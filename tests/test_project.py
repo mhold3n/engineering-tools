@@ -20,6 +20,11 @@ def test_init_project_creates_layout(tmp_path: Path, monkeypatch) -> None:
     assert (root / "jobs").is_dir()
     assert (root / "artifacts").is_dir()
     assert (root / ".engineering-tools").is_dir()
+    bom = root / ".engineering-tools" / "bom.json"
+    assert bom.is_file()
+    bom_data = json.loads(bom.read_text(encoding="utf-8"))
+    assert bom_data["version"] == 1
+    assert bom_data["items"] == []
     assert (root / "README.md").is_file()
     assert (root / "ATTRIBUTION.md").is_file()
 

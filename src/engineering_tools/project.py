@@ -33,6 +33,13 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
     (root_path / "artifacts").mkdir(exist_ok=True)
     (root_path / PROJECT_DIR).mkdir(exist_ok=True)
 
+    bom_file = root_path / PROJECT_DIR / "bom.json"
+    if not bom_file.exists():
+        bom_file.write_text(
+            json.dumps({"version": 1, "items": []}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
     project_name = name or root_path.name
 
     readme = root_path / "README.md"
@@ -42,7 +49,7 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
             "Local project managed by engineering-tools (MIT glue).\n\n"
             "- `jobs/` -- solver job inputs / run directories\n"
             "- `artifacts/` -- meshes, results, exports\n"
-            "- `.engineering-tools/` -- local job history and meta\n"
+            "- `.engineering-tools/` -- local job history, BOM-lite, and meta\n"
             "- See repository `THIRD_PARTY.md` / `ATTRIBUTION.md` for upstream licenses.\n",
             encoding="utf-8",
         )
