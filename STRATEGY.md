@@ -61,6 +61,8 @@ Caveats on the distro itself:
 
 ## First build slice
 
+**v0.2.0 PLM start:** user-level project registry (`~/.engineering-tools/registry.json`, overridable via `ETOOLS_HOME`) plus per-project append-only job history (`<project>/.engineering-tools/jobs.jsonl`), listed with `etools projects` / `etools jobs`. This is the first MIT PLM layer slice—stdlib-only, no database—on top of doctor/init/hello.
+
 1. Declare the **base profile** (which apps + how we detect them).
 2. Ship a tiny MIT CLI/GUI that can: create a project, find installed solvers,
    launch a “hello” FEA or CAD path with attribution.

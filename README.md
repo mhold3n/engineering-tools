@@ -18,12 +18,16 @@ This installs the `engineering-tools` and `etools` console scripts.
 
 ```bash
 etools doctor          # detect FreeCAD, CalculiX, OpenFOAM, ...
-etools init ./my-part  # jobs/, artifacts/, attribution scaffold
+etools init ./my-part  # jobs/, artifacts/, attribution scaffold + registry
 etools hello           # CalculiX hello_beam if ccx on PATH, else FreeCAD hello_box
 etools hello --project ./my-part
+etools projects        # list registered projects
+etools jobs ./my-part  # recent job history (jsonl under .engineering-tools/)
 ```
 
 `etools profile` is an alias for `doctor`.
+
+Project registry lives under `~/.engineering-tools/registry.json` (override with `ETOOLS_HOME`). Per-project job history is append-only JSONL at `<project>/.engineering-tools/jobs.jsonl`.
 
 ### Hello samples
 
