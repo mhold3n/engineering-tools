@@ -30,8 +30,8 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
         readme.write_text(
             f"# {project_name}\n\n"
             "Local project managed by engineering-tools (MIT glue).\n\n"
-            "- `jobs/` \u2014 solver job inputs / run directories\n"
-            "- `artifacts/` \u2014 meshes, results, exports\n"
+            "- `jobs/` -- solver job inputs / run directories\n"
+            "- `artifacts/` -- meshes, results, exports\n"
             "- See repository `THIRD_PARTY.md` / `ATTRIBUTION.md` for upstream licenses.\n",
             encoding="utf-8",
         )
@@ -39,7 +39,7 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
     attribution = root_path / "ATTRIBUTION.md"
     if not attribution.exists():
         attribution.write_text(
-            f"# Attribution \u2014 {project_name}\n\n"
+            f"# Attribution -- {project_name}\n\n"
             "This project uses the engineering-tools MIT workflow layer. "
             "Do not vendor solvers here. Keep upstream licenses intact and "
             "record any third-party inputs you add below.\n\n"

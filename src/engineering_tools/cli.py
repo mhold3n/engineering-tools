@@ -16,7 +16,7 @@ from .project import init_project
 def _cmd_doctor(_args: argparse.Namespace) -> int:
     detected = detect_profile()
     summary = summarize_profile(detected)
-    print(f"engineering-tools {__version__} \u2014 doctor")
+    print(f"engineering-tools {__version__} -- doctor")
     print(f"Found {summary['found_count']} / {summary['total']} tools")
     for detail in summary["details"]:
         if detail["found"]:
