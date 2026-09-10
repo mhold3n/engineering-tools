@@ -1,3 +1,3 @@
-"""Engineering tools — MIT PLM/workflow layer over mature open CAE apps."""
+"""engineering-tools: MIT glue over a CAELinux-style open-source stack."""
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"

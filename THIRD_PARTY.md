@@ -43,6 +43,7 @@ See [`SOURCE_MAP.md`](SOURCE_MAP.md) for the Dassault → OSS layering.
 | Source | What we use | Upstream license | Notes |
 | --- | --- | --- | --- |
 | [CalculiX](http://www.calculix.de/) | Called by `etools hello` via packaged MIT sample deck `hello_beam.inp` | GPL-2.0 | CalculiX source is not vendored (GPL-2.0); only the MIT sample is packaged |
+| [FreeCAD](https://www.freecad.org/) | Called by `etools hello` via packaged MIT `hello_box.py` | LGPL-2.0-or-later | FreeCAD source not vendored (LGPL) |
 
 ## Integration note
 
