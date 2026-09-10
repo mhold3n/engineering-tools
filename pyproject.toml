@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineering-tools"
-version = "0.1.0"
+version = "0.1.1"
 description = "MIT PLM/workflow glue for a CAELinux-style open-source engineering stack"
 readme = "README.md"
 license = { text = "MIT" }
@@ -30,6 +30,9 @@ etools = "engineering_tools.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+engineering_tools = ["data/calculix/*.inp"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

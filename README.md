@@ -19,10 +19,17 @@ This installs the `engineering-tools` and `etools` console scripts.
 ```bash
 etools doctor          # detect FreeCAD, CalculiX, OpenFOAM, ...
 etools init ./my-part  # jobs/, artifacts/, attribution scaffold
-etools hello           # smoke-check FreeCAD headless or CalculiX (ccx)
+etools hello           # run packaged CalculiX hello_beam if ccx is on PATH
+etools hello --project ./my-part   # write outputs under artifacts/calculix-hello/
 ```
 
 `etools profile` is an alias for `doctor`.
+
+When `ccx` (CalculiX) is installed, `hello` runs the MIT sample deck in
+`examples/calculix/hello_beam.inp` (also packaged under
+`engineering_tools/data/calculix/`). CalculiX itself stays upstream GPL — we only
+call it. If CalculiX is missing, `hello` falls back to a FreeCAD headless box, then
+to detect-only.
 
 ## License
 
