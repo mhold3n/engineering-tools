@@ -17,7 +17,7 @@ def test_load_freecad_sample_mentions_hellobox():
 def test_hello_runs_fake_freecad(tmp_path, monkeypatch):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
-    # No ccx — force FreeCAD path
+    # No ccx — force FreeCAD path (keep /usr/bin:/bin so fake script can call touch)
     fc = fake_bin / "FreeCADCmd"
     fc.write_text(
         "#!/bin/sh\n"
@@ -29,7 +29,7 @@ def test_hello_runs_fake_freecad(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     fc.chmod(0o755)
-    monkeypatch.setenv("PATH", str(fake_bin))
+    monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + "/usr/bin:/bin")
 
     project = tmp_path / "proj"
     project.mkdir()
