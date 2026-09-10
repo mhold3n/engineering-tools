@@ -50,9 +50,9 @@ Caveats on the distro itself:
 ┌─────────────────────────────────────────┐
 │  engineering-tools (MIT)                │  ← we own this
 │  PLM · workflow · launcher · credits    │
-└─────────────────├───────────────────────┘
+└─────────────────┬───────────────────────┘
                   │ adapters / jobs / files
-┌─────────────────┴───────────────────────┐
+┌─────────────────▼───────────────────────┐
 │  Mature CAE apps (upstream licenses)    │  ← CAELinux-proven set
 │  FreeCAD · Aster · CalculiX · OpenFOAM  │
 │  Elmer · OpenModelica · Salome · …      │
