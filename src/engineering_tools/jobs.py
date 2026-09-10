@@ -33,6 +33,7 @@ def append_job(
     outputs: Optional[list[str]] = None,
     message: str = "",
     credit: Optional[str] = None,
+    input_path: Optional[str] = None,
 ) -> dict[str, Any]:
     """Append one job record to ``<project>/.engineering-tools/jobs.jsonl``."""
     root = Path(project).expanduser().resolve()
@@ -48,6 +49,7 @@ def append_job(
         "outputs": list(outputs or []),
         "message": message,
         "credit": credit,
+        "input": input_path,
     }
     path = jobs_log_path(root)
     with path.open("a", encoding="utf-8") as fh:
