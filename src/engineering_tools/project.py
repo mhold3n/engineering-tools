@@ -6,22 +6,32 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from .registry import register_project
 
 PROJECT_MARKER = ".engineering-tools.json"
+PROJECT_DIR = ".engineering-tools"
+
+
+def is_project(root: str | Path) -> bool:
+    """True if path looks like an engineering-tools project."""
+    path = Path(root).expanduser().resolve()
+    return (path / PROJECT_MARKER).is_file() or (path / PROJECT_DIR).is_dir()
 
 
 def init_project(root: str | Path, name: Optional[str] = None) -> Path:
-    """Create jobs/, artifacts/, README.md, ATTRIBUTION.md, and project marker.
+    """Create jobs/, artifacts/, meta dir, README.md, ATTRIBUTION.md, and register.
 
     Returns the resolved project root. Idempotent for directories; overwrites
     marker metadata but will not clobber an existing README/ATTRIBUTION if
-    they already exist (creates only when missing).
+    they already exist (creates only when missing). Registers/updates the
+    project in the user-level registry (dedupe by resolved path).
     """
     root_path = Path(root).expanduser().resolve()
     root_path.mkdir(parents=True, exist_ok=True)
 
     (root_path / "jobs").mkdir(exist_ok=True)
     (root_path / "artifacts").mkdir(exist_ok=True)
+    (root_path / PROJECT_DIR).mkdir(exist_ok=True)
 
     project_name = name or root_path.name
 
@@ -32,6 +42,7 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
             "Local project managed by engineering-tools (MIT glue).\n\n"
             "- `jobs/` -- solver job inputs / run directories\n"
             "- `artifacts/` -- meshes, results, exports\n"
+            "- `.engineering-tools/` -- local job history and meta\n"
             "- See repository `THIRD_PARTY.md` / `ATTRIBUTION.md` for upstream licenses.\n",
             encoding="utf-8",
         )
@@ -54,7 +65,7 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
             {
                 "name": project_name,
                 "version": 1,
-                "layout": ["jobs", "artifacts"],
+                "layout": ["jobs", "artifacts", PROJECT_DIR],
             },
             indent=2,
         )
@@ -62,4 +73,5 @@ def init_project(root: str | Path, name: Optional[str] = None) -> Path:
         encoding="utf-8",
     )
 
+    register_project(root_path, name=project_name)
     return root_path
