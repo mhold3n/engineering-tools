@@ -9,11 +9,14 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 from . import __version__
+from .bom_cli import cmd_bom_dispatch
 from .hello import run_hello
 from .jobs import append_job, read_jobs
 from .profile import detect_profile, summarize_profile
 from .project import init_project, is_project
 from .registry import list_projects, touch_project
+from .run import SUPPORTED_TOOLS
+from .run_cli import cmd_run_dispatch
 
 
 def _cmd_doctor(_args: argparse.Namespace) -> int:
@@ -83,21 +86,21 @@ def _cmd_projects(args: argparse.Namespace) -> int:
     return 0
 
 
-def _resolve_jobs_project(explicit: Optional[str]) -> Path:
+def _resolve_project(explicit: Optional[str], *, command: str) -> Path:
     if explicit:
         return Path(explicit).expanduser().resolve()
     cwd = Path.cwd().resolve()
     if is_project(cwd):
         return cwd
     raise SystemExit(
-        "No project path given and cwd is not an engineering-tools project. "
-        "Pass a path: etools jobs ./my-part"
+        f"No project path given and cwd is not an engineering-tools project. "
+        f"Pass a path: etools {command} ./my-part"
     )
 
 
 def _cmd_jobs(args: argparse.Namespace) -> int:
     try:
-        project = _resolve_jobs_project(args.project)
+        project = _resolve_project(args.project, command="jobs")
     except SystemExit as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -116,6 +119,32 @@ def _cmd_jobs(args: argparse.Namespace) -> int:
         command = job.get("command") or "-"
         print(f"  {created}  [{status:4}]  {tool}/{command}  id={job.get('id', '')[:8]}")
     return 0
+
+
+def _cmd_bom(args: argparse.Namespace) -> int:
+    rest = list(getattr(args, "bom_rest", None) or [])
+    if rest and rest[0] == "--":
+        rest = rest[1:]
+    return cmd_bom_dispatch(rest, outer_json=bool(getattr(args, "json", False)))
+
+
+def _cmd_run_entry(args: argparse.Namespace) -> int:
+    tool = args.tool_flag or args.tool_pos
+    input_file = args.input_flag or args.input_pos
+    if not tool or not input_file:
+        print(
+            "Usage: etools run --tool calculix|freecad --input FILE --project PATH\n"
+            "   or: etools run calculix|freecad FILE --project PATH",
+            file=sys.stderr,
+        )
+        return 2
+    return cmd_run_dispatch(
+        tool=tool,
+        input_file=input_file,
+        project=args.project,
+        workdir=args.workdir,
+        as_json=bool(args.json),
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -153,6 +182,66 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--json", action="store_true", help="Print JSON")
     jobs.add_argument("--limit", type=int, default=20, help="Max jobs to show (default: 20)")
     jobs.set_defaults(func=_cmd_jobs)
+
+    bom = sub.add_parser(
+        "bom",
+        help="Hobbyist bill of materials (BOM-lite)",
+        description=(
+            "BOM-lite stored at <project>/.engineering-tools/bom.json\n\n"
+            "  etools bom [project] [--json]\n"
+            "  etools bom add [project] --part NAME --qty N [--unit ea] "
+            "[--material M] [--source S] [--notes N]\n"
+            "  etools bom remove [project] --id ID | --part NAME"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    bom.add_argument("--json", action="store_true", help="Print JSON (list/add/remove)")
+    bom.add_argument("bom_rest", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
+    bom.set_defaults(func=_cmd_bom)
+
+    run = sub.add_parser(
+        "run",
+        help="Run a custom CalculiX .inp or FreeCAD .py deck and log the job",
+        description=(
+            "Run a custom solver deck and append jobs.jsonl.\n\n"
+            "Primary UX:\n"
+            "  etools run --tool calculix --input deck.inp --project .\n"
+            "  etools run --tool freecad --input script.py --project .\n\n"
+            "Shorthand (same meaning):\n"
+            "  etools run calculix deck.inp --project .\n"
+            "  etools run freecad script.py --project ."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    run.add_argument(
+        "tool_pos",
+        nargs="?",
+        default=None,
+        choices=list(SUPPORTED_TOOLS),
+        help="Shorthand tool name (calculix|freecad)",
+    )
+    run.add_argument("input_pos", nargs="?", default=None, help="Shorthand input file path")
+    run.add_argument(
+        "--tool",
+        dest="tool_flag",
+        default=None,
+        choices=list(SUPPORTED_TOOLS),
+        help="Solver/tool: calculix or freecad",
+    )
+    run.add_argument(
+        "--input",
+        dest="input_flag",
+        default=None,
+        help="Input .inp (CalculiX) or .py (FreeCAD)",
+    )
+    run.add_argument(
+        "--project",
+        default=None,
+        help="Project path (default: cwd if it is a project)",
+    )
+    run.add_argument("--workdir", default=None, help="Optional working directory for outputs")
+    run.add_argument("--json", action="store_true", help="Also print JSON result")
+    run.set_defaults(func=_cmd_run_entry)
 
     return parser
 
