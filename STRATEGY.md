@@ -63,10 +63,12 @@ Caveats on the distro itself:
 
 **v0.2.0 PLM start:** user-level project registry (`~/.engineering-tools/registry.json`, overridable via `ETOOLS_HOME`) plus per-project append-only job history (`<project>/.engineering-tools/jobs.jsonl`), listed with `etools projects` / `etools jobs`. This is the first MIT PLM layer slice—stdlib-only, no database—on top of doctor/init/hello.
 
+**v0.3.0 next PLM/workflow steps:** BOM-lite (`<project>/.engineering-tools/bom.json` with `etools bom` CRUD) and custom deck execution (`etools run` for CalculiX `.inp` / FreeCAD `.py`, logged like hello into jobs.jsonl with artifacts under `artifacts/run-<id>/`). These are the next hobbyist PLM/workflow slices after registry + job history—still stdlib-only, no ERP.
+
 1. Declare the **base profile** (which apps + how we detect them).
 2. Ship a tiny MIT CLI/GUI that can: create a project, find installed solvers,
    launch a “hello” FEA or CAD path with attribution.
-3. Grow PLM (revisions, BOM-lite, job history) once the adapter pattern is real.
+3. Grow PLM (revisions, richer BOM, job history) once the adapter pattern is real.
 
 ## Non-goals (for now)
 

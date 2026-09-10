@@ -18,16 +18,26 @@ This installs the `engineering-tools` and `etools` console scripts.
 
 ```bash
 etools doctor          # detect FreeCAD, CalculiX, OpenFOAM, ...
-etools init ./my-part  # jobs/, artifacts/, attribution scaffold + registry
+etools init ./my-part  # jobs/, artifacts/, bom.json, attribution + registry
 etools hello           # CalculiX hello_beam if ccx on PATH, else FreeCAD hello_box
 etools hello --project ./my-part
 etools projects        # list registered projects
 etools jobs ./my-part  # recent job history (jsonl under .engineering-tools/)
+
+# BOM-lite (hobbyist bill of materials)
+etools bom ./my-part
+etools bom add ./my-part --part Bracket --qty 2 --material AL6061
+etools bom remove ./my-part --part Bracket
+
+# Run a custom solver deck (logs to jobs.jsonl; outputs under artifacts/run-<id>/)
+etools run --tool calculix --input deck.inp --project ./my-part
+etools run calculix deck.inp --project ./my-part          # shorthand
+etools run --tool freecad --input script.py --project ./my-part
 ```
 
 `etools profile` is an alias for `doctor`.
 
-Project registry lives under `~/.engineering-tools/registry.json` (override with `ETOOLS_HOME`). Per-project job history is append-only JSONL at `<project>/.engineering-tools/jobs.jsonl`.
+Project registry lives under `~/.engineering-tools/registry.json` (override with `ETOOLS_HOME`). Per-project job history is append-only JSONL at `<project>/.engineering-tools/jobs.jsonl`. BOM-lite lives at `<project>/.engineering-tools/bom.json`.
 
 ### Hello samples
 
