@@ -1,11 +1,11 @@
 # Open-Source Stack Manifest and `hello` Design
 
 Created: 2026-09-11
-Status: Approved for implementation
+Status: Approved for implementation; proprietary inventory and replacement map remain provisional pending independent audit
 
 ## Purpose
 
-`engineering-tools` is an open-source response to the complete canonical Dassault product map. GitHub distributes first-party orchestration, installation knowledge, immutable upstream pointers, verification logic, and owned smoke fixtures. Third-party applications and engineering data remain outside the repository.
+`engineering-tools` is an open-source response to a complete, independently audited Dassault product inventory. GitHub distributes first-party orchestration, installation knowledge, immutable upstream pointers, verification logic, and owned smoke fixtures. Third-party applications and engineering data remain outside the repository.
 
 Alpha proves completeness, reproducible installability, and independent functional verification. Beta proves interoperability, workflow quality, and system-level integration.
 
@@ -13,7 +13,7 @@ Alpha proves completeness, reproducible installability, and independent function
 
 Alpha must prove that every canonical Dassault product has exactly one reproducibly installable, independently functioning open-source replacement solution.
 
-- Every closed-source product in the canonical map has exactly one selected open-source response.
+- Every closed-source product in the audited proprietary inventory has exactly one selected open-source response.
 - A response may be a fixed composition when the capability inherently requires several components. It may not be a menu of competing alternatives.
 - One open-source component may satisfy multiple product mappings.
 - Every component has an official upstream source, immutable identity, license, installation recipe, execution locator, component probe, and expected signal.
@@ -24,9 +24,9 @@ Alpha must prove that every canonical Dassault product has exactly one reproduci
 
 “Functioning replacement coverage” is deliberately narrow in Alpha: the selected replacement is installed, executable, and demonstrates its assigned capability independently. Cross-component handoffs and polished integrated workflows belong to Beta.
 
-## Canonical Product Map
+## Provisional Proprietary Inventory and Replacement Map
 
-This table is authoritative for manifest coverage. `+` denotes one fixed composite solution, not alternatives.
+This table seeds the first manifest increment, but is not frozen as the canonical inventory. An independent audit must normalize suite, product, subcomponent, and capability granularity; remove artificial capability rows; add omitted Dassault products; and then freeze inventory coverage before mass installation work. Replacement selection remains separate from deciding what belongs in the proprietary inventory. `+` denotes one fixed composite solution, not alternatives.
 
 | Closed-source product or capability | Selected open-source response | Fit |
 | --- | --- | --- |
@@ -106,18 +106,22 @@ The first reference platform is Ubuntu 24.04 LTS on x86-64. Additional platforms
 
 Add one versioned `src/engineering_tools/data/stack.json` as canonical source. Keeping it inside package data makes the same manifest available from a Git checkout and an installed wheel. JSON preserves the project’s standard-library-only runtime on Python 3.10; TOML would require a compatibility dependency and YAML would require a parser dependency.
 
-The manifest contains two logical collections:
+The manifest contains three logical collections:
 
 ```text
 src/engineering_tools/data/stack.json
+  inventory
+    proprietary product identity
+    portfolio and granularity classification
+    independent audit state
   components
     source and immutable identity
     installation recipe
     execution locator
     component hello probe
     expected component signal
-  products
-    closed-source product identity
+  mappings
+    proprietary inventory ID
     exactly one replacement solution
     required component IDs
     fit grade
@@ -142,18 +146,30 @@ Supported execution types are `binary`, `python`, `container`, `java`, `service`
 
 An entry whose immutable pointer or probe has not been completed uses an explicit lifecycle state such as `source-unresolved` or `probe-unimplemented`. These are reportable states, not placeholder text, and prevent Alpha from passing.
 
-### Product fields
+### Inventory fields
 
-Each product declares:
+Each proprietary inventory entry declares:
 
-- Stable product ID and closed-source display name.
+- Stable proprietary product ID and display name.
+- Dassault portfolio family.
+- Granularity classification: `suite`, `product`, `application`, `subcomponent`, or `capability`.
+- Source evidence identifying the proprietary offering.
+- Independent audit state.
+
+The initial inventory uses `provisional` audit state. Alpha certification is impossible while any inventory entry remains provisional or while inventory audit identifies an unresolved omission or artificial row.
+
+### Mapping fields
+
+Each mapping declares:
+
+- Stable mapping ID and proprietary inventory ID.
 - One replacement label.
 - Fit grade.
 - Nonempty ordered component ID list.
 - Mapping-specific capability probe ID.
 - Expected capability signal.
 
-Manifest validation rejects missing product mappings, empty component lists, unknown component IDs, multiple replacement choices, duplicate IDs, unsupported execution types, and malformed immutable identities.
+Manifest validation rejects audited inventory entries without mappings, mappings without inventory entries, empty component lists, unknown component IDs, multiple replacement choices, duplicate IDs, unsupported execution types, malformed immutable identities, and invalid audit states.
 
 ## Local State
 
@@ -183,7 +199,7 @@ Machine-specific state lives under `ETOOLS_HOME`, defaulting to `~/.engineering-
 6. Report every component and product; never return after the first success.
 7. Write the complete local report atomically.
 8. When `--project` is supplied, append one job record per component and one per product, including failures and unresolved states.
-9. Exit zero only when every canonical product is covered.
+9. Exit zero only when proprietary inventory audit is frozen and every audited product is covered.
 
 The initial manifest/`hello` implementation is expected to exit nonzero. Current repository implements executable probes only for CalculiX and FreeCAD, has an unfinished OpenFOAM sample, and lacks most canonical components and product probes. This intentional red state is the actionable installation and implementation ledger.
 
@@ -221,6 +237,7 @@ A composite mapping such as DELMIA robotics requires independent PASS results fr
 | `invalid-pointer` | Upstream source, artifact, commit, digest, or installation metadata cannot be resolved or validated. |
 | `probe-unimplemented` | Required component or product probe has not been implemented. |
 | `capability-failed` | Components work independently, but mapped capability probe fails. |
+| `inventory-unfrozen` | Proprietary inventory or mapping audit is incomplete. |
 | `invalid-manifest` | Canonical manifest violates schema or coverage invariants. |
 
 Every state except `ok` and `covered` prevents aggregate success. Expected incompleteness remains typed and actionable, but does not pass.
@@ -235,7 +252,7 @@ Examples:
 - CATIA product probe: verify resulting document contains a parametric solid shape.
 - SOLIDWORKS product probe: independently verify the selected FreeCAD workflow can create and export a mechanical part.
 - OpenFOAM component probe: stage owned cavity case, run `blockMesh`, and validate `constant/polyMesh/` output.
-- SIMULIA Fluid Dynamics Engineer product probe: confirm the mesh represents a valid CFD case. Running a full CFD solver is outside the first OpenFOAM slice.
+- SIMULIA Fluid Dynamics Engineer product probe: run a microscopic CFD solve, verify timesteps or iterations occurred, require expected field output, and perform a basic numerical sanity check.
 
 Probe code may be shared when product requirements genuinely match, but each product receives its own reported result.
 
@@ -252,7 +269,7 @@ Complete the already-started third adapter as first concrete manifest integratio
 - Copy custom case into `artifacts/run-<id>/`, run `blockMesh`, and record outputs and attribution.
 - Do not run a CFD solver, parse solver selection, use MPI, launch ParaView, or add container orchestration in this slice.
 
-OpenFOAM becomes `ok` only after installation, locator, integrity, and component probe pass. Its SIMULIA CFD mapping becomes `covered` only after its separate mapping probe passes.
+OpenFOAM becomes `ok` only after installation, locator, integrity, and `blockMesh` component probe pass. The first OpenFOAM increment deliberately leaves its SIMULIA CFD mapping red as `probe-unimplemented`; mesh generation proves preprocessing, not CFD. A following capability increment must execute a microscopic solver case, verify progress and field output, and apply a numerical sanity check before that mapping becomes `covered`.
 
 ## Installation and CI
 
@@ -260,7 +277,7 @@ Installation recipes obtain third-party software from official immutable upstrea
 
 CI uses the same manifest and commands as local verification:
 
-- Manifest CI validates schema, one-response-per-product coverage, immutable pointer shape, attribution linkage, and adapter references.
+- Manifest CI validates schema, inventory-to-mapping coverage, one-response-per-product coverage, immutable pointer shape, attribution linkage, and adapter references.
 - Reference-environment CI installs or reuses the declared stack outside the checkout, then runs `etools hello` against actual local locators.
 - A persistent self-hosted reference runner may retain the large installation between runs; reuse never skips integrity or functional verification.
 - Hosted CI that lacks the stack may validate repository logic with controlled fixtures, but it cannot certify Alpha coverage.
@@ -270,15 +287,17 @@ CI uses the same manifest and commands as local verification:
 
 The first increment establishes truthful red infrastructure rather than pretending Alpha is complete:
 
-1. Add complete canonical product mapping and deduplicated component inventory to `src/engineering_tools/data/stack.json` and include it in built distributions.
+1. Add the provisional proprietary inventory, replacement mappings, and deduplicated component inventory to `src/engineering_tools/data/stack.json` and include it in built distributions.
 2. Add manifest loader and structural validation.
 3. Replace `hello` preference/early-return behavior with exhaustive component and product evaluation.
 4. Port existing CalculiX and FreeCAD probes into manifest-driven reporting.
-5. Finish OpenFOAM component and SIMULIA CFD capability probes.
+5. Finish the OpenFOAM `blockMesh` component probe and leave the SIMULIA CFD capability probe explicitly unimplemented and red.
 6. Represent every remaining unresolved source, installation recipe, or probe explicitly so it fails with actionable state.
 7. Add deterministic text and JSON reports plus atomic local report persistence.
 8. Add project job logging for every evaluated component and product.
 9. Add CI tests for manifest coverage and result aggregation using fake locators; do not claim full Alpha certification until reference-environment `hello` passes.
+
+Before mass installation work, independently audit and freeze the proprietary inventory and replacement map. Before declaring SIMULIA Fluid Dynamics Engineer covered, add its microscopic solver capability probe. Neither gate blocks this first manifest/`hello` infrastructure increment.
 
 ## Error Handling
 
@@ -294,7 +313,7 @@ The first increment establishes truthful red infrastructure rather than pretendi
 
 Tests use temporary `ETOOLS_HOME`, fake binaries/services, owned fixtures, and a reduced test manifest. They must cover:
 
-- Full canonical product-map coverage and exactly-one-response invariant.
+- Provisional inventory-to-mapping coverage, audit-state gating, and exactly-one-response invariant.
 - Composite mapping resolution and component deduplication.
 - Each manifest validation failure.
 - Every result state and aggregate exit behavior.
@@ -308,6 +327,8 @@ Tests use temporary `ETOOLS_HOME`, fake binaries/services, owned fixtures, and a
 - CLI text output ordering and stable JSON shape.
 
 Real third-party applications are verified by reference-environment CI; unit tests prove orchestration and failure semantics without vendoring those applications.
+
+Evidence caching keyed by component immutable identity, installation digest, probe version, and environment fingerprint is deferred until real verification cost warrants it. Caching may avoid redundant execution but may never weaken coverage requirements.
 
 ## Non-Goals for This Increment
 
@@ -323,12 +344,12 @@ Real third-party applications are verified by reference-environment CI; unit tes
 
 The manifest/`hello` foundation is complete when:
 
-- Packaged `src/engineering_tools/data/stack.json` represents every canonical product above with exactly one solution.
+- Packaged `src/engineering_tools/data/stack.json` represents every provisional inventory entry above with exactly one solution and prevents Alpha certification until inventory audit is frozen.
 - Every referenced component exists once in component catalog.
 - Manifest validation is deterministic and test-covered.
 - `hello` evaluates all entries and produces component-level and product-level results.
 - Existing CalculiX and FreeCAD checks work through new model.
-- OpenFOAM `blockMesh` check and custom case run work through new model.
+- OpenFOAM `blockMesh` check and custom case run work through new model while SIMULIA CFD remains red pending a real solver probe.
 - Missing products and unfinished probes produce explicit nonzero results.
 - Current incomplete local stack therefore fails honestly.
 - No third-party payload is committed.
