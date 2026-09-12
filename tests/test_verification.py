@@ -15,6 +15,12 @@ def test_missing_installations_is_empty(tmp_path, monkeypatch) -> None:
     assert load_installations() == {"schema_version": 1, "components": {}}
 
 
+def test_invalid_utf8_installations_is_empty(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path))
+    (tmp_path / "installations.json").write_bytes(b"\xff")
+    assert load_installations() == {"schema_version": 1, "components": {}}
+
+
 def test_installation_lookup(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path))
     (tmp_path / "installations.json").write_text(

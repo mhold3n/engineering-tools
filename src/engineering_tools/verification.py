@@ -25,7 +25,7 @@ def load_installations() -> dict[str, Any]:
         return {"schema_version": 1, "components": {}}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return {"schema_version": 1, "components": {}}
     if not isinstance(data, dict) or not isinstance(data.get("components"), dict):
         return {"schema_version": 1, "components": {}}
