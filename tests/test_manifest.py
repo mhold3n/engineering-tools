@@ -119,7 +119,19 @@ def test_load_manifest_raises_all_validation_errors(tmp_path: Path) -> None:
             lambda d: d["mappings"][0].update(
                 alternatives=[{"replacement": "OpenLB", "components": ["openfoam"]}]
             ),
-            "must not contain alternative representations",
+            "undeclared field",
+        ),
+        (
+            lambda d: d["mappings"][0].update(
+                choices=[{"replacement": "OpenLB", "components": ["openfoam"]}]
+            ),
+            "undeclared field",
+        ),
+        (
+            lambda d: d["mappings"][0].update(
+                solutions=[{"replacement": "OpenLB", "components": ["openfoam"]}]
+            ),
+            "undeclared field",
         ),
     ],
 )

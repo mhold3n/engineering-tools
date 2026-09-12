@@ -14,6 +14,15 @@ AUDIT_STATES = {"provisional", "audited"}
 SOURCE_STATES = {"resolved", "source-unresolved"}
 INSTALL_RECIPE_STATES = {"implemented", "recipe-unimplemented"}
 PROBE_STATES = {"implemented", "probe-unimplemented"}
+MAPPING_FIELDS = {
+    "id",
+    "inventory_id",
+    "replacement",
+    "fit",
+    "components",
+    "probe",
+    "expected_signal",
+}
 
 
 class ManifestError(ValueError):
@@ -149,17 +158,17 @@ def validate_manifest(data: object) -> tuple[str, ...]:
         for row in mappings:
             if not isinstance(row, dict):
                 continue
+            undeclared_fields = sorted(
+                (key for key in row if not isinstance(key, str) or key not in MAPPING_FIELDS),
+                key=repr,
+            )
+            for field in undeclared_fields:
+                errors.append(f"mapping {row.get('id')!r} has undeclared field {field!r}")
             replacement = row.get("replacement")
             if not isinstance(replacement, str) or not replacement.strip():
                 errors.append(f"mapping {row.get('id')!r} requires one replacement label")
             elif "/" in replacement or re.search(r"\bor\b", replacement, re.IGNORECASE):
                 errors.append(f"mapping {row.get('id')!r} replacement must not encode alternatives")
-            if any(
-                isinstance(key, str) and "alternative" in key.lower() for key in row
-            ):
-                errors.append(
-                    f"mapping {row.get('id')!r} must not contain alternative representations"
-                )
             probe = row.get("probe")
             probe_state = probe.get("state") if isinstance(probe, dict) else None
             if probe_state not in PROBE_STATES:
