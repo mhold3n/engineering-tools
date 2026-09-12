@@ -32,7 +32,15 @@ etools = "engineering_tools.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-engineering_tools = ["data/calculix/*.inp", "data/freecad/*.py"]
+engineering_tools = [
+  "data/stack.json",
+  "data/calculix/*.inp",
+  "data/freecad/*.py",
+  "data/openfoam/hello_cavity/README.md",
+  "data/openfoam/hello_cavity/0/*",
+  "data/openfoam/hello_cavity/constant/*",
+  "data/openfoam/hello_cavity/system/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
