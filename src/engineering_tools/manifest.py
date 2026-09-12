@@ -102,6 +102,10 @@ def validate_manifest(data: object) -> tuple[str, ...]:
             required = row.get("components")
             if not isinstance(required, list) or not required:
                 errors.append(f"mapping {row.get('id')!r} components must not be empty")
+            elif not all(isinstance(component, str) and component for component in required):
+                errors.append(
+                    f"mapping {row.get('id')!r} components must contain only nonempty strings"
+                )
             elif unknown := sorted(set(required) - component_ids):
                 errors.append(f"mapping {row.get('id')!r} references unknown component {unknown[0]!r}")
 

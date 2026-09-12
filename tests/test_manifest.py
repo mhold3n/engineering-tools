@@ -147,6 +147,25 @@ def test_validation_allows_fixed_composite_replacement_label() -> None:
     assert validate_manifest(data) == ()
 
 
+@pytest.mark.parametrize(
+    "components",
+    [[{"id": "openfoam"}], [["openfoam"]], [""]],
+)
+def test_mapping_components_must_be_nonempty_strings(
+    components: list[object], tmp_path: Path
+) -> None:
+    data = valid_manifest()
+    data["mappings"][0]["components"] = components
+    errors = validate_manifest(data)
+    assert any("components must contain only nonempty strings" in error for error in errors)
+
+    path = tmp_path / "bad-components.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ManifestError) as exc:
+        load_manifest(path)
+    assert any("components must contain only nonempty strings" in error for error in exc.value.errors)
+
+
 def test_manifest_digest_is_canonical() -> None:
     first = valid_manifest()
     second = json.loads(json.dumps(first, sort_keys=True))
