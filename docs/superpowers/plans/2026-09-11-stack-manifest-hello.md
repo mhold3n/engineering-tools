@@ -1354,7 +1354,8 @@ Expected: all targeted tests pass, including continuation after early failures a
 
 ```bash
 git status --short
-git diff --check HEAD~6..HEAD
+branch_base=$(git merge-base feat/stack-manifest-hello main)
+git diff --check "$branch_base"..HEAD
 git ls-files | rg -i '\.(appimage|deb|rpm|iso|img|sif|squashfs|fcstd|frd)$'
 ```
 
