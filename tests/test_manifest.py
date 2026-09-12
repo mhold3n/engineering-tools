@@ -108,6 +108,33 @@ def test_load_manifest_raises_all_validation_errors(tmp_path: Path) -> None:
     assert exc.value.errors
 
 
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (
+            lambda d: d["mappings"][0].update(replacement="OpenFOAM or OpenLB"),
+            "must not encode alternatives",
+        ),
+        (
+            lambda d: d["mappings"][0].update(
+                alternatives=[{"replacement": "OpenLB", "components": ["openfoam"]}]
+            ),
+            "must not contain alternative representations",
+        ),
+    ],
+)
+def test_validation_rejects_alternative_representations(mutation, message: str) -> None:
+    data = valid_manifest()
+    mutation(data)
+    assert any(message in error for error in validate_manifest(data))
+
+
+def test_validation_allows_fixed_composite_replacement_label() -> None:
+    data = valid_manifest()
+    data["mappings"][0]["replacement"] = "Git LFS + PostgreSQL + Nextcloud + ERPNext"
+    assert validate_manifest(data) == ()
+
+
 def test_manifest_digest_is_canonical() -> None:
     first = valid_manifest()
     second = json.loads(json.dumps(first, sort_keys=True))

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -148,8 +149,17 @@ def validate_manifest(data: object) -> tuple[str, ...]:
         for row in mappings:
             if not isinstance(row, dict):
                 continue
-            if not isinstance(row.get("replacement"), str) or not row["replacement"].strip():
+            replacement = row.get("replacement")
+            if not isinstance(replacement, str) or not replacement.strip():
                 errors.append(f"mapping {row.get('id')!r} requires one replacement label")
+            elif "/" in replacement or re.search(r"\bor\b", replacement, re.IGNORECASE):
+                errors.append(f"mapping {row.get('id')!r} replacement must not encode alternatives")
+            if any(
+                isinstance(key, str) and "alternative" in key.lower() for key in row
+            ):
+                errors.append(
+                    f"mapping {row.get('id')!r} must not contain alternative representations"
+                )
             probe = row.get("probe")
             probe_state = probe.get("state") if isinstance(probe, dict) else None
             if probe_state not in PROBE_STATES:
