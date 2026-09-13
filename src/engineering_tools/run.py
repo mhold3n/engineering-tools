@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from .hello import CALCULIX_CREDIT, FREECAD_CREDIT, _find_freecad_cmd
+from .hello_probes import CALCULIX_CREDIT, FREECAD_CREDIT, _find_freecad_cmd
 from .jobs import append_job
 from .registry import touch_project
 

@@ -1,11 +1,11 @@
-"""Tests for hello smoke paths and packaged CalculiX sample."""
+"""Tests for packaged CalculiX sample and normalized probe."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-from engineering_tools.hello import load_calculix_sample, run_hello
+from engineering_tools.hello_probes import load_calculix_sample, probe_calculix
 
 
 def test_load_calculix_sample_contains_c3d8():
@@ -14,7 +14,7 @@ def test_load_calculix_sample_contains_c3d8():
     assert "hello_beam" in text.lower() or "engineering-tools" in text.lower()
 
 
-def test_hello_runs_fake_ccx(tmp_path, monkeypatch):
+def test_calculix_probe_runs_fake_ccx(tmp_path, monkeypatch):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     ccx = fake_bin / "ccx"
@@ -27,20 +27,25 @@ def test_hello_runs_fake_ccx(tmp_path, monkeypatch):
     ccx.chmod(0o755)
     monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + os.environ.get("PATH", ""))
 
-    project = tmp_path / "proj"
-    project.mkdir()
-    (project / "artifacts").mkdir()
-
-    result = run_hello(project=str(project))
-    assert result["ok"] is True
-    assert result["backend"] == "CalculiX"
-    assert "CalculiX" in result["message"]
-    assert (project / "artifacts" / "calculix-hello" / "hello_beam.inp").is_file()
-    assert (project / "artifacts" / "calculix-hello" / "hello_beam.frd").is_file()
+    result = probe_calculix(project=tmp_path / "project")
+    assert result["id"] == "calculix"
+    assert result["status"] == "ok"
+    assert result["locator"]
+    assert result["credit"]
+    assert any(path.endswith(".frd") for path in result["outputs"])
 
 
-def test_hello_without_tools(monkeypatch):
+def test_calculix_probe_marks_nonzero_execution_broken(tmp_path, monkeypatch):
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    ccx = fake_bin / "ccx"
+    ccx.write_text("#!/bin/sh\nexit 7\n", encoding="utf-8")
+    ccx.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + "/usr/bin:/bin")
+
+    assert probe_calculix()["status"] == "broken"
+
+
+def test_calculix_probe_missing_is_typed(monkeypatch):
     monkeypatch.setenv("PATH", "/nonexistent-etools-path")
-    result = run_hello()
-    assert result["ok"] is False
-    assert result["backend"] is None
+    assert probe_calculix()["status"] == "missing"

@@ -1,11 +1,11 @@
-"""Tests for packaged FreeCAD hello sample."""
+"""Tests for packaged FreeCAD hello sample and normalized probe."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-from engineering_tools.hello import load_freecad_sample, run_hello
+from engineering_tools.hello_probes import load_freecad_sample, probe_freecad
 
 
 def test_load_freecad_sample_mentions_hellobox():
@@ -14,7 +14,7 @@ def test_load_freecad_sample_mentions_hellobox():
     assert "Part::Box" in text
 
 
-def test_hello_runs_fake_freecad(tmp_path, monkeypatch):
+def test_freecad_probe_runs_fake_freecad(tmp_path, monkeypatch):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     # No ccx — force FreeCAD path (keep /usr/bin:/bin so fake script can call touch)
@@ -31,13 +31,25 @@ def test_hello_runs_fake_freecad(tmp_path, monkeypatch):
     fc.chmod(0o755)
     monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + "/usr/bin:/bin")
 
-    project = tmp_path / "proj"
-    project.mkdir()
-    (project / "artifacts").mkdir()
+    result = probe_freecad(project=tmp_path / "project")
+    assert result["id"] == "freecad"
+    assert result["status"] == "ok"
+    assert result["locator"]
+    assert result["credit"]
+    assert any(path.endswith(".FCStd") for path in result["outputs"])
 
-    result = run_hello(project=str(project))
-    assert result["ok"] is True
-    assert result["backend"] == "FreeCAD"
-    assert "FreeCAD" in result["message"]
-    assert (project / "artifacts" / "freecad-hello" / "hello_box.py").is_file()
-    assert (project / "artifacts" / "freecad-hello" / "hello_box.FCStd").is_file()
+
+def test_freecad_probe_marks_nonzero_execution_broken(tmp_path, monkeypatch):
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    command = fake_bin / "FreeCADCmd"
+    command.write_text("#!/bin/sh\nexit 7\n", encoding="utf-8")
+    command.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + "/usr/bin:/bin")
+
+    assert probe_freecad()["status"] == "broken"
+
+
+def test_freecad_probe_missing_is_typed(monkeypatch):
+    monkeypatch.setenv("PATH", "/nonexistent-etools-path")
+    assert probe_freecad()["status"] == "missing"
