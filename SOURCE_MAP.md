@@ -2,7 +2,11 @@
 
 Engineering tools replaces a closed CAD/CAE/PLM suite by composing existing
 open-source projects. Our own code stays MIT; upstreams keep their own licenses
-(see [`THIRD_PARTY.md`](THIRD_PARTY.md)).
+(see [`THIRD_PARTY.md`](THIRD_PARTY.md)). Canonical machine-readable input is
+[`src/engineering_tools/data/stack.json`](src/engineering_tools/data/stack.json).
+Its product inventory remains provisional pending independent audit. Design and
+coverage contract live in
+[`docs/superpowers/specs/2026-09-11-open-source-stack-manifest-hello-design.md`](docs/superpowers/specs/2026-09-11-open-source-stack-manifest-hello-design.md).
 
 ```
 Dassault monolith
@@ -17,6 +21,8 @@ Dassault monolith
       ├── scientific R&D ────► RDKit / LAMMPS / Quantum ESPRESSO / GROMACS
       └── PLM/workflow ──────► weakest OSS layer; requires a custom stack
 ```
+
+This abbreviated layer view explains architecture; it is not complete product inventory or replacement authority.
 
 ## Layer notes
 

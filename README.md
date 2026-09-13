@@ -17,9 +17,10 @@ This installs the `engineering-tools` and `etools` console scripts.
 ## Quickstart
 
 ```bash
-etools doctor          # detect FreeCAD, CalculiX, OpenFOAM, ...
+etools doctor          # discover execution locators
 etools init ./my-part  # jobs/, artifacts/, bom.json, attribution + registry
-etools hello           # CalculiX hello_beam if ccx on PATH, else FreeCAD hello_box
+etools hello           # verify every declared component and product mapping; currently expected red
+etools hello --json    # machine-readable completion ledger
 etools hello --project ./my-part
 etools projects        # list registered projects
 etools jobs ./my-part  # recent job history (jsonl under .engineering-tools/)
@@ -33,16 +34,24 @@ etools bom remove ./my-part --part Bracket
 etools run --tool calculix --input deck.inp --project ./my-part
 etools run calculix deck.inp --project ./my-part          # shorthand
 etools run --tool freecad --input script.py --project ./my-part
+etools run openfoam ./case --project ./my-part
 ```
 
 `etools profile` is an alias for `doctor`.
 
-Project registry lives under `~/.engineering-tools/registry.json` (override with `ETOOLS_HOME`). Per-project job history is append-only JSONL at `<project>/.engineering-tools/jobs.jsonl`. BOM-lite lives at `<project>/.engineering-tools/bom.json`.
+Project registry lives under `~/.engineering-tools/registry.json` (override with `ETOOLS_HOME`). Per-project job history is append-only JSONL at `<project>/.engineering-tools/jobs.jsonl`. BOM-lite lives at `<project>/.engineering-tools/bom.json`. Complete latest pulse lives at `~/.engineering-tools/hello-report.json`.
+
+### Alpha pulse
+
+`hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
+
+Current packaged inventory is provisional, so default `hello` intentionally exits nonzero. This is completion evidence, not optional-package filtering. OpenFOAM `blockMesh` can prove OpenFOAM component health; it cannot cover SIMULIA Fluid Dynamics Engineer. CFD coverage requires microscopic solver execution, field output, and numerical sanity check.
 
 ### Hello samples
 
 - **CalculiX** (`ccx`): MIT deck `examples/calculix/hello_beam.inp` → `artifacts/calculix-hello/`
 - **FreeCAD** (`FreeCADCmd`): MIT script `examples/freecad/hello_box.py` → `artifacts/freecad-hello/hello_box.FCStd`
+- **OpenFOAM** (`blockMesh` or `foamExec blockMesh`): MIT cavity case → `artifacts/openfoam-hello/constant/polyMesh/`
 
 Upstream solvers stay GPL/LGPL; we only call them.
 

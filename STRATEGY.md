@@ -9,6 +9,17 @@ Start from the **most mature hobbyist CAE workstation pattern** (what
 launcher, credits, docs, and opinionated defaults for hobbyists.
 Solvers stay upstream (GPL/LGPL/etc.) and keep their licenses.
 
+## Alpha and Beta boundary
+
+```text
+ALPHA = completeness + installability + independent functional verification
+BETA  = interoperability + workflow quality + system-level integration
+```
+
+Alpha requires exactly one reproducibly installable, independently functioning open-source response for every audited Dassault inventory item. Fixed composites count as one response; alternative menus do not. Package size never changes inclusion or priority. Beta improves handoffs and whole-system workflows after Alpha coverage exists.
+
+Current inventory and replacement map remain provisional. `inventory-unfrozen` prevents Alpha certification until independent inventory audit removes artificial rows, adds omissions, normalizes granularity, and freezes evidence. Complete this audit before mass installation.
+
 ## Why CAELinux (and why not freeze on it)
 
 CAELinux already assembled the mature stack we mapped in
