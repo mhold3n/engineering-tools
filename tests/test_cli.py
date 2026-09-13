@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from engineering_tools.cli import main
@@ -28,9 +29,13 @@ def test_init_creates_project(tmp_path: Path, monkeypatch) -> None:
     assert (target / "artifacts").is_dir()
 
 
-def test_hello_returns_int() -> None:
-    code = main(["hello"])
-    assert code in (0, 1)
+def test_hello_json_is_parseable_and_packaged_manifest_is_red(tmp_path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "state"))
+    code = main(["hello", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert report["inventory_state"] == "provisional"
+    assert report["ok"] is False
 
 
 def test_hello_with_project(tmp_path: Path, monkeypatch) -> None:

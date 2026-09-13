@@ -17,6 +17,7 @@ from .project import init_project, is_project
 from .registry import list_projects, touch_project
 from .run import SUPPORTED_TOOLS
 from .run_cli import cmd_run_dispatch
+from .verification import hello_report_path
 
 
 def _cmd_doctor(_args: argparse.Namespace) -> int:
@@ -43,30 +44,39 @@ def _cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
-def _record_hello_job(project: str, result: dict) -> None:
-    status = "ok" if result.get("ok") else "fail"
-    append_job(
-        project,
-        tool=result.get("backend"),
-        command="hello",
-        status=status,
-        workdir=result.get("workdir"),
-        outputs=list(result.get("outputs") or []),
-        message=str(result.get("message") or ""),
-        credit=result.get("credit"),
-    )
+def _record_hello_jobs(project: str, report: dict) -> None:
+    for kind, rows in (("component", report["components"]), ("product", report["products"])):
+        for result in rows:
+            append_job(
+                project,
+                tool=f"{kind}:{result['id']}",
+                command="hello",
+                status=result["status"],
+                workdir=result.get("workdir"),
+                outputs=list(result.get("outputs") or []),
+                message=str(result.get("message") or ""),
+                credit=result.get("credit"),
+            )
     touch_project(project)
 
 
 def _cmd_hello(args: argparse.Namespace) -> int:
-    result = run_hello(project=args.project)
-    print(result["message"])
-    if args.project:
-        print(f"Project: {result['project']}")
-        _record_hello_job(args.project, result)
+    report = run_hello(project=args.project)
+    if args.project and report["status"] != "invalid-manifest":
+        _record_hello_jobs(args.project, report)
     if args.json:
-        print(json.dumps({k: v for k, v in result.items() if k != "summary"}, indent=2))
-    return 0 if result["ok"] else 1
+        print(json.dumps(report, indent=2))
+    else:
+        print("Components:")
+        for item in report["components"]:
+            print(f"  [{item['status']}] {item['name']}: {item['message']}")
+        print("Products:")
+        for item in report["products"]:
+            print(f"  [{item['status']}] {item['name']} -> {item['replacement']}: {item['message']}")
+        print(f"Counts: {json.dumps(report['counts'], sort_keys=True)}")
+        print(f"Report: {hello_report_path()}")
+        print(f"Status: {report['status']}")
+    return 0 if report["ok"] else 1
 
 
 def _cmd_projects(args: argparse.Namespace) -> int:
@@ -163,9 +173,9 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--name", default=None, help="Project display name")
     init.set_defaults(func=_cmd_init)
 
-    hello = sub.add_parser("hello", help="Smoke-check FreeCAD / CalculiX / PATH tools")
+    hello = sub.add_parser("hello", help="Verify every declared stack component and product mapping")
     hello.add_argument("--project", default=None, help="Optional project path to note")
-    hello.add_argument("--json", action="store_true", help="Also print JSON result")
+    hello.add_argument("--json", action="store_true", help="Print JSON result")
     hello.set_defaults(func=_cmd_hello)
 
     projects = sub.add_parser("projects", help="List registered projects")
