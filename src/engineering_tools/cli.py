@@ -143,8 +143,8 @@ def _cmd_run_entry(args: argparse.Namespace) -> int:
     input_file = args.input_flag or args.input_pos
     if not tool or not input_file:
         print(
-            "Usage: etools run --tool calculix|freecad --input FILE --project PATH\n"
-            "   or: etools run calculix|freecad FILE --project PATH",
+            "Usage: etools run --tool calculix|freecad|openfoam --input INPUT --project PATH\n"
+            "   or: etools run calculix|freecad|openfoam INPUT --project PATH",
             file=sys.stderr,
         )
         return 2
@@ -211,15 +211,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser(
         "run",
-        help="Run a custom CalculiX .inp or FreeCAD .py deck and log the job",
+        help="Run a custom CalculiX, FreeCAD, or OpenFOAM input and log the job",
         description=(
             "Run a custom solver deck and append jobs.jsonl.\n\n"
             "Primary UX:\n"
             "  etools run --tool calculix --input deck.inp --project .\n"
             "  etools run --tool freecad --input script.py --project .\n\n"
+            "  etools run --tool openfoam --input ./case --project .\n\n"
             "Shorthand (same meaning):\n"
             "  etools run calculix deck.inp --project .\n"
-            "  etools run freecad script.py --project ."
+            "  etools run freecad script.py --project .\n"
+            "  etools run openfoam ./case --project ."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -228,7 +230,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=None,
         choices=list(SUPPORTED_TOOLS),
-        help="Shorthand tool name (calculix|freecad)",
+        help="Shorthand tool name (calculix|freecad|openfoam)",
     )
     run.add_argument("input_pos", nargs="?", default=None, help="Shorthand input file path")
     run.add_argument(
@@ -236,13 +238,13 @@ def build_parser() -> argparse.ArgumentParser:
         dest="tool_flag",
         default=None,
         choices=list(SUPPORTED_TOOLS),
-        help="Solver/tool: calculix or freecad",
+        help="Solver/tool: calculix, freecad, or openfoam",
     )
     run.add_argument(
         "--input",
         dest="input_flag",
         default=None,
-        help="Input .inp (CalculiX) or .py (FreeCAD)",
+        help="Input .inp (CalculiX), .py (FreeCAD), or case directory (OpenFOAM)",
     )
     run.add_argument(
         "--project",
