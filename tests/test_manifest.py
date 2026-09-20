@@ -171,3 +171,27 @@ def test_manifest_digest_is_canonical() -> None:
     second = json.loads(json.dumps(first, sort_keys=True))
     assert manifest_digest(first) == manifest_digest(second)
     assert len(manifest_digest(first)) == 64
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        # Implemented component probe without id must fail validation, not crash hello.
+        lambda d: d["components"][0]["probe"].pop("id"),
+        lambda d: d["components"][0]["probe"].update(id=""),
+        lambda d: d["components"][0]["probe"].update(id=None),
+        # Implemented mapping probe without id must fail the same way.
+        lambda d: (
+            d["mappings"][0]["probe"].update(state="implemented"),
+            d["mappings"][0]["probe"].pop("id"),
+        ),
+        lambda d: (
+            d["mappings"][0]["probe"].update(state="implemented", id=""),
+        ),
+    ],
+)
+def test_implemented_probe_requires_nonempty_id(mutation) -> None:
+    data = valid_manifest()
+    mutation(data)
+    errors = validate_manifest(data)
+    assert any("requires nonempty probe id" in error for error in errors)

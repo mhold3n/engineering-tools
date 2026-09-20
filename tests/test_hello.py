@@ -154,3 +154,42 @@ def test_invalid_manifest_reports_all_errors_without_probes(tmp_path, monkeypatc
     assert report["ok"] is False
     assert len(report["errors"]) > 1
     assert called == []
+
+
+def test_resolved_source_with_unimplemented_recipe_is_unverified(tmp_path, monkeypatch):
+    # Next gate after pointers resolve: recipe still missing must surface as unverified.
+    write_receipts(tmp_path, monkeypatch)
+    path = write_reduced_manifest(tmp_path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for component in data["components"]:
+        component["install_recipe"] = {"state": "recipe-unimplemented", "id": component["id"]}
+    path.write_text(json.dumps(data), encoding="utf-8")
+    report = run_hello(manifest_path=path)
+    assert [item["status"] for item in report["components"]] == ["unverified", "unverified"]
+    assert report["ok"] is False
+
+
+def test_audited_inventory_without_full_coverage_is_incomplete(tmp_path, monkeypatch):
+    # Frozen inventory with products not covered must be incomplete, not inventory-unfrozen.
+    write_receipts(tmp_path, monkeypatch, "first", "second")
+    monkeypatch.setattr(
+        hello_module,
+        "COMPONENT_PROBES",
+        {
+            "probe-first": lambda project=None: probe_result("first", "ok"),
+            "probe-second": lambda project=None: probe_result("second", "ok"),
+        },
+    )
+    monkeypatch.setattr(
+        hello_module,
+        "PRODUCT_PROBES",
+        {"mapping-ok": lambda results: {"status": "covered", "message": "covered"}},
+    )
+    # Leave product probe unimplemented so audited inventory cannot reach covered.
+    report = run_hello(
+        manifest_path=write_reduced_manifest(tmp_path, inventory_state="audited")
+    )
+    assert report["inventory_state"] == "audited"
+    assert report["products"][0]["status"] == "probe-unimplemented"
+    assert report["status"] == "incomplete"
+    assert report["ok"] is False

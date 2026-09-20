@@ -157,6 +157,11 @@ def validate_manifest(data: object) -> tuple[str, ...]:
             probe_state = probe.get("state") if isinstance(probe, dict) else None
             if probe_state not in PROBE_STATES:
                 errors.append(f"component {row.get('id')!r} has invalid probe state")
+            # Implemented probes must name a dispatch key; missing id crashed hello with KeyError.
+            elif probe_state == "implemented" and (
+                not isinstance(probe.get("id"), str) or not probe["id"]
+            ):
+                errors.append(f"component {row.get('id')!r} requires nonempty probe id")
 
     if isinstance(mappings, list):
         for row in mappings:
@@ -177,6 +182,11 @@ def validate_manifest(data: object) -> tuple[str, ...]:
             probe_state = probe.get("state") if isinstance(probe, dict) else None
             if probe_state not in PROBE_STATES:
                 errors.append(f"mapping {row.get('id')!r} has invalid probe state")
+            # Same contract for product capability probes once marked implemented.
+            elif probe_state == "implemented" and (
+                not isinstance(probe.get("id"), str) or not probe["id"]
+            ):
+                errors.append(f"mapping {row.get('id')!r} requires nonempty probe id")
 
     return tuple(sorted(set(errors)))
 

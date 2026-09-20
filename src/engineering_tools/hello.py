@@ -55,9 +55,13 @@ def _evaluate_component(component: dict[str, Any], installations: dict[str, Any]
     probe = component["probe"]
     if probe["state"] != "implemented":
         return _unavailable_component(component, "probe-unimplemented", "component probe is not implemented")
-    implementation = COMPONENT_PROBES.get(probe["id"])
+    # Guard override/edited manifests that skip validation or omit probe.id.
+    probe_id = probe.get("id")
+    if not isinstance(probe_id, str) or not probe_id:
+        return _unavailable_component(component, "invalid-manifest", "implemented component probe requires nonempty id")
+    implementation = COMPONENT_PROBES.get(probe_id)
     if implementation is None:
-        return _unavailable_component(component, "invalid-manifest", f"unknown implemented probe {probe['id']!r}")
+        return _unavailable_component(component, "invalid-manifest", f"unknown implemented probe {probe_id!r}")
     try:
         result = implementation(project=project)
     except Exception as exc:
@@ -81,9 +85,13 @@ def _evaluate_product(mapping: dict[str, Any], inventory: dict[str, Any], result
     probe = mapping["probe"]
     if probe["state"] != "implemented":
         return {**base, "status": "probe-unimplemented", "message": "product capability probe is not implemented"}
-    implementation = PRODUCT_PROBES.get(probe["id"])
+    # Same defensive contract for product probes as for components.
+    probe_id = probe.get("id")
+    if not isinstance(probe_id, str) or not probe_id:
+        return {**base, "status": "invalid-manifest", "message": "implemented product probe requires nonempty id"}
+    implementation = PRODUCT_PROBES.get(probe_id)
     if implementation is None:
-        return {**base, "status": "invalid-manifest", "message": f"unknown implemented product probe {probe['id']!r}"}
+        return {**base, "status": "invalid-manifest", "message": f"unknown implemented product probe {probe_id!r}"}
     try:
         outcome = implementation(results)
     except Exception as exc:
