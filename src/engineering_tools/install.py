@@ -216,3 +216,42 @@ def install_component(
 
     # Remaining kinds are registered for wave recipes; refuse until a concrete adapter lands.
     raise InstallError(f"recipe kind {kind!r} is declared but not yet executable in this build")
+
+
+def install_components(
+    components: list[dict[str, Any]],
+    *,
+    install_root: Path | None = None,
+    worktree_root: Path | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Install many components; continue after failures and summarize."""
+    results: list[dict[str, Any]] = []
+    for component in components:
+        component_id = str(component.get("id") or "")
+        try:
+            outcome = install_component(
+                component,
+                install_root=install_root,
+                worktree_root=worktree_root,
+                force=force,
+            )
+            results.append(
+                {
+                    "id": component_id,
+                    "status": outcome["status"],
+                    "message": outcome.get("status"),
+                }
+            )
+        except InstallError as exc:
+            results.append({"id": component_id, "status": "failed", "message": str(exc)})
+    failed = [row for row in results if row["status"] == "failed"]
+    return {
+        "ok": not failed,
+        "results": results,
+        "counts": {
+            "installed": sum(1 for row in results if row["status"] == "installed"),
+            "skipped": sum(1 for row in results if row["status"] == "skipped"),
+            "failed": len(failed),
+        },
+    }

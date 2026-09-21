@@ -11,7 +11,10 @@ from typing import Optional, Sequence
 from . import __version__
 from .bom_cli import cmd_bom_dispatch
 from .hello import run_hello
+from .install import install_components
+from .install_waves import INSTALL_WAVES, all_wave_component_ids, wave_component_ids
 from .jobs import append_job, read_jobs
+from .manifest import load_manifest
 from .profile import detect_profile, summarize_profile
 from .project import init_project, is_project
 from .registry import list_projects, touch_project
@@ -77,6 +80,51 @@ def _cmd_hello(args: argparse.Namespace) -> int:
         print(f"Report: {hello_report_path()}")
         print(f"Status: {report['status']}")
     return 0 if report["ok"] else 1
+
+
+def _cmd_install(args: argparse.Namespace) -> int:
+    """Install pinned components outside the git worktree; continue on per-item failure."""
+    manifest = load_manifest()
+    by_id = {item["id"]: item for item in manifest["components"]}
+    selected: list[dict] = []
+    if args.wave:
+        try:
+            ids = wave_component_ids(args.wave)
+        except KeyError:
+            print(f"unknown wave: {args.wave}", file=sys.stderr)
+            print("known waves: " + ", ".join(INSTALL_WAVES), file=sys.stderr)
+            return 2
+        missing = [component_id for component_id in ids if component_id not in by_id]
+        if missing:
+            print(f"wave references unknown components: {', '.join(missing)}", file=sys.stderr)
+            return 2
+        selected = [by_id[component_id] for component_id in ids]
+    elif args.all:
+        ids = all_wave_component_ids()
+        selected = [by_id[component_id] for component_id in ids if component_id in by_id]
+    elif args.component_id:
+        if args.component_id not in by_id:
+            print(f"unknown component: {args.component_id}", file=sys.stderr)
+            return 2
+        selected = [by_id[args.component_id]]
+    else:
+        print("specify a component id, --wave, or --all", file=sys.stderr)
+        return 2
+
+    summary = install_components(
+        selected, worktree_root=Path.cwd(), force=bool(args.force)
+    )
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        for row in summary["results"]:
+            print(f"  [{row['status']}] {row['id']}: {row.get('message')}")
+        counts = summary["counts"]
+        print(
+            f"installed={counts['installed']} skipped={counts['skipped']} "
+            f"failed={counts['failed']} ok={summary['ok']}"
+        )
+    return 0 if summary["ok"] else 1
 
 
 def _cmd_projects(args: argparse.Namespace) -> int:
@@ -177,6 +225,36 @@ def build_parser() -> argparse.ArgumentParser:
     hello.add_argument("--project", default=None, help="Optional project path to note")
     hello.add_argument("--json", action="store_true", help="Print JSON result")
     hello.set_defaults(func=_cmd_hello)
+
+    install = sub.add_parser(
+        "install",
+        help="Install pinned stack components outside the git worktree",
+        description=(
+            "Fetch pinned upstreams and install outside the repository.\n\n"
+            "  etools install <component-id>\n"
+            "  etools install --wave 1-cad-viz\n"
+            "  etools install --all\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    install.add_argument("component_id", nargs="?", default=None, help="Component id to install")
+    install.add_argument(
+        "--wave",
+        default=None,
+        help="Install wave name (e.g. 1-cad-viz, 2-cae-core)",
+    )
+    install.add_argument(
+        "--all",
+        action="store_true",
+        help="Install every in-scope (non-3DEXPERIENCE) wave component",
+    )
+    install.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-fetch and re-verify even when a matching receipt exists",
+    )
+    install.add_argument("--json", action="store_true", help="Print JSON summary")
+    install.set_defaults(func=_cmd_install)
 
     projects = sub.add_parser("projects", help="List registered projects")
     projects.add_argument("--json", action="store_true", help="Print JSON")
