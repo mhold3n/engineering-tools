@@ -64,7 +64,16 @@ def _record_hello_jobs(project: str, report: dict) -> None:
 
 
 def _cmd_hello(args: argparse.Namespace) -> int:
-    report = run_hello(project=args.project)
+    # Keep probe library chatter off stdout when emitting machine-readable JSON.
+    if args.json:
+        import contextlib
+        import io
+
+        sink = io.StringIO()
+        with contextlib.redirect_stdout(sink):
+            report = run_hello(project=args.project)
+    else:
+        report = run_hello(project=args.project)
     if args.project and report["status"] != "invalid-manifest":
         _record_hello_jobs(args.project, report)
     if args.json:

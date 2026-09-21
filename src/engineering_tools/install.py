@@ -22,6 +22,7 @@ RECIPE_KINDS = {
     "pip",
     "upstream-archive",
     "first-party-module",
+    "git-tree",
 }
 
 
@@ -194,7 +195,7 @@ def _install_pip(
     install_root: Path,
     worktree_root: Path,
 ) -> dict[str, Any]:
-    """Install a pinned pip package into an isolated target directory under install_root."""
+    """Install a pinned pip package (or git+ URL) into an isolated target under install_root."""
     import subprocess
     import sys
 
@@ -206,6 +207,10 @@ def _install_pip(
     assert_outside_worktree(install_root, worktree_root)
     target = install_root / component["id"]
     target.mkdir(parents=True, exist_ok=True)
+    # Support git+https://… pins for apps that are not published on PyPI.
+    req = package
+    if package.startswith("git+") or "://" in package:
+        req = package
     cmd = [
         sys.executable,
         "-m",
@@ -215,10 +220,10 @@ def _install_pip(
         "--no-input",
         "--target",
         str(target),
-        package,
+        req,
     ]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600, check=False)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=1200, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise InstallError(f"pip install failed for {package}: {exc}") from exc
     if proc.returncode != 0:
@@ -294,6 +299,63 @@ def _install_apt(
     return {"status": "installed", "integrity_verified": True, "receipt": receipt}
 
 
+def _install_git_tree(
+    component: dict[str, Any],
+    *,
+    install_root: Path,
+    worktree_root: Path,
+) -> dict[str, Any]:
+    """Clone a pinned source commit into install_root (for non-PyPI workbenches/apps)."""
+    import subprocess
+
+    identity = (component.get("source") or {}).get("identity") or {}
+    if identity.get("type") != "source":
+        raise InstallError("git-tree recipe requires source identity with repository+commit")
+    repository = identity.get("repository")
+    commit = identity.get("commit")
+    if not isinstance(repository, str) or not isinstance(commit, str):
+        raise InstallError("git-tree identity requires repository and commit")
+    assert_outside_worktree(install_root, worktree_root)
+    destination = install_root / component["id"]
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    clone = subprocess.run(
+        ["git", "clone", "--filter=blob:none", repository, str(destination)],
+        capture_output=True,
+        text=True,
+        timeout=600,
+        check=False,
+    )
+    if clone.returncode != 0:
+        detail = (clone.stderr or clone.stdout or "").strip().splitlines()
+        raise InstallError(
+            f"git clone failed for {component['id']}: {detail[-1] if detail else clone.returncode}"
+        )
+    checkout = subprocess.run(
+        ["git", "-C", str(destination), "checkout", "--detach", commit],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    if checkout.returncode != 0:
+        shutil.rmtree(destination, ignore_errors=True)
+        detail = (checkout.stderr or checkout.stdout or "").strip().splitlines()
+        raise InstallError(
+            f"git checkout failed for {component['id']}: {detail[-1] if detail else checkout.returncode}"
+        )
+    receipt = {
+        "locator": str(destination.resolve()),
+        "immutable_id": f"git:{repository}@{commit}",
+        "integrity_verified": True,
+        "recipe_id": (component.get("install_recipe") or {}).get("id"),
+        "installed_at": _utc_now(),
+    }
+    upsert_installation(component["id"], receipt)
+    return {"status": "installed", "integrity_verified": True, "receipt": receipt}
+
+
 def install_component(
     component: dict[str, Any],
     *,
@@ -320,6 +382,8 @@ def install_component(
         return _install_upstream_archive(component, install_root=root, worktree_root=tree)
     if kind == "first-party-module":
         return _install_first_party_module(component, install_root=root, worktree_root=tree)
+    if kind == "git-tree":
+        return _install_git_tree(component, install_root=root, worktree_root=tree)
     if kind == "pip":
         return _install_pip(component, install_root=root, worktree_root=tree)
     if kind == "apt":

@@ -1361,11 +1361,10 @@
       "install_recipe": {
         "state": "implemented",
         "id": "kicad-stepup",
-        "kind": "pip",
-        "package": "kicadStepUpMod"
+        "kind": "git-tree"
       },
       "execution": {
-        "type": "python",
+        "type": "other",
         "locator": [
           "kicadStepUp"
         ]
@@ -1545,7 +1544,7 @@
         "state": "implemented",
         "id": "erpnext",
         "kind": "pip",
-        "package": "erpnext"
+        "package": "git+https://github.com/frappe/erpnext.git@v15.121.3"
       },
       "execution": {
         "type": "service",
@@ -1615,7 +1614,7 @@
         "state": "implemented",
         "id": "erpnext-manufacturing",
         "kind": "pip",
-        "package": "erpnext"
+        "package": "git+https://github.com/frappe/erpnext.git@v15.121.3"
       },
       "execution": {
         "type": "service",
@@ -1649,13 +1648,18 @@
       "install_recipe": {
         "state": "implemented",
         "id": "frepple",
-        "kind": "pip",
-        "package": "frepple"
+        "kind": "apt",
+        "package": "frepple",
+        "locators": [
+          "frepple",
+          "frepple-server"
+        ]
       },
       "execution": {
         "type": "service",
         "locator": [
-          "frepple"
+          "frepple",
+          "frepple-server"
         ]
       },
       "probe": {

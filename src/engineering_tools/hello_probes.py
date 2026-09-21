@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -110,6 +111,7 @@ def _copy_resource_tree(source, destination: Path) -> None:
 
 
 def probe_openfoam(project: str | Path | None = None) -> dict[str, Any]:
+    """Run blockMesh under the Debian/Ubuntu OpenFOAM bashrc environment when present."""
     resolved = _openfoam_command()
     if not resolved:
         return _result("openfoam", "OpenFOAM", "missing", "blockMesh or foamExec not found")
@@ -117,14 +119,32 @@ def probe_openfoam(project: str | Path | None = None) -> dict[str, Any]:
     work = _work_dir(project, "openfoam-hello", "etools-openfoam-")
     root = resources.files("engineering_tools")
     _copy_resource_tree(root / "data" / "openfoam" / "hello_cavity", work)
+    # Distro OpenFOAM requires etc/bashrc so controlDict / WM_* resolve.
+    bashrc_candidates = (
+        "/usr/share/openfoam/etc/bashrc",
+        "/opt/openfoam/etc/bashrc",
+        "/usr/lib/openfoam/openfoam1912/etc/bashrc",
+    )
+    bashrc = next((p for p in bashrc_candidates if Path(p).is_file()), None)
+    if bashrc:
+        quoted = " ".join(shlex.quote(part) for part in command)
+        shell_cmd = f"set +u; . {shlex.quote(bashrc)}; {quoted}"
+        run_argv = ["bash", "-lc", shell_cmd]
+    else:
+        run_argv = command
     try:
-        proc = subprocess.run(command, cwd=work, capture_output=True, text=True, timeout=120, check=False)
+        proc = subprocess.run(run_argv, cwd=work, capture_output=True, text=True, timeout=120, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return _result("openfoam", "OpenFOAM", "broken", f"OpenFOAM blockMesh failed: {exc}", locator=locator, workdir=work, credit=OPENFOAM_CREDIT)
     points = work / "constant" / "polyMesh" / "points"
     outputs = [str(points)] if points.is_file() else []
     if proc.returncode:
-        status, message = "broken", f"OpenFOAM blockMesh failed with exit {proc.returncode}"
+        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        status, message = (
+            "broken",
+            f"OpenFOAM blockMesh failed with exit {proc.returncode}"
+            + (f": {detail[-1]}" if detail else ""),
+        )
     elif not points.is_file():
         status, message = "broken", "OpenFOAM blockMesh did not create constant/polyMesh/points"
     else:
@@ -297,6 +317,40 @@ def probe_topopt_jl(project: str | Path | None = None) -> dict[str, Any]:
     )
 
 
+def make_path_probe(component_id: str, name: str, relative_paths: tuple[str, ...], credit: str):
+    """Probe that a verified install receipt points at a tree containing expected files."""
+
+    def probe(project: str | Path | None = None) -> dict[str, Any]:
+        from .verification import installation_for, load_installations
+
+        receipt = installation_for(component_id, load_installations())
+        locator = receipt.get("locator") if receipt else None
+        if not locator:
+            return _result(component_id, name, "missing", f"{name} installation receipt is missing", credit=credit)
+        root = Path(locator)
+        for rel in relative_paths:
+            if (root / rel).exists():
+                return _result(
+                    component_id,
+                    name,
+                    "ok",
+                    f"{name} tree ok via {root / rel}",
+                    locator=str(root / rel),
+                    credit=credit,
+                    returncode=0,
+                )
+        return _result(
+            component_id,
+            name,
+            "missing",
+            f"{name} expected files not found under {locator}: {', '.join(relative_paths)}",
+            locator=locator,
+            credit=credit,
+        )
+
+    return probe
+
+
 COMPONENT_PROBES = {
     "calculix-hello-beam": probe_calculix,
     "freecad-hello-box": probe_freecad,
@@ -329,11 +383,16 @@ COMPONENT_PROBES = {
     "topopt-jl-hello": probe_topopt_jl,
     "freecad-cam-hello": make_binary_probe('freecad-cam', 'FreeCAD CAM', ('FreeCADCmd', 'freecad'), "FreeCAD CAM upstream"),
     "qelectrotech-hello": make_binary_probe('qelectrotech', 'QElectroTech', ('qelectrotech',), "QElectroTech upstream"),
-    "kicad-stepup-hello": make_pip_module_probe('kicad-stepup', 'KiCadStepUp', 'kicadStepUpMod', "KiCadStepUp upstream"),
+    "kicad-stepup-hello": make_path_probe(
+        "kicad-stepup",
+        "KiCadStepUp",
+        ("InitGui.py", "kicadStepUpCMD.py", "README.md"),
+        "KiCadStepUp upstream",
+    ),
     "nextcloud-hello": make_binary_probe('nextcloud', 'Nextcloud', ('nextcloud',), "Nextcloud upstream"),
     "erpnext-hello": make_pip_module_probe('erpnext', 'ERPNext', 'erpnext', "ERPNext upstream"),
     "erpnext-manufacturing-hello": make_pip_module_probe('erpnext-manufacturing', 'ERPNext Manufacturing', 'erpnext', "ERPNext Manufacturing upstream"),
-    "frepple-hello": make_pip_module_probe('frepple', 'frePPLe', 'frepple', "frePPLe upstream"),
+    "frepple-hello": make_binary_probe('frepple', 'frePPLe', ('frepple', 'frepple-server'), "frePPLe upstream"),
     "ros-2-hello": make_binary_probe('ros-2', 'ROS 2', ('ros2',), "ROS 2 upstream"),
     "moveit-hello": make_binary_probe('moveit', 'MoveIt', ('moveit', 'ros2'), "MoveIt upstream"),
     "gazebo-hello": make_binary_probe('gazebo', 'Gazebo', ('gz', 'gazebo'), "Gazebo upstream"),
