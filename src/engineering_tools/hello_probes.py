@@ -217,10 +217,52 @@ def make_binary_probe(
     return probe
 
 
+def make_pip_module_probe(component_id: str, name: str, module: str, credit: str):
+    """Probe a pip-installed module using the receipt target directory on sys.path."""
+
+    def probe(project: str | Path | None = None) -> dict[str, Any]:
+        from .verification import installation_for, load_installations
+        import sys
+
+        receipt = installation_for(component_id, load_installations())
+        locator = receipt.get("locator") if receipt else None
+        if locator:
+            sys.path.insert(0, locator)
+        try:
+            __import__(module)
+        except ImportError:
+            return _result(
+                component_id,
+                name,
+                "missing",
+                f"Python module {module!r} not importable",
+                locator=locator,
+                credit=credit,
+            )
+        return _result(
+            component_id,
+            name,
+            "ok",
+            f"Python module {module!r} import ok",
+            locator=locator,
+            credit=credit,
+            returncode=0,
+        )
+
+    return probe
+
+
 COMPONENT_PROBES = {
     "calculix-hello-beam": probe_calculix,
     "freecad-hello-box": probe_freecad,
     "openfoam-block-mesh": probe_openfoam,
     "first-party-mine-scheduling-model-hello": probe_mine_scheduling,
     "first-party-pit-optimization-model-hello": probe_pit_optimization,
+    "pyomo-hello": make_pip_module_probe("pyomo", "Pyomo", "pyomo", "Pyomo (BSD) - https://www.pyomo.org/"),
+    "openmdao-hello": make_pip_module_probe("openmdao", "OpenMDAO", "openmdao", "OpenMDAO (Apache-2.0) - https://openmdao.org/"),
+    "dvc-hello": make_binary_probe("dvc", "DVC", ("dvc",), "DVC (Apache-2.0) - https://dvc.org/"),
+    "ase-hello": make_pip_module_probe("ase", "ASE", "ase", "ASE (LGPL) - https://wiki.fysik.dtu.dk/ase/"),
+    "rdkit-hello": make_pip_module_probe("rdkit", "RDKit", "rdkit", "RDKit (BSD) - https://www.rdkit.org/"),
+    "gempy-hello": make_pip_module_probe("gempy", "GemPy", "gempy", "GemPy (LGPL) - https://www.gempy.org/"),
+    "pylife-hello": make_pip_module_probe("pylife", "pyLife", "pylife", "pyLife (BSD) - https://github.com/boschresearch/pylife"),
 }

@@ -187,6 +187,56 @@ def _install_first_party_module(
     return {"status": "installed", "integrity_verified": True, "receipt": receipt}
 
 
+def _install_pip(
+    component: dict[str, Any],
+    *,
+    install_root: Path,
+    worktree_root: Path,
+) -> dict[str, Any]:
+    """Install a pinned pip package into an isolated target directory under install_root."""
+    import subprocess
+    import sys
+
+    recipe = component.get("install_recipe") or {}
+    package = recipe.get("package")
+    if not isinstance(package, str) or not package:
+        raise InstallError("pip recipe requires nonempty package name")
+    identity = (component.get("source") or {}).get("identity") or {}
+    assert_outside_worktree(install_root, worktree_root)
+    target = install_root / component["id"]
+    target.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--target",
+        str(target),
+        package,
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600, check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise InstallError(f"pip install failed for {package}: {exc}") from exc
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        raise InstallError(
+            f"pip install failed for {package}: {detail[-1] if detail else proc.returncode}"
+        )
+    immutable_id = _immutable_id_for(identity) if identity.get("type") else f"pip:{package}"
+    receipt = {
+        "locator": str(target.resolve()),
+        "immutable_id": immutable_id,
+        "integrity_verified": True,
+        "recipe_id": recipe.get("id"),
+        "installed_at": _utc_now(),
+    }
+    upsert_installation(component["id"], receipt)
+    return {"status": "installed", "integrity_verified": True, "receipt": receipt}
+
+
 def install_component(
     component: dict[str, Any],
     *,
@@ -213,6 +263,8 @@ def install_component(
         return _install_upstream_archive(component, install_root=root, worktree_root=tree)
     if kind == "first-party-module":
         return _install_first_party_module(component, install_root=root, worktree_root=tree)
+    if kind == "pip":
+        return _install_pip(component, install_root=root, worktree_root=tree)
 
     # Remaining kinds are registered for wave recipes; refuse until a concrete adapter lands.
     raise InstallError(f"recipe kind {kind!r} is declared but not yet executable in this build")

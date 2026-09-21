@@ -990,14 +990,21 @@
       "id": "pylife",
       "name": "pyLife",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/boschresearch/pylife",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/boschresearch/pylife",
+          "commit": "a32a04a679f8f193b7e3d8ecbd6386b0594a706f"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "pylife"
+        "state": "implemented",
+        "id": "pylife",
+        "kind": "pip",
+        "package": "pylife"
       },
       "execution": {
         "type": "python",
@@ -1006,7 +1013,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "pylife-hello"
       },
       "expected_signal": {
@@ -1018,14 +1025,21 @@
       "id": "openmdao",
       "name": "OpenMDAO",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://openmdao.org/",
-        "repository": null
+        "repository": "https://github.com/OpenMDAO/OpenMDAO",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/OpenMDAO/OpenMDAO",
+          "commit": "66370fc0159d35d814249aee917a0d10556126d9"
+        }
       },
       "license": "Apache-2.0",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "openmdao"
+        "state": "implemented",
+        "id": "openmdao",
+        "kind": "pip",
+        "package": "openmdao"
       },
       "execution": {
         "type": "python",
@@ -1034,7 +1048,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "openmdao-hello"
       },
       "expected_signal": {
@@ -1326,14 +1340,21 @@
       "id": "dvc",
       "name": "DVC",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/iterative/dvc",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/iterative/dvc",
+          "commit": "56e59829512ff134aa269099a2099587b810b4dd"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "dvc"
+        "state": "implemented",
+        "id": "dvc",
+        "kind": "pip",
+        "package": "dvc"
       },
       "execution": {
         "type": "binary",
@@ -1342,7 +1363,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "dvc-hello"
       },
       "expected_signal": {
@@ -1410,14 +1431,21 @@
       "id": "pyomo",
       "name": "Pyomo",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.pyomo.org/",
-        "repository": null
+        "repository": "https://github.com/Pyomo/pyomo",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/Pyomo/pyomo",
+          "commit": "e099f6463abd3b17b3231abf108b0a46e9640d1a"
+        }
       },
       "license": "BSD-3-Clause",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "pyomo"
+        "state": "implemented",
+        "id": "pyomo",
+        "kind": "pip",
+        "package": "pyomo"
       },
       "execution": {
         "type": "python",
@@ -1426,7 +1454,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "pyomo-hello"
       },
       "expected_signal": {
@@ -1550,14 +1578,21 @@
       "id": "gempy",
       "name": "GemPy",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/gempy-project/gempy",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/gempy-project/gempy",
+          "commit": "61ad07342db140ae5e92d5fef2da95835eb6a3ec"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "gempy"
+        "state": "implemented",
+        "id": "gempy",
+        "kind": "pip",
+        "package": "gempy"
       },
       "execution": {
         "type": "python",
@@ -1566,7 +1601,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "gempy-hello"
       },
       "expected_signal": {
@@ -1730,14 +1765,21 @@
       "id": "ase",
       "name": "ASE",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://gitlab.com/ase/ase",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/ase/ase",
+          "commit": "c77931fd38c5fdaa560bc204488fad5e4c50f4c8"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "ase"
+        "state": "implemented",
+        "id": "ase",
+        "kind": "pip",
+        "package": "ase"
       },
       "execution": {
         "type": "python",
@@ -1746,7 +1788,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "ase-hello"
       },
       "expected_signal": {
@@ -1814,14 +1856,21 @@
       "id": "rdkit",
       "name": "RDKit",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.rdkit.org/",
-        "repository": null
+        "repository": "https://github.com/rdkit/rdkit",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/rdkit/rdkit",
+          "commit": "c967969493894c408e1b4cc1bb34abf1b040e792"
+        }
       },
       "license": "BSD-3-Clause",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "rdkit"
+        "state": "implemented",
+        "id": "rdkit",
+        "kind": "pip",
+        "package": "rdkit"
       },
       "execution": {
         "type": "python",
@@ -1830,7 +1879,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "rdkit-hello"
       },
       "expected_signal": {
