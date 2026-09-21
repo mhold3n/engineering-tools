@@ -1578,14 +1578,20 @@
       "id": "first-party-mine-scheduling-model",
       "name": "first-party mine-scheduling model",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/mhold3n/engineering-tools",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/mhold3n/engineering-tools",
+          "commit": "first-party-mine-scheduling-model"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "first-party-mine-scheduling-model"
+        "state": "implemented",
+        "id": "first-party-mine-scheduling-model",
+        "kind": "first-party-module"
       },
       "execution": {
         "type": "python",
@@ -1594,7 +1600,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "first-party-mine-scheduling-model-hello"
       },
       "expected_signal": {
@@ -1606,14 +1612,20 @@
       "id": "first-party-pit-optimization-model",
       "name": "first-party pit-optimization model",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/mhold3n/engineering-tools",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/mhold3n/engineering-tools",
+          "commit": "first-party-pit-optimization-model"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "first-party-pit-optimization-model"
+        "state": "implemented",
+        "id": "first-party-pit-optimization-model",
+        "kind": "first-party-module"
       },
       "execution": {
         "type": "python",
@@ -1622,7 +1634,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "first-party-pit-optimization-model-hello"
       },
       "expected_signal": {

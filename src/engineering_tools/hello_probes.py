@@ -132,4 +132,95 @@ def probe_openfoam(project: str | Path | None = None) -> dict[str, Any]:
     return _result("openfoam", "OpenFOAM", status, message, locator=locator, workdir=work, outputs=outputs, credit=OPENFOAM_CREDIT, returncode=proc.returncode)
 
 
-COMPONENT_PROBES = {"calculix-hello-beam": probe_calculix, "freecad-hello-box": probe_freecad, "openfoam-block-mesh": probe_openfoam}
+def probe_mine_scheduling(project: str | Path | None = None) -> dict[str, Any]:
+    from .geovia_models import mine_schedule
+
+    work = _work_dir(project, "geovia-mine-hello", "etools-mine-")
+    result = mine_schedule([{"tonnage": 0.5}, {"tonnage": 0.5}], periods=2)
+    out = work / "schedule.json"
+    out.write_text(str(result), encoding="utf-8")
+    if result["scheduled"] != 2 or result["objective"] != 1.0:
+        return _result(
+            "first-party-mine-scheduling-model",
+            "First-party mine scheduling model",
+            "broken",
+            "mine schedule toy model produced unexpected objective",
+            workdir=work,
+            outputs=[str(out)],
+        )
+    return _result(
+        "first-party-mine-scheduling-model",
+        "First-party mine scheduling model",
+        "ok",
+        "mine schedule toy model ok",
+        workdir=work,
+        outputs=[str(out)],
+        returncode=0,
+    )
+
+
+def probe_pit_optimization(project: str | Path | None = None) -> dict[str, Any]:
+    from .geovia_models import pit_optimize
+
+    work = _work_dir(project, "geovia-pit-hello", "etools-pit-")
+    result = pit_optimize([{"value": 5, "cost": 1}, {"value": 1, "cost": 4}], cutoff=0.0)
+    out = work / "pit.json"
+    out.write_text(str(result), encoding="utf-8")
+    if result["count"] != 1 or result["objective"] != 4.0:
+        return _result(
+            "first-party-pit-optimization-model",
+            "First-party pit optimization model",
+            "broken",
+            "pit optimize toy model produced unexpected objective",
+            workdir=work,
+            outputs=[str(out)],
+        )
+    return _result(
+        "first-party-pit-optimization-model",
+        "First-party pit optimization model",
+        "ok",
+        "pit optimize toy model ok",
+        workdir=work,
+        outputs=[str(out)],
+        returncode=0,
+    )
+
+
+def make_binary_probe(
+    component_id: str,
+    name: str,
+    binaries: tuple[str, ...],
+    credit: str,
+):
+    """Build a missing/ok probe that only checks locator presence (independent smoke)."""
+
+    def probe(project: str | Path | None = None) -> dict[str, Any]:
+        for binary in binaries:
+            found = shutil.which(binary)
+            if found:
+                return _result(
+                    component_id,
+                    name,
+                    "ok",
+                    f"{name} locator ok via {found}",
+                    locator=found,
+                    credit=credit,
+                    returncode=0,
+                )
+        return _result(
+            component_id,
+            name,
+            "missing",
+            f"{name} binaries not found: {', '.join(binaries)}",
+        )
+
+    return probe
+
+
+COMPONENT_PROBES = {
+    "calculix-hello-beam": probe_calculix,
+    "freecad-hello-box": probe_freecad,
+    "openfoam-block-mesh": probe_openfoam,
+    "first-party-mine-scheduling-model-hello": probe_mine_scheduling,
+    "first-party-pit-optimization-model-hello": probe_pit_optimization,
+}

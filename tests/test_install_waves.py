@@ -52,13 +52,13 @@ def test_install_cli_unknown_component(tmp_path, monkeypatch, capsys) -> None:
 
 def test_install_cli_wave_continues_after_failure(tmp_path, monkeypatch, capsys) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "state"))
-    # Point install root outside a fake worktree; recipes are unimplemented so all fail.
+    # Mega-ops recipes are still unimplemented → typed failures, continue-on-fail.
     worktree = tmp_path / "repo"
     worktree.mkdir()
     monkeypatch.chdir(worktree)
-    code = main(["install", "--wave", "7-first-party", "--json"])
+    code = main(["install", "--wave", "6-mega-ops", "--json"])
     assert code != 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["ok"] is False
-    assert len(payload["results"]) == len(INSTALL_WAVES["7-first-party"])
+    assert len(payload["results"]) == len(INSTALL_WAVES["6-mega-ops"])
     assert all(row["status"] == "failed" for row in payload["results"])

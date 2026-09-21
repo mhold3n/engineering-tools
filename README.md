@@ -41,6 +41,23 @@ etools run openfoam ./case --project ./my-part
 
 Project registry lives under `~/.engineering-tools/registry.json` (override with `ETOOLS_HOME`). Per-project job history is append-only JSONL at `<project>/.engineering-tools/jobs.jsonl`. BOM-lite lives at `<project>/.engineering-tools/bom.json`. Complete latest pulse lives at `~/.engineering-tools/hello-report.json`.
 
+## Install waves (pointer repo)
+
+`etools install` fetches pinned components **outside** the git tree and writes
+receipts under `ETOOLS_HOME/installations.json`:
+
+```bash
+etools install --wave 1-cad-viz
+etools install --wave 7-first-party
+etools install --all
+etools hello --json   # phase gate: in-scope components status=ok; aggregate may stay red
+```
+
+Waves: `1-cad-viz`, `2-cae-core`, `3-electrical`, `4-science`, `5-mbse-plm-light`,
+`6-mega-ops`, `7-first-party` (53 components). 3DEXPERIENCE platform composition
+and product capability probes are deferred. Reference platform is Ubuntu 24.04
+x86-64; hosted CI does not certify VM installs.
+
 ### Alpha pulse
 
 `hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
