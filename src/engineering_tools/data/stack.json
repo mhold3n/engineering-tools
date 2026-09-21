@@ -1652,6 +1652,7 @@
         "package": "frepple",
         "locators": [
           "frepple",
+          "frepplectl",
           "frepple-server"
         ]
       },
@@ -1659,6 +1660,7 @@
         "type": "service",
         "locator": [
           "frepple",
+          "frepplectl",
           "frepple-server"
         ]
       },
