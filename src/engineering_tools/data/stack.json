@@ -632,14 +632,24 @@
       "id": "eclipse-papyrus",
       "name": "Eclipse Papyrus",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://gitlab.eclipse.org/eclipse/papyrus/org.eclipse.papyrus-desktop",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.eclipse.org/eclipse/papyrus/org.eclipse.papyrus-desktop",
+          "commit": "6aa651f27fa2b10a3cc1f9a8089cfd16d73fc278"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "eclipse-papyrus"
+        "state": "implemented",
+        "id": "eclipse-papyrus",
+        "kind": "apt",
+        "package": "papyrus",
+        "locators": [
+          "papyrus"
+        ]
       },
       "execution": {
         "type": "java",
@@ -648,7 +658,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "eclipse-papyrus-hello"
       },
       "expected_signal": {
@@ -2013,14 +2023,24 @@
       "id": "knime-analytics-platform",
       "name": "KNIME Analytics Platform",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/knime-oss/knime-core",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/knime-oss/knime-core",
+          "commit": "5487725ad40b45793b8ed8180ff8fd6bbd937302"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "knime-analytics-platform"
+        "state": "implemented",
+        "id": "knime-analytics-platform",
+        "kind": "appimage",
+        "package": "knime",
+        "locators": [
+          "knime"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -2029,7 +2049,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "knime-analytics-platform-hello"
       },
       "expected_signal": {
@@ -2372,14 +2392,24 @@
       "id": "libreclinica",
       "name": "LibreClinica",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/reliatec-gmbh/LibreClinica",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/reliatec-gmbh/LibreClinica",
+          "commit": "8e2052cd428bced9c7bc6530fa5204fead5c85ed"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "libreclinica"
+        "state": "implemented",
+        "id": "libreclinica",
+        "kind": "container",
+        "package": "libreclinica",
+        "locators": [
+          "libreclinica"
+        ]
       },
       "execution": {
         "type": "service",
@@ -2388,7 +2418,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "libreclinica-hello"
       },
       "expected_signal": {
@@ -2400,14 +2430,24 @@
       "id": "sweet-home-3d",
       "name": "Sweet Home 3D",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/laszukdawid/SweetHome3D",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/laszukdawid/SweetHome3D",
+          "commit": "ca29ca56d454d86f8350ca11eddc8c4ea7dd146d"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "sweet-home-3d"
+        "state": "implemented",
+        "id": "sweet-home-3d",
+        "kind": "apt",
+        "package": "sweethome3d",
+        "locators": [
+          "sweethome3d"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -2416,7 +2456,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "sweet-home-3d-hello"
       },
       "expected_signal": {
