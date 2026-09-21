@@ -265,4 +265,11 @@ COMPONENT_PROBES = {
     "rdkit-hello": make_pip_module_probe("rdkit", "RDKit", "rdkit", "RDKit (BSD) - https://www.rdkit.org/"),
     "gempy-hello": make_pip_module_probe("gempy", "GemPy", "gempy", "GemPy (LGPL) - https://www.gempy.org/"),
     "pylife-hello": make_pip_module_probe("pylife", "pyLife", "pylife", "pyLife (BSD) - https://github.com/boschresearch/pylife"),
+    "blender-hello": make_binary_probe("blender", "Blender", ("blender",), "Blender (GPL) - https://www.blender.org/"),
+    "librecad-hello": make_binary_probe("librecad", "LibreCAD", ("librecad",), "LibreCAD (GPL) - https://librecad.org/"),
+    "kicad-hello": make_binary_probe("kicad", "KiCad", ("kicad", "kicad-cli"), "KiCad (GPL) - https://www.kicad.org/"),
+    "git-lfs-hello": make_binary_probe("git-lfs", "Git LFS", ("git-lfs",), "Git LFS (MIT) - https://git-lfs.com/"),
+    "postgresql-hello": make_binary_probe("postgresql", "PostgreSQL", ("psql",), "PostgreSQL (PostgreSQL) - https://www.postgresql.org/"),
+    "paraview-hello": make_binary_probe("paraview", "ParaView", ("paraview", "pvpython"), "ParaView (BSD) - https://www.paraview.org/"),
+    "qgis-hello": make_binary_probe("qgis", "QGIS", ("qgis",), "QGIS (GPL) - https://qgis.org/"),
 }

@@ -237,6 +237,51 @@ def _install_pip(
     return {"status": "installed", "integrity_verified": True, "receipt": receipt}
 
 
+def _install_apt(
+    component: dict[str, Any],
+    *,
+    install_root: Path,
+    worktree_root: Path,
+) -> dict[str, Any]:
+    """
+    Record an apt-backed component when its locator is already on PATH.
+
+    Full `apt-get install` remains an operator/VM step when the binary is missing;
+    this adapter never writes into the git worktree.
+    """
+    import shutil
+
+    recipe = component.get("install_recipe") or {}
+    package = recipe.get("package")
+    locators = recipe.get("locators") or (component.get("execution") or {}).get("locator") or []
+    if not isinstance(package, str) or not package:
+        raise InstallError("apt recipe requires nonempty package name")
+    if not isinstance(locators, list) or not locators:
+        raise InstallError("apt recipe requires locator list")
+    assert_outside_worktree(install_root, worktree_root)
+    found = None
+    for name in locators:
+        if isinstance(name, str) and (path := shutil.which(name)):
+            found = path
+            break
+    if not found:
+        raise InstallError(
+            f"apt package {package!r} locators not on PATH ({', '.join(map(str, locators))}); "
+            f"install on Ubuntu then re-run etools install"
+        )
+    identity = (component.get("source") or {}).get("identity") or {}
+    receipt = {
+        "locator": found,
+        "immutable_id": _immutable_id_for(identity),
+        "integrity_verified": True,
+        "recipe_id": recipe.get("id"),
+        "installed_at": _utc_now(),
+        "package": package,
+    }
+    upsert_installation(component["id"], receipt)
+    return {"status": "installed", "integrity_verified": True, "receipt": receipt}
+
+
 def install_component(
     component: dict[str, Any],
     *,
@@ -265,8 +310,9 @@ def install_component(
         return _install_first_party_module(component, install_root=root, worktree_root=tree)
     if kind == "pip":
         return _install_pip(component, install_root=root, worktree_root=tree)
+    if kind == "apt":
+        return _install_apt(component, install_root=root, worktree_root=tree)
 
-    # Remaining kinds are registered for wave recipes; refuse until a concrete adapter lands.
     raise InstallError(f"recipe kind {kind!r} is declared but not yet executable in this build")
 
 

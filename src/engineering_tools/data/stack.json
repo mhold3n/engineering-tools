@@ -597,14 +597,21 @@
       "id": "freecad",
       "name": "FreeCAD",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.freecad.org/",
-        "repository": "https://github.com/FreeCAD/FreeCAD"
+        "repository": "https://github.com/FreeCAD/FreeCAD",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/FreeCAD/FreeCAD",
+          "commit": "c2b56826ec4fa261cdabaab3a43775ca8938a13d"
+        }
       },
       "license": "LGPL-2.0-or-later",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "freecad"
+        "state": "implemented",
+        "id": "freecad",
+        "kind": "apt",
+        "package": "freecad"
       },
       "execution": {
         "type": "binary",
@@ -681,14 +688,21 @@
       "id": "librecad",
       "name": "LibreCAD",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/LibreCAD/LibreCAD",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/LibreCAD/LibreCAD",
+          "commit": "bd0b71d187840a2e53d09a0800dbc0622378c923"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "librecad"
+        "state": "implemented",
+        "id": "librecad",
+        "kind": "apt",
+        "package": "librecad"
       },
       "execution": {
         "type": "binary",
@@ -697,7 +711,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "librecad-hello"
       },
       "expected_signal": {
@@ -1144,14 +1158,21 @@
       "id": "kicad",
       "name": "KiCad",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://gitlab.com/kicad/code/kicad",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/kicad/code/kicad",
+          "commit": "965fb68075b53cd4eaf2244954c9ef54ae0b433c"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "kicad"
+        "state": "implemented",
+        "id": "kicad",
+        "kind": "apt",
+        "package": "kicad"
       },
       "execution": {
         "type": "binary",
@@ -1160,7 +1181,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "kicad-hello"
       },
       "expected_signal": {
@@ -1200,14 +1221,21 @@
       "id": "blender",
       "name": "Blender",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/blender/blender",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/blender/blender",
+          "commit": "8d50cbc777cfedb0fbefe0432a0a4085e10d7dee"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "blender"
+        "state": "implemented",
+        "id": "blender",
+        "kind": "apt",
+        "package": "blender"
       },
       "execution": {
         "type": "binary",
@@ -1216,7 +1244,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "blender-hello"
       },
       "expected_signal": {
@@ -1228,14 +1256,21 @@
       "id": "git-lfs",
       "name": "Git LFS",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/git-lfs/git-lfs",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/git-lfs/git-lfs",
+          "commit": "f0bffc4fe998fe5cb004dbca9e8951ea662ff66b"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "git-lfs"
+        "state": "implemented",
+        "id": "git-lfs",
+        "kind": "apt",
+        "package": "git-lfs"
       },
       "execution": {
         "type": "binary",
@@ -1244,7 +1279,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "git-lfs-hello"
       },
       "expected_signal": {
@@ -1256,14 +1291,21 @@
       "id": "postgresql",
       "name": "PostgreSQL",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/postgres/postgres",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/postgres/postgres",
+          "commit": "d39fda1cc404834781458376173e5293f870e83a"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "postgresql"
+        "state": "implemented",
+        "id": "postgresql",
+        "kind": "apt",
+        "package": "postgresql"
       },
       "execution": {
         "type": "service",
@@ -1272,7 +1314,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "postgresql-hello"
       },
       "expected_signal": {
@@ -1550,14 +1592,21 @@
       "id": "qgis",
       "name": "QGIS",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/qgis/QGIS",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/qgis/QGIS",
+          "commit": "3fbdcdad28e43abe9f3429de4033a42597cc24b8"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "qgis"
+        "state": "implemented",
+        "id": "qgis",
+        "kind": "apt",
+        "package": "qgis"
       },
       "execution": {
         "type": "binary",
@@ -1566,7 +1615,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "qgis-hello"
       },
       "expected_signal": {
@@ -2115,14 +2164,21 @@
       "id": "paraview",
       "name": "ParaView",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://gitlab.kitware.com/paraview/paraview",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.kitware.com/paraview/paraview",
+          "commit": "dd4543b17e0f6941cd94261e3f0ed0d64309747c"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "paraview"
+        "state": "implemented",
+        "id": "paraview",
+        "kind": "apt",
+        "package": "paraview"
       },
       "execution": {
         "type": "binary",
@@ -2131,7 +2187,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "paraview-hello"
       },
       "expected_signal": {
