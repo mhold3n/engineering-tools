@@ -660,14 +660,24 @@
       "id": "openmodelica",
       "name": "OpenModelica",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://openmodelica.org/",
-        "repository": null
+        "repository": "https://github.com/OpenModelica/OpenModelica",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/OpenModelica/OpenModelica",
+          "commit": "47601b8f7e6e32f40722c40f120a18439c372ecc"
+        }
       },
       "license": "OSMC-PL / AGPL-3.0",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "openmodelica"
+        "state": "implemented",
+        "id": "openmodelica",
+        "kind": "apt",
+        "package": "openmodelica",
+        "locators": [
+          "omc"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -676,7 +686,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "openmodelica-hello"
       },
       "expected_signal": {
@@ -723,14 +733,24 @@
       "id": "open-cascade-technology",
       "name": "Open CASCADE Technology",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://dev.opencascade.org/",
-        "repository": null
+        "repository": "https://github.com/Open-Cascade-SAS/OCCT",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/Open-Cascade-SAS/OCCT",
+          "commit": "3d097a0328e71b826377d4814ab05ec3c3d23871"
+        }
       },
       "license": "LGPL-2.1 WITH Open CASCADE Exception",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "open-cascade-technology"
+        "state": "implemented",
+        "id": "open-cascade-technology",
+        "kind": "apt",
+        "package": "libocct-foundation-dev",
+        "locators": [
+          "DRAWEXE"
+        ]
       },
       "execution": {
         "type": "other",
@@ -739,7 +759,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "open-cascade-technology-hello"
       },
       "expected_signal": {
@@ -751,14 +771,24 @@
       "id": "salome-meca",
       "name": "SALOME-Meca",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/SalomePlatform/salome",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/SalomePlatform/salome",
+          "commit": "aa93502df82e66c55352ecef22e5ff99067f1425"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "salome-meca"
+        "state": "implemented",
+        "id": "salome-meca",
+        "kind": "container",
+        "package": "salome-meca",
+        "locators": [
+          "salome"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -767,7 +797,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "salome-meca-hello"
       },
       "expected_signal": {
@@ -779,14 +809,25 @@
       "id": "code-aster",
       "name": "Code_Aster",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://code-aster.org/",
-        "repository": null
+        "repository": "https://gitlab.com/codeaster/src",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/codeaster/src",
+          "commit": "5f2556a0cb71bae14871734e76f2efba1e58d4af"
+        }
       },
       "license": "GPL-3.0",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "code-aster"
+        "state": "implemented",
+        "id": "code-aster",
+        "kind": "apt",
+        "package": "code-aster",
+        "locators": [
+          "as_run",
+          "aster"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -795,7 +836,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "code-aster-hello"
       },
       "expected_signal": {
@@ -807,14 +848,24 @@
       "id": "calculix",
       "name": "CalculiX",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "http://www.calculix.de/",
-        "repository": null
+        "repository": "https://github.com/Dhondtguido/CalculiX",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/Dhondtguido/CalculiX",
+          "commit": "e9e57edea350a6097d0b3cddfc22e6f1d7680887"
+        }
       },
       "license": "GPL-2.0",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "calculix"
+        "state": "implemented",
+        "id": "calculix",
+        "kind": "apt",
+        "package": "calculix-ccx",
+        "locators": [
+          "ccx"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -835,14 +886,25 @@
       "id": "openfoam",
       "name": "OpenFOAM",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://openfoam.com/",
-        "repository": null
+        "repository": "https://github.com/OpenFOAM/OpenFOAM-dev",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/OpenFOAM/OpenFOAM-dev",
+          "commit": "f30ee709ec49642240e7b57dbfa8ac1576909b6a"
+        }
       },
       "license": "GPL-3.0-or-later",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "openfoam"
+        "state": "implemented",
+        "id": "openfoam",
+        "kind": "apt",
+        "package": "openfoam",
+        "locators": [
+          "blockMesh",
+          "foamExec"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -864,14 +926,24 @@
       "id": "openlb",
       "name": "OpenLB",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.openlb.net/",
-        "repository": null
+        "repository": "https://gitlab.com/openlb/release",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/openlb/release",
+          "commit": "882924a9cfc8dcdf82909e39530789cb6f5ebcc4"
+        }
       },
       "license": "GPL-2.0-or-later",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "openlb"
+        "state": "implemented",
+        "id": "openlb",
+        "kind": "apt",
+        "package": "openlb",
+        "locators": [
+          "openlb"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -880,7 +952,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "openlb-hello"
       },
       "expected_signal": {
@@ -892,14 +964,24 @@
       "id": "openems",
       "name": "openEMS",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://openems.de/",
-        "repository": null
+        "repository": "https://github.com/thliebig/openEMS-Project",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/thliebig/openEMS-Project",
+          "commit": "f307142fb601a60753148760645f5f7fbd7c583d"
+        }
       },
       "license": "GPL-3.0-or-later",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "openems"
+        "state": "implemented",
+        "id": "openems",
+        "kind": "apt",
+        "package": "openems",
+        "locators": [
+          "openEMS"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -908,7 +990,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "openems-hello"
       },
       "expected_signal": {
@@ -920,14 +1002,24 @@
       "id": "elmer-fem",
       "name": "Elmer FEM",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.elmerfem.org/",
-        "repository": null
+        "repository": "https://github.com/ElmerCSC/elmerfem",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/ElmerCSC/elmerfem",
+          "commit": "2487f25113d4e27f6adf74861968d91c924e044c"
+        }
       },
       "license": "Mixed GPL / LGPL",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "elmer-fem"
+        "state": "implemented",
+        "id": "elmer-fem",
+        "kind": "apt",
+        "package": "elmerfem-csc",
+        "locators": [
+          "ElmerSolver"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -936,7 +1028,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "elmer-fem-hello"
       },
       "expected_signal": {
@@ -948,14 +1040,24 @@
       "id": "project-chrono",
       "name": "Project Chrono",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://projectchrono.org/",
-        "repository": null
+        "repository": "https://github.com/projectchrono/chrono",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/projectchrono/chrono",
+          "commit": "77de755804dcff98b46cd87bdaa3a0c71227869c"
+        }
       },
       "license": "BSD-3-Clause",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "project-chrono"
+        "state": "implemented",
+        "id": "project-chrono",
+        "kind": "apt",
+        "package": "chrono",
+        "locators": [
+          "chrono"
+        ]
       },
       "execution": {
         "type": "other",
@@ -964,7 +1066,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "project-chrono-hello"
       },
       "expected_signal": {
@@ -976,14 +1078,24 @@
       "id": "opencfs",
       "name": "openCFS",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://gitlab.com/openCFS/CFS",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/openCFS/CFS",
+          "commit": "0ba042f53fa7c080f769533a2dce95bdb1e8b361"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "opencfs"
+        "state": "implemented",
+        "id": "opencfs",
+        "kind": "apt",
+        "package": "opencfs",
+        "locators": [
+          "cfs"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -992,7 +1104,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "opencfs-hello"
       },
       "expected_signal": {
@@ -1074,14 +1186,21 @@
       "id": "topopt-jl",
       "name": "TopOpt.jl",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/JuliaTopOpt/TopOpt.jl",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/JuliaTopOpt/TopOpt.jl",
+          "commit": "ca90253960194b18cfdd10521712bd90ba8d65dd"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "topopt-jl"
+        "state": "implemented",
+        "id": "topopt-jl",
+        "kind": "pip",
+        "package": "TopOpt"
       },
       "execution": {
         "type": "other",
@@ -1090,7 +1209,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "topopt-jl-hello"
       },
       "expected_signal": {
@@ -1102,14 +1221,25 @@
       "id": "freecad-cam",
       "name": "FreeCAD CAM",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/FreeCAD/FreeCAD",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/FreeCAD/FreeCAD",
+          "commit": "db5c942e151fbcba95fcb7b9822cd8f663aa872c"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "freecad-cam"
+        "state": "implemented",
+        "id": "freecad-cam",
+        "kind": "apt",
+        "package": "freecad",
+        "locators": [
+          "FreeCADCmd",
+          "freecad"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1118,7 +1248,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "freecad-cam-hello"
       },
       "expected_signal": {
@@ -1130,14 +1260,24 @@
       "id": "qelectrotech",
       "name": "QElectroTech",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/qelectrotech/qelectrotech-source-mirror",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/qelectrotech/qelectrotech-source-mirror",
+          "commit": "61f5e5e5029aa8940d99bea9851b309e8648b537"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "qelectrotech"
+        "state": "implemented",
+        "id": "qelectrotech",
+        "kind": "apt",
+        "package": "qelectrotech",
+        "locators": [
+          "qelectrotech"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1146,7 +1286,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "qelectrotech-hello"
       },
       "expected_signal": {
@@ -1193,14 +1333,21 @@
       "id": "kicad-stepup",
       "name": "KiCadStepUp",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/easyw/kicadStepUpMod",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/easyw/kicadStepUpMod",
+          "commit": "3db98be23aae40413eab041f19de5ab2e168157e"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "kicad-stepup"
+        "state": "implemented",
+        "id": "kicad-stepup",
+        "kind": "pip",
+        "package": "kicadStepUpMod"
       },
       "execution": {
         "type": "python",
@@ -1209,7 +1356,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "kicad-stepup-hello"
       },
       "expected_signal": {
@@ -1326,14 +1473,24 @@
       "id": "nextcloud",
       "name": "Nextcloud",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/nextcloud/server",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/nextcloud/server",
+          "commit": "ab1772ff3950366d862293582259f19214a3ff37"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "nextcloud"
+        "state": "implemented",
+        "id": "nextcloud",
+        "kind": "container",
+        "package": "nextcloud",
+        "locators": [
+          "nextcloud"
+        ]
       },
       "execution": {
         "type": "service",
@@ -1342,7 +1499,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "nextcloud-hello"
       },
       "expected_signal": {
@@ -1354,14 +1511,21 @@
       "id": "erpnext",
       "name": "ERPNext",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/frappe/erpnext",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/frappe/erpnext",
+          "commit": "3c251254b8ff4ffa90d565045c43f64c8e78fe45"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "erpnext"
+        "state": "implemented",
+        "id": "erpnext",
+        "kind": "pip",
+        "package": "erpnext"
       },
       "execution": {
         "type": "service",
@@ -1370,7 +1534,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "erpnext-hello"
       },
       "expected_signal": {
@@ -1417,14 +1581,21 @@
       "id": "erpnext-manufacturing",
       "name": "ERPNext Manufacturing",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/frappe/erpnext",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/frappe/erpnext",
+          "commit": "3c251254b8ff4ffa90d565045c43f64c8e78fe45"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "erpnext-manufacturing"
+        "state": "implemented",
+        "id": "erpnext-manufacturing",
+        "kind": "pip",
+        "package": "erpnext"
       },
       "execution": {
         "type": "service",
@@ -1433,7 +1604,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "erpnext-manufacturing-hello"
       },
       "expected_signal": {
@@ -1445,14 +1616,21 @@
       "id": "frepple",
       "name": "frePPLe",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/frePPLe/frepple",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/frePPLe/frepple",
+          "commit": "29aa9af68688fbf6eea56a406afb6d8656e305cc"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "frepple"
+        "state": "implemented",
+        "id": "frepple",
+        "kind": "pip",
+        "package": "frepple"
       },
       "execution": {
         "type": "service",
@@ -1461,7 +1639,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "frepple-hello"
       },
       "expected_signal": {
@@ -1508,14 +1686,24 @@
       "id": "ros-2",
       "name": "ROS 2",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/ros2/ros2",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/ros2/ros2",
+          "commit": "d8bbb0e05c14849c13f2cf994d959393aa564474"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "ros-2"
+        "state": "implemented",
+        "id": "ros-2",
+        "kind": "apt",
+        "package": "ros-humble-desktop",
+        "locators": [
+          "ros2"
+        ]
       },
       "execution": {
         "type": "other",
@@ -1524,7 +1712,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "ros-2-hello"
       },
       "expected_signal": {
@@ -1536,14 +1724,25 @@
       "id": "moveit",
       "name": "MoveIt",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/moveit/moveit2",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/moveit/moveit2",
+          "commit": "093360fef2ea8269c607821b551ffb2d4bc5c9a8"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "moveit"
+        "state": "implemented",
+        "id": "moveit",
+        "kind": "apt",
+        "package": "ros-humble-moveit",
+        "locators": [
+          "moveit",
+          "ros2"
+        ]
       },
       "execution": {
         "type": "other",
@@ -1552,7 +1751,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "moveit-hello"
       },
       "expected_signal": {
@@ -1564,14 +1763,25 @@
       "id": "gazebo",
       "name": "Gazebo",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/gazebosim/gz-sim",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/gazebosim/gz-sim",
+          "commit": "ab0ef5b3de35fcdfa253864f8ba3c987e9014317"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "gazebo"
+        "state": "implemented",
+        "id": "gazebo",
+        "kind": "apt",
+        "package": "gz-sim",
+        "locators": [
+          "gz",
+          "gazebo"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1580,7 +1790,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "gazebo-hello"
       },
       "expected_signal": {
@@ -1730,14 +1940,24 @@
       "id": "opensearch",
       "name": "OpenSearch",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/opensearch-project/OpenSearch",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/opensearch-project/OpenSearch",
+          "commit": "cc02ad2d0abcff22093a970eb67fa335338ea8ca"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "opensearch"
+        "state": "implemented",
+        "id": "opensearch",
+        "kind": "container",
+        "package": "opensearch",
+        "locators": [
+          "opensearch"
+        ]
       },
       "execution": {
         "type": "service",
@@ -1746,7 +1966,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "opensearch-hello"
       },
       "expected_signal": {
@@ -1758,14 +1978,21 @@
       "id": "apache-superset",
       "name": "Apache Superset",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/apache/superset",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/apache/superset",
+          "commit": "782b7ae924cb6508d0ba04a3098ad0725ae6a119"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "apache-superset"
+        "state": "implemented",
+        "id": "apache-superset",
+        "kind": "pip",
+        "package": "apache-superset"
       },
       "execution": {
         "type": "service",
@@ -1774,7 +2001,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "apache-superset-hello"
       },
       "expected_signal": {
@@ -1849,14 +2076,25 @@
       "id": "lammps",
       "name": "LAMMPS",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.lammps.org/",
-        "repository": null
+        "repository": "https://github.com/lammps/lammps",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/lammps/lammps",
+          "commit": "df3dba0cae4196f3f4e691785600454fc7ed4a3b"
+        }
       },
       "license": "GPL-2.0",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "lammps"
+        "state": "implemented",
+        "id": "lammps",
+        "kind": "apt",
+        "package": "lammps",
+        "locators": [
+          "lmp",
+          "lammps"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1865,7 +2103,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "lammps-hello"
       },
       "expected_signal": {
@@ -1877,14 +2115,24 @@
       "id": "quantum-espresso",
       "name": "Quantum ESPRESSO",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.quantum-espresso.org/",
-        "repository": null
+        "repository": "https://github.com/QEF/q-e",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/QEF/q-e",
+          "commit": "61569eb480231b649c47f631df9c5c83537df461"
+        }
       },
       "license": "GPL-2.0-or-later",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "quantum-espresso"
+        "state": "implemented",
+        "id": "quantum-espresso",
+        "kind": "apt",
+        "package": "quantum-espresso",
+        "locators": [
+          "pw.x"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1893,7 +2141,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "quantum-espresso-hello"
       },
       "expected_signal": {
@@ -1940,14 +2188,24 @@
       "id": "gromacs",
       "name": "GROMACS",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": "https://www.gromacs.org/",
-        "repository": null
+        "repository": "https://gitlab.com/gromacs/gromacs",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/gromacs/gromacs",
+          "commit": "d16f659f8a8ad52467f20a25854b3721369530c0"
+        }
       },
       "license": "LGPL-2.1-or-later",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "gromacs"
+        "state": "implemented",
+        "id": "gromacs",
+        "kind": "apt",
+        "package": "gromacs",
+        "locators": [
+          "gmx"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1956,7 +2214,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "gromacs-hello"
       },
       "expected_signal": {
@@ -1968,14 +2226,24 @@
       "id": "autodock-vina",
       "name": "AutoDock Vina",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/ccsb-scripps/AutoDock-Vina",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/ccsb-scripps/AutoDock-Vina",
+          "commit": "3c65c0b3e6c2c1d183f6a175ecb65e3c5ba91645"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "autodock-vina"
+        "state": "implemented",
+        "id": "autodock-vina",
+        "kind": "apt",
+        "package": "autodock-vina",
+        "locators": [
+          "vina"
+        ]
       },
       "execution": {
         "type": "binary",
@@ -1984,7 +2252,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "autodock-vina-hello"
       },
       "expected_signal": {
@@ -1996,14 +2264,24 @@
       "id": "elabftw",
       "name": "eLabFTW",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/elabftw/elabftw",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/elabftw/elabftw",
+          "commit": "b5bed8b82d0168a3da40e7a72669d346b1ad79d4"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "elabftw"
+        "state": "implemented",
+        "id": "elabftw",
+        "kind": "container",
+        "package": "elabftw",
+        "locators": [
+          "elabftw"
+        ]
       },
       "execution": {
         "type": "service",
@@ -2012,7 +2290,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "elabftw-hello"
       },
       "expected_signal": {
@@ -2024,14 +2302,21 @@
       "id": "senaite",
       "name": "SENAITE",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/senaite/senaite.core",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/senaite/senaite.core",
+          "commit": "717fa8a8d3d322015de394c66eb2a7f936af186d"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "senaite"
+        "state": "implemented",
+        "id": "senaite",
+        "kind": "pip",
+        "package": "senaite.core"
       },
       "execution": {
         "type": "service",
@@ -2040,7 +2325,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "senaite-hello"
       },
       "expected_signal": {
@@ -2052,14 +2337,21 @@
       "id": "psi4",
       "name": "Psi4",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/psi4/psi4",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/psi4/psi4",
+          "commit": "258591c1c483c2231f228187ba4bcb30ba1178f9"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "psi4"
+        "state": "implemented",
+        "id": "psi4",
+        "kind": "pip",
+        "package": "psi4"
       },
       "execution": {
         "type": "binary",
@@ -2068,7 +2360,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "psi4-hello"
       },
       "expected_signal": {
@@ -2136,14 +2428,24 @@
       "id": "openstack",
       "name": "OpenStack",
       "source": {
-        "state": "source-unresolved",
+        "state": "resolved",
         "homepage": null,
-        "repository": null
+        "repository": "https://github.com/openstack/openstack",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/openstack/openstack",
+          "commit": "cf5bfcd5259f3dfdae850962c22346ab77fb0a0d"
+        }
       },
       "license": null,
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "openstack"
+        "state": "implemented",
+        "id": "openstack",
+        "kind": "container",
+        "package": "openstack",
+        "locators": [
+          "openstack"
+        ]
       },
       "execution": {
         "type": "service",
@@ -2152,7 +2454,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "openstack-hello"
       },
       "expected_signal": {

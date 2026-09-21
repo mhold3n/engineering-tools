@@ -312,6 +312,9 @@ def install_component(
         return _install_pip(component, install_root=root, worktree_root=tree)
     if kind == "apt":
         return _install_apt(component, install_root=root, worktree_root=tree)
+    if kind in {"container", "appimage"}:
+        # Until image pulls land: treat as locator presence on PATH (operator-provisioned).
+        return _install_apt(component, install_root=root, worktree_root=tree)
 
     raise InstallError(f"recipe kind {kind!r} is declared but not yet executable in this build")
 
