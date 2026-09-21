@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import shutil
 import urllib.request
 from datetime import datetime, timezone
@@ -225,6 +226,17 @@ def _install_pip(
         raise InstallError(
             f"pip install failed for {package}: {detail[-1] if detail else proc.returncode}"
         )
+    # Expose console scripts on a stable PATH prefix under ETOOLS_HOME/bin.
+    scripts = target / "bin"
+    if scripts.is_dir():
+        bin_dir = etools_home() / "bin"
+        bin_dir.mkdir(parents=True, exist_ok=True)
+        for script in scripts.iterdir():
+            if script.is_file() and os.access(script, os.X_OK):
+                link = bin_dir / script.name
+                if link.exists() or link.is_symlink():
+                    link.unlink()
+                link.symlink_to(script.resolve())
     immutable_id = _immutable_id_for(identity) if identity.get("type") else f"pip:{package}"
     receipt = {
         "locator": str(target.resolve()),

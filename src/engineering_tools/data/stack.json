@@ -757,15 +757,17 @@
         "state": "implemented",
         "id": "open-cascade-technology",
         "kind": "apt",
-        "package": "libocct-foundation-dev",
+        "package": "occt-draw",
         "locators": [
-          "DRAWEXE"
+          "DRAWEXE",
+          "occt-draw"
         ]
       },
       "execution": {
-        "type": "other",
+        "type": "binary",
         "locator": [
-          "occt"
+          "DRAWEXE",
+          "occt-draw"
         ]
       },
       "probe": {
@@ -1209,8 +1211,11 @@
       "install_recipe": {
         "state": "implemented",
         "id": "topopt-jl",
-        "kind": "pip",
-        "package": "TopOpt"
+        "kind": "apt",
+        "package": "julia",
+        "locators": [
+          "julia"
+        ]
       },
       "execution": {
         "type": "other",
@@ -1462,11 +1467,16 @@
         "state": "implemented",
         "id": "postgresql",
         "kind": "apt",
-        "package": "postgresql"
+        "package": "postgresql",
+        "locators": [
+          "psql",
+          "postgres"
+        ]
       },
       "execution": {
         "type": "service",
         "locator": [
+          "psql",
           "postgres"
         ]
       },
@@ -1710,7 +1720,7 @@
         "state": "implemented",
         "id": "ros-2",
         "kind": "apt",
-        "package": "ros-humble-desktop",
+        "package": "ros-jazzy-ros-base",
         "locators": [
           "ros2"
         ]
@@ -1748,7 +1758,7 @@
         "state": "implemented",
         "id": "moveit",
         "kind": "apt",
-        "package": "ros-humble-moveit",
+        "package": "ros-jazzy-moveit",
         "locators": [
           "moveit",
           "ros2"
@@ -1787,7 +1797,7 @@
         "state": "implemented",
         "id": "gazebo",
         "kind": "apt",
-        "package": "gz-sim",
+        "package": "ros-jazzy-ros-gz",
         "locators": [
           "gz",
           "gazebo"

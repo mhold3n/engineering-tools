@@ -336,7 +336,21 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _ensure_etools_bin_on_path() -> None:
+    """Prepend ETOOLS_HOME/bin so pip console scripts installed by etools are visible."""
+    import os
+
+    from .registry import etools_home
+
+    bin_dir = str((etools_home() / "bin").expanduser())
+    current = os.environ.get("PATH", "")
+    parts = current.split(os.pathsep) if current else []
+    if bin_dir not in parts:
+        os.environ["PATH"] = bin_dir + (os.pathsep + current if current else "")
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    _ensure_etools_bin_on_path()
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     return int(args.func(args))

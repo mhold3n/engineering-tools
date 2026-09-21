@@ -252,6 +252,51 @@ def make_pip_module_probe(component_id: str, name: str, module: str, credit: str
     return probe
 
 
+def probe_topopt_jl(project: str | Path | None = None) -> dict[str, Any]:
+    """Smoke-check TopOpt.jl via Julia (not a pip module)."""
+    credit = "TopOpt.jl upstream"
+    julia = shutil.which("julia")
+    if not julia:
+        return _result("topopt-jl", "TopOpt.jl", "missing", "julia not found on PATH", credit=credit)
+    try:
+        proc = subprocess.run(
+            [julia, "-e", "using TopOpt"],
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return _result(
+            "topopt-jl",
+            "TopOpt.jl",
+            "broken",
+            f"julia TopOpt import failed: {exc}",
+            locator=julia,
+            credit=credit,
+        )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        return _result(
+            "topopt-jl",
+            "TopOpt.jl",
+            "broken",
+            f"julia TopOpt import failed: {detail[-1] if detail else proc.returncode}",
+            locator=julia,
+            credit=credit,
+            returncode=proc.returncode,
+        )
+    return _result(
+        "topopt-jl",
+        "TopOpt.jl",
+        "ok",
+        f"TopOpt.jl import ok via {julia}",
+        locator=julia,
+        credit=credit,
+        returncode=0,
+    )
+
+
 COMPONENT_PROBES = {
     "calculix-hello-beam": probe_calculix,
     "freecad-hello-box": probe_freecad,
@@ -273,7 +318,7 @@ COMPONENT_PROBES = {
     "paraview-hello": make_binary_probe("paraview", "ParaView", ("paraview", "pvpython"), "ParaView (BSD) - https://www.paraview.org/"),
     "qgis-hello": make_binary_probe("qgis", "QGIS", ("qgis",), "QGIS (GPL) - https://qgis.org/"),
     "openmodelica-hello": make_binary_probe('openmodelica', 'OpenModelica', ('omc',), "OpenModelica upstream"),
-    "open-cascade-technology-hello": make_binary_probe('open-cascade-technology', 'Open CASCADE Technology', ('DRAWEXE',), "Open CASCADE Technology upstream"),
+    "open-cascade-technology-hello": make_binary_probe('open-cascade-technology', 'Open CASCADE Technology', ('DRAWEXE', 'occt-draw'), "Open CASCADE Technology upstream"),
     "salome-meca-hello": make_binary_probe('salome-meca', 'SALOME-Meca', ('salome',), "SALOME-Meca upstream"),
     "code-aster-hello": make_binary_probe('code-aster', 'Code_Aster', ('as_run', 'aster'), "Code_Aster upstream"),
     "openlb-hello": make_binary_probe('openlb', 'OpenLB', ('openlb',), "OpenLB upstream"),
@@ -281,7 +326,7 @@ COMPONENT_PROBES = {
     "elmer-fem-hello": make_binary_probe('elmer-fem', 'Elmer FEM', ('ElmerSolver',), "Elmer FEM upstream"),
     "project-chrono-hello": make_binary_probe('project-chrono', 'Project Chrono', ('chrono',), "Project Chrono upstream"),
     "opencfs-hello": make_binary_probe('opencfs', 'openCFS', ('cfs',), "openCFS upstream"),
-    "topopt-jl-hello": make_pip_module_probe('topopt-jl', 'TopOpt.jl', 'TopOpt', "TopOpt.jl upstream"),
+    "topopt-jl-hello": probe_topopt_jl,
     "freecad-cam-hello": make_binary_probe('freecad-cam', 'FreeCAD CAM', ('FreeCADCmd', 'freecad'), "FreeCAD CAM upstream"),
     "qelectrotech-hello": make_binary_probe('qelectrotech', 'QElectroTech', ('qelectrotech',), "QElectroTech upstream"),
     "kicad-stepup-hello": make_pip_module_probe('kicad-stepup', 'KiCadStepUp', 'kicadStepUpMod', "KiCadStepUp upstream"),
@@ -293,7 +338,7 @@ COMPONENT_PROBES = {
     "moveit-hello": make_binary_probe('moveit', 'MoveIt', ('moveit', 'ros2'), "MoveIt upstream"),
     "gazebo-hello": make_binary_probe('gazebo', 'Gazebo', ('gz', 'gazebo'), "Gazebo upstream"),
     "opensearch-hello": make_binary_probe('opensearch', 'OpenSearch', ('opensearch',), "OpenSearch upstream"),
-    "apache-superset-hello": make_pip_module_probe('apache-superset', 'Apache Superset', 'apache_superset', "Apache Superset upstream"),
+    "apache-superset-hello": make_pip_module_probe('apache-superset', 'Apache Superset', 'superset', "Apache Superset upstream"),
     "lammps-hello": make_binary_probe('lammps', 'LAMMPS', ('lmp', 'lammps'), "LAMMPS upstream"),
     "quantum-espresso-hello": make_binary_probe('quantum-espresso', 'Quantum ESPRESSO', ('pw.x',), "Quantum ESPRESSO upstream"),
     "gromacs-hello": make_binary_probe('gromacs', 'GROMACS', ('gmx',), "GROMACS upstream"),
