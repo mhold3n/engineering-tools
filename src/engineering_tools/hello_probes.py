@@ -404,7 +404,7 @@ COMPONENT_PROBES = {
     "autodock-vina-hello": make_binary_probe('autodock-vina', 'AutoDock Vina', ('vina',), "AutoDock Vina upstream"),
     "elabftw-hello": make_binary_probe('elabftw', 'eLabFTW', ('elabftw',), "eLabFTW upstream"),
     "senaite-hello": make_pip_module_probe('senaite', 'SENAITE', 'senaite.core', "SENAITE upstream"),
-    "psi4-hello": make_pip_module_probe('psi4', 'Psi4', 'psi4', "Psi4 upstream"),
+    "psi4-hello": make_binary_probe('psi4', 'Psi4', ('psi4',), "Psi4 upstream"),
     "openstack-hello": make_binary_probe('openstack', 'OpenStack', ('openstack',), "OpenStack upstream"),
 
     "sweet-home-3d-hello": make_binary_probe('sweet-home-3d', 'Sweet Home 3D', ('sweethome3d',), "Sweet Home 3D upstream"),

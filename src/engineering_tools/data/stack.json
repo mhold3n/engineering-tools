@@ -2384,8 +2384,11 @@
       "install_recipe": {
         "state": "implemented",
         "id": "psi4",
-        "kind": "pip",
-        "package": "psi4"
+        "kind": "apt",
+        "package": "psi4",
+        "locators": [
+          "psi4"
+        ]
       },
       "execution": {
         "type": "binary",
