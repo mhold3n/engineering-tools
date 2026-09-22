@@ -1,0 +1,3398 @@
+{
+  "schema_version": 1,
+  "inventory_state": "audited",
+  "inventory": [
+    {
+      "id": "3dexperience",
+      "name": "3DEXPERIENCE",
+      "portfolio": "3DEXPERIENCE",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "catia",
+      "name": "CATIA",
+      "portfolio": "CATIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks",
+      "name": "SOLIDWORKS",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "catia-magic",
+      "name": "CATIA Magic",
+      "portfolio": "CATIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "cameo",
+      "name": "Cameo",
+      "portfolio": "CATIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "dymola",
+      "name": "Dymola",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "draftsight",
+      "name": "DraftSight",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "spatial-acis",
+      "name": "Spatial ACIS",
+      "portfolio": "Dassault",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "cgm",
+      "name": "CGM",
+      "portfolio": "CATIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "abaqus-cae",
+      "name": "Abaqus/CAE",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "abaqus-solver",
+      "name": "Abaqus solver",
+      "portfolio": "SIMULIA",
+      "granularity": "capability",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "abaqus-style-simpler-solver-workflows",
+      "name": "Abaqus-style simpler solver workflows",
+      "portfolio": "SIMULIA",
+      "granularity": "capability",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks-simulation",
+      "name": "SOLIDWORKS Simulation",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "simulia-fluid-dynamics-engineer",
+      "name": "SIMULIA Fluid Dynamics Engineer",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "powerflow",
+      "name": "PowerFLOW",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "xflow",
+      "name": "XFlow",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "cst-studio-suite",
+      "name": "CST Studio Suite",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "opera-em",
+      "name": "Opera EM",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "simpack",
+      "name": "Simpack",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "wave6",
+      "name": "Wave6",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "fe-safe",
+      "name": "fe-safe",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "isight",
+      "name": "Isight",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "tosca",
+      "name": "Tosca",
+      "portfolio": "SIMULIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks-cam",
+      "name": "SOLIDWORKS CAM",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks-electrical",
+      "name": "SOLIDWORKS Electrical",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "catia-electrical-ecad-interaction",
+      "name": "CATIA electrical/ECAD interaction",
+      "portfolio": "CATIA",
+      "granularity": "capability",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks-visualize",
+      "name": "SOLIDWORKS Visualize",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "catia-composer",
+      "name": "CATIA Composer",
+      "portfolio": "CATIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks-composer",
+      "name": "SOLIDWORKS Composer",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "3dexcite",
+      "name": "3DEXCITE",
+      "portfolio": "3DEXCITE",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "enovia",
+      "name": "ENOVIA",
+      "portfolio": "ENOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "solidworks-pdm",
+      "name": "SOLIDWORKS PDM",
+      "portfolio": "SOLIDWORKS",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "delmia-apriso",
+      "name": "DELMIA Apriso",
+      "portfolio": "DELMIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "delmia-ortems",
+      "name": "DELMIA Ortems",
+      "portfolio": "DELMIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "delmia-quintiq",
+      "name": "DELMIA Quintiq",
+      "portfolio": "DELMIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "delmia-robotics",
+      "name": "DELMIA robotics",
+      "portfolio": "DELMIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "geovia-surpac",
+      "name": "GEOVIA Surpac",
+      "portfolio": "GEOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "geovia-minesched",
+      "name": "GEOVIA MineSched",
+      "portfolio": "GEOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "geovia-whittle",
+      "name": "GEOVIA Whittle",
+      "portfolio": "GEOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "netvibes",
+      "name": "NETVIBES",
+      "portfolio": "NETVIBES",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "exalead",
+      "name": "EXALEAD",
+      "portfolio": "EXALEAD",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "biovia-pipeline-pilot",
+      "name": "BIOVIA Pipeline Pilot",
+      "portfolio": "BIOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "biovia-materials-studio",
+      "name": "BIOVIA Materials Studio",
+      "portfolio": "BIOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "biovia-discovery-studio",
+      "name": "BIOVIA Discovery Studio",
+      "portfolio": "BIOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "biovia-eln",
+      "name": "BIOVIA ELN",
+      "portfolio": "BIOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "biovia-lims",
+      "name": "BIOVIA LIMS",
+      "portfolio": "BIOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "turbomole",
+      "name": "TURBOMOLE",
+      "portfolio": "BIOVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "medidata-rave-edc",
+      "name": "MEDIDATA Rave EDC",
+      "portfolio": "MEDIDATA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "3dvia-homebyme",
+      "name": "3DVIA HomeByMe",
+      "portfolio": "3DVIA",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "outscale",
+      "name": "OUTSCALE",
+      "portfolio": "OUTSCALE",
+      "granularity": "product",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    },
+    {
+      "id": "simulia-postprocessing",
+      "name": "SIMULIA postprocessing",
+      "portfolio": "SIMULIA",
+      "granularity": "capability",
+      "audit_state": "audited",
+      "evidence": {
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "engineering-tools",
+      "name": "engineering-tools",
+      "source": {
+        "state": "source-unresolved",
+        "homepage": null,
+        "repository": null
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "recipe-unimplemented",
+        "id": "engineering-tools"
+      },
+      "execution": {
+        "type": "other",
+        "locator": [
+          "etools"
+        ]
+      },
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "engineering-tools-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "freecad",
+      "name": "FreeCAD",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.freecad.org/",
+        "repository": "https://github.com/FreeCAD/FreeCAD",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/FreeCAD/FreeCAD",
+          "commit": "c2b56826ec4fa261cdabaab3a43775ca8938a13d"
+        }
+      },
+      "license": "LGPL-2.0-or-later",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "freecad",
+        "kind": "apt",
+        "package": "freecad"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "FreeCADCmd"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "freecad-hello-box"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "eclipse-papyrus",
+      "name": "Eclipse Papyrus",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://gitlab.eclipse.org/eclipse/papyrus/org.eclipse.papyrus-desktop",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.eclipse.org/eclipse/papyrus/org.eclipse.papyrus-desktop",
+          "commit": "6aa651f27fa2b10a3cc1f9a8089cfd16d73fc278"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "eclipse-papyrus",
+        "kind": "apt",
+        "package": "papyrus",
+        "locators": [
+          "papyrus"
+        ]
+      },
+      "execution": {
+        "type": "java",
+        "locator": [
+          "papyrus"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "eclipse-papyrus-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "openmodelica",
+      "name": "OpenModelica",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://openmodelica.org/",
+        "repository": "https://github.com/OpenModelica/OpenModelica",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/OpenModelica/OpenModelica",
+          "commit": "47601b8f7e6e32f40722c40f120a18439c372ecc"
+        }
+      },
+      "license": "OSMC-PL / AGPL-3.0",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "openmodelica",
+        "kind": "apt",
+        "package": "openmodelica",
+        "locators": [
+          "omc"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "omc"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "openmodelica-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "librecad",
+      "name": "LibreCAD",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/LibreCAD/LibreCAD",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/LibreCAD/LibreCAD",
+          "commit": "bd0b71d187840a2e53d09a0800dbc0622378c923"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "librecad",
+        "kind": "apt",
+        "package": "librecad"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "librecad"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "librecad-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "open-cascade-technology",
+      "name": "Open CASCADE Technology",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://dev.opencascade.org/",
+        "repository": "https://github.com/Open-Cascade-SAS/OCCT",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/Open-Cascade-SAS/OCCT",
+          "commit": "3d097a0328e71b826377d4814ab05ec3c3d23871"
+        }
+      },
+      "license": "LGPL-2.1 WITH Open CASCADE Exception",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "open-cascade-technology",
+        "kind": "apt",
+        "package": "occt-draw",
+        "locators": [
+          "DRAWEXE",
+          "occt-draw"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "DRAWEXE",
+          "occt-draw"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "open-cascade-technology-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "salome-meca",
+      "name": "SALOME-Meca",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/SalomePlatform/salome",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/SalomePlatform/salome",
+          "commit": "aa93502df82e66c55352ecef22e5ff99067f1425"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "salome-meca",
+        "kind": "container",
+        "package": "salome-meca",
+        "locators": [
+          "salome"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "salome"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "salome-meca-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "code-aster",
+      "name": "Code_Aster",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://code-aster.org/",
+        "repository": "https://gitlab.com/codeaster/src",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/codeaster/src",
+          "commit": "5f2556a0cb71bae14871734e76f2efba1e58d4af"
+        }
+      },
+      "license": "GPL-3.0",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "code-aster",
+        "kind": "apt",
+        "package": "code-aster",
+        "locators": [
+          "as_run",
+          "aster"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "as_run"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "code-aster-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "calculix",
+      "name": "CalculiX",
+      "source": {
+        "state": "resolved",
+        "homepage": "http://www.calculix.de/",
+        "repository": "https://github.com/Dhondtguido/CalculiX",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/Dhondtguido/CalculiX",
+          "commit": "e9e57edea350a6097d0b3cddfc22e6f1d7680887"
+        }
+      },
+      "license": "GPL-2.0",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "calculix",
+        "kind": "apt",
+        "package": "calculix-ccx",
+        "locators": [
+          "ccx"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "ccx"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "calculix-hello-beam"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "openfoam",
+      "name": "OpenFOAM",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://openfoam.com/",
+        "repository": "https://github.com/OpenFOAM/OpenFOAM-dev",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/OpenFOAM/OpenFOAM-dev",
+          "commit": "f30ee709ec49642240e7b57dbfa8ac1576909b6a"
+        }
+      },
+      "license": "GPL-3.0-or-later",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "openfoam",
+        "kind": "apt",
+        "package": "openfoam",
+        "locators": [
+          "blockMesh",
+          "foamExec"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "blockMesh",
+          "foamExec"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "openfoam-block-mesh"
+      },
+      "expected_signal": {
+        "path": "constant/polyMesh/points"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "openlb",
+      "name": "OpenLB",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.openlb.net/",
+        "repository": "https://gitlab.com/openlb/release",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/openlb/release",
+          "commit": "882924a9cfc8dcdf82909e39530789cb6f5ebcc4"
+        }
+      },
+      "license": "GPL-2.0-or-later",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "openlb",
+        "kind": "apt",
+        "package": "openlb",
+        "locators": [
+          "openlb"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "olb3d"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "openlb-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "openems",
+      "name": "openEMS",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://openems.de/",
+        "repository": "https://github.com/thliebig/openEMS-Project",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/thliebig/openEMS-Project",
+          "commit": "f307142fb601a60753148760645f5f7fbd7c583d"
+        }
+      },
+      "license": "GPL-3.0-or-later",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "openems",
+        "kind": "apt",
+        "package": "openems",
+        "locators": [
+          "openEMS"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "openEMS"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "openems-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "elmer-fem",
+      "name": "Elmer FEM",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.elmerfem.org/",
+        "repository": "https://github.com/ElmerCSC/elmerfem",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/ElmerCSC/elmerfem",
+          "commit": "2487f25113d4e27f6adf74861968d91c924e044c"
+        }
+      },
+      "license": "Mixed GPL / LGPL",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "elmer-fem",
+        "kind": "apt",
+        "package": "elmerfem-csc",
+        "locators": [
+          "ElmerSolver"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "ElmerSolver"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "elmer-fem-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "project-chrono",
+      "name": "Project Chrono",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://projectchrono.org/",
+        "repository": "https://github.com/projectchrono/chrono",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/projectchrono/chrono",
+          "commit": "77de755804dcff98b46cd87bdaa3a0c71227869c"
+        }
+      },
+      "license": "BSD-3-Clause",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "project-chrono",
+        "kind": "apt",
+        "package": "chrono",
+        "locators": [
+          "chrono"
+        ]
+      },
+      "execution": {
+        "type": "other",
+        "locator": [
+          "chrono"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "project-chrono-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "opencfs",
+      "name": "openCFS",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://gitlab.com/openCFS/CFS",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/openCFS/CFS",
+          "commit": "0ba042f53fa7c080f769533a2dce95bdb1e8b361"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "opencfs",
+        "kind": "apt",
+        "package": "opencfs",
+        "locators": [
+          "cfs"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "openCFS"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "opencfs-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "pylife",
+      "name": "pyLife",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/boschresearch/pylife",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/boschresearch/pylife",
+          "commit": "a32a04a679f8f193b7e3d8ecbd6386b0594a706f"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "pylife",
+        "kind": "pip",
+        "package": "pylife"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "pylife"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "pylife-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "openmdao",
+      "name": "OpenMDAO",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://openmdao.org/",
+        "repository": "https://github.com/OpenMDAO/OpenMDAO",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/OpenMDAO/OpenMDAO",
+          "commit": "66370fc0159d35d814249aee917a0d10556126d9"
+        }
+      },
+      "license": "Apache-2.0",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "openmdao",
+        "kind": "pip",
+        "package": "openmdao"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "openmdao"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "openmdao-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "topopt-jl",
+      "name": "TopOpt.jl",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/JuliaTopOpt/TopOpt.jl",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/JuliaTopOpt/TopOpt.jl",
+          "commit": "ca90253960194b18cfdd10521712bd90ba8d65dd"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "topopt-jl",
+        "kind": "apt",
+        "package": "julia",
+        "locators": [
+          "julia"
+        ]
+      },
+      "execution": {
+        "type": "other",
+        "locator": [
+          "julia"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "topopt-jl-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "freecad-cam",
+      "name": "FreeCAD CAM",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/FreeCAD/FreeCAD",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/FreeCAD/FreeCAD",
+          "commit": "db5c942e151fbcba95fcb7b9822cd8f663aa872c"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "freecad-cam",
+        "kind": "apt",
+        "package": "freecad",
+        "locators": [
+          "FreeCADCmd",
+          "freecad"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "FreeCADCmd"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "freecad-cam-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "qelectrotech",
+      "name": "QElectroTech",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/qelectrotech/qelectrotech-source-mirror",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/qelectrotech/qelectrotech-source-mirror",
+          "commit": "61f5e5e5029aa8940d99bea9851b309e8648b537"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "qelectrotech",
+        "kind": "apt",
+        "package": "qelectrotech",
+        "locators": [
+          "qelectrotech"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "qelectrotech"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "qelectrotech-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "kicad",
+      "name": "KiCad",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://gitlab.com/kicad/code/kicad",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/kicad/code/kicad",
+          "commit": "965fb68075b53cd4eaf2244954c9ef54ae0b433c"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "kicad",
+        "kind": "apt",
+        "package": "kicad"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "kicad"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "kicad-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "kicad-stepup",
+      "name": "KiCadStepUp",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/easyw/kicadStepUpMod",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/easyw/kicadStepUpMod",
+          "commit": "3db98be23aae40413eab041f19de5ab2e168157e"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "kicad-stepup",
+        "kind": "git-tree"
+      },
+      "execution": {
+        "type": "other",
+        "locator": [
+          "kicadStepUp"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "kicad-stepup-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "blender",
+      "name": "Blender",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/blender/blender",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/blender/blender",
+          "commit": "8d50cbc777cfedb0fbefe0432a0a4085e10d7dee"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "blender",
+        "kind": "apt",
+        "package": "blender"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "blender"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "blender-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "git-lfs",
+      "name": "Git LFS",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/git-lfs/git-lfs",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/git-lfs/git-lfs",
+          "commit": "f0bffc4fe998fe5cb004dbca9e8951ea662ff66b"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "git-lfs",
+        "kind": "apt",
+        "package": "git-lfs"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "git-lfs"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "git-lfs-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/postgres/postgres",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/postgres/postgres",
+          "commit": "d39fda1cc404834781458376173e5293f870e83a"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "postgresql",
+        "kind": "apt",
+        "package": "postgresql",
+        "locators": [
+          "psql",
+          "postgres"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "psql",
+          "postgres"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "postgresql-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "nextcloud",
+      "name": "Nextcloud",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/nextcloud/server",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/nextcloud/server",
+          "commit": "ab1772ff3950366d862293582259f19214a3ff37"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "nextcloud",
+        "kind": "container",
+        "package": "nextcloud",
+        "locators": [
+          "nextcloud"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "nextcloud"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "nextcloud-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "erpnext",
+      "name": "ERPNext",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/frappe/erpnext",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/frappe/erpnext",
+          "commit": "3c251254b8ff4ffa90d565045c43f64c8e78fe45"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "erpnext",
+        "kind": "pip",
+        "package": "git+https://github.com/frappe/erpnext.git@v15.121.3"
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "erpnext"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "erpnext-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "dvc",
+      "name": "DVC",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/iterative/dvc",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/iterative/dvc",
+          "commit": "56e59829512ff134aa269099a2099587b810b4dd"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "dvc",
+        "kind": "pip",
+        "package": "dvc"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "dvc"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "dvc-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "erpnext-manufacturing",
+      "name": "ERPNext Manufacturing",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/frappe/erpnext",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/frappe/erpnext",
+          "commit": "3c251254b8ff4ffa90d565045c43f64c8e78fe45"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "erpnext-manufacturing",
+        "kind": "pip",
+        "package": "git+https://github.com/frappe/erpnext.git@v15.121.3"
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "erpnext"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "erpnext-manufacturing-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "frepple",
+      "name": "frePPLe",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/frePPLe/frepple",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/frePPLe/frepple",
+          "commit": "29aa9af68688fbf6eea56a406afb6d8656e305cc"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "frepple",
+        "kind": "apt",
+        "package": "frepple",
+        "locators": [
+          "frepple",
+          "frepplectl",
+          "frepple-server"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "frepple",
+          "frepplectl",
+          "frepple-server"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "frepple-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "pyomo",
+      "name": "Pyomo",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.pyomo.org/",
+        "repository": "https://github.com/Pyomo/pyomo",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/Pyomo/pyomo",
+          "commit": "e099f6463abd3b17b3231abf108b0a46e9640d1a"
+        }
+      },
+      "license": "BSD-3-Clause",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "pyomo",
+        "kind": "pip",
+        "package": "pyomo"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "pyomo"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "pyomo-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "ros-2",
+      "name": "ROS 2",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/ros2/ros2",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/ros2/ros2",
+          "commit": "d8bbb0e05c14849c13f2cf994d959393aa564474"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "ros-2",
+        "kind": "apt",
+        "package": "ros-jazzy-ros-base",
+        "locators": [
+          "ros2"
+        ]
+      },
+      "execution": {
+        "type": "other",
+        "locator": [
+          "ros2"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "ros-2-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "moveit",
+      "name": "MoveIt",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/moveit/moveit2",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/moveit/moveit2",
+          "commit": "093360fef2ea8269c607821b551ffb2d4bc5c9a8"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "moveit",
+        "kind": "apt",
+        "package": "ros-jazzy-moveit",
+        "locators": [
+          "moveit",
+          "ros2"
+        ]
+      },
+      "execution": {
+        "type": "other",
+        "locator": [
+          "moveit"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "moveit-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "gazebo",
+      "name": "Gazebo",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/gazebosim/gz-sim",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/gazebosim/gz-sim",
+          "commit": "ab0ef5b3de35fcdfa253864f8ba3c987e9014317"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "gazebo",
+        "kind": "apt",
+        "package": "ros-jazzy-ros-gz",
+        "locators": [
+          "gz",
+          "gazebo"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "gz"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "gazebo-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "qgis",
+      "name": "QGIS",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/qgis/QGIS",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/qgis/QGIS",
+          "commit": "3fbdcdad28e43abe9f3429de4033a42597cc24b8"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "qgis",
+        "kind": "apt",
+        "package": "qgis"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "qgis"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "qgis-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "gempy",
+      "name": "GemPy",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/gempy-project/gempy",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/gempy-project/gempy",
+          "commit": "61ad07342db140ae5e92d5fef2da95835eb6a3ec"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "gempy",
+        "kind": "pip",
+        "package": "gempy"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "gempy"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "gempy-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "first-party-mine-scheduling-model",
+      "name": "first-party mine-scheduling model",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/mhold3n/engineering-tools",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/mhold3n/engineering-tools",
+          "commit": "first-party-mine-scheduling-model"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "first-party-mine-scheduling-model",
+        "kind": "first-party-module"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "mine-scheduling-model"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "first-party-mine-scheduling-model-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "first-party-pit-optimization-model",
+      "name": "first-party pit-optimization model",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/mhold3n/engineering-tools",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/mhold3n/engineering-tools",
+          "commit": "first-party-pit-optimization-model"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "first-party-pit-optimization-model",
+        "kind": "first-party-module"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "pit-optimization-model"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "first-party-pit-optimization-model-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "opensearch",
+      "name": "OpenSearch",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/opensearch-project/OpenSearch",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/opensearch-project/OpenSearch",
+          "commit": "cc02ad2d0abcff22093a970eb67fa335338ea8ca"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "opensearch",
+        "kind": "container",
+        "package": "opensearch",
+        "locators": [
+          "opensearch"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "opensearch"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "opensearch-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "apache-superset",
+      "name": "Apache Superset",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/apache/superset",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/apache/superset",
+          "commit": "782b7ae924cb6508d0ba04a3098ad0725ae6a119"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "apache-superset",
+        "kind": "pip",
+        "package": "apache-superset"
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "superset"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "apache-superset-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "knime-analytics-platform",
+      "name": "KNIME Analytics Platform",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/knime-oss/knime-core",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/knime-oss/knime-core",
+          "commit": "5487725ad40b45793b8ed8180ff8fd6bbd937302"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "knime-analytics-platform",
+        "kind": "appimage",
+        "package": "knime",
+        "locators": [
+          "knime"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "knime"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "knime-analytics-platform-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "ase",
+      "name": "ASE",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://gitlab.com/ase/ase",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/ase/ase",
+          "commit": "c77931fd38c5fdaa560bc204488fad5e4c50f4c8"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "ase",
+        "kind": "pip",
+        "package": "ase"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "ase"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "ase-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "lammps",
+      "name": "LAMMPS",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.lammps.org/",
+        "repository": "https://github.com/lammps/lammps",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/lammps/lammps",
+          "commit": "df3dba0cae4196f3f4e691785600454fc7ed4a3b"
+        }
+      },
+      "license": "GPL-2.0",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "lammps",
+        "kind": "apt",
+        "package": "lammps",
+        "locators": [
+          "lmp",
+          "lammps"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "lmp"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "lammps-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "quantum-espresso",
+      "name": "Quantum ESPRESSO",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.quantum-espresso.org/",
+        "repository": "https://github.com/QEF/q-e",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/QEF/q-e",
+          "commit": "61569eb480231b649c47f631df9c5c83537df461"
+        }
+      },
+      "license": "GPL-2.0-or-later",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "quantum-espresso",
+        "kind": "apt",
+        "package": "quantum-espresso",
+        "locators": [
+          "pw.x"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "pw.x"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "quantum-espresso-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "rdkit",
+      "name": "RDKit",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.rdkit.org/",
+        "repository": "https://github.com/rdkit/rdkit",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/rdkit/rdkit",
+          "commit": "c967969493894c408e1b4cc1bb34abf1b040e792"
+        }
+      },
+      "license": "BSD-3-Clause",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "rdkit",
+        "kind": "pip",
+        "package": "rdkit"
+      },
+      "execution": {
+        "type": "python",
+        "locator": [
+          "rdkit"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "rdkit-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "gromacs",
+      "name": "GROMACS",
+      "source": {
+        "state": "resolved",
+        "homepage": "https://www.gromacs.org/",
+        "repository": "https://gitlab.com/gromacs/gromacs",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.com/gromacs/gromacs",
+          "commit": "d16f659f8a8ad52467f20a25854b3721369530c0"
+        }
+      },
+      "license": "LGPL-2.1-or-later",
+      "install_recipe": {
+        "state": "implemented",
+        "id": "gromacs",
+        "kind": "apt",
+        "package": "gromacs",
+        "locators": [
+          "gmx"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "gmx"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "gromacs-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": "THIRD_PARTY.md"
+    },
+    {
+      "id": "autodock-vina",
+      "name": "AutoDock Vina",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/ccsb-scripps/AutoDock-Vina",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/ccsb-scripps/AutoDock-Vina",
+          "commit": "3c65c0b3e6c2c1d183f6a175ecb65e3c5ba91645"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "autodock-vina",
+        "kind": "apt",
+        "package": "autodock-vina",
+        "locators": [
+          "vina"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "vina"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "autodock-vina-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "elabftw",
+      "name": "eLabFTW",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/elabftw/elabftw",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/elabftw/elabftw",
+          "commit": "b5bed8b82d0168a3da40e7a72669d346b1ad79d4"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "elabftw",
+        "kind": "container",
+        "package": "elabftw",
+        "locators": [
+          "elabftw"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "elabftw"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "elabftw-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "senaite",
+      "name": "SENAITE",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/senaite/senaite.core",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/senaite/senaite.core",
+          "commit": "717fa8a8d3d322015de394c66eb2a7f936af186d"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "senaite",
+        "kind": "pip",
+        "package": "senaite.core"
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "senaite"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "senaite-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "psi4",
+      "name": "Psi4",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/psi4/psi4",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/psi4/psi4",
+          "commit": "258591c1c483c2231f228187ba4bcb30ba1178f9"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "psi4",
+        "kind": "apt",
+        "package": "psi4",
+        "locators": [
+          "psi4"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "psi4"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "psi4-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "libreclinica",
+      "name": "LibreClinica",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/reliatec-gmbh/LibreClinica",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/reliatec-gmbh/LibreClinica",
+          "commit": "8e2052cd428bced9c7bc6530fa5204fead5c85ed"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "libreclinica",
+        "kind": "container",
+        "package": "libreclinica",
+        "locators": [
+          "libreclinica"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "libreclinica"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "libreclinica-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "sweet-home-3d",
+      "name": "Sweet Home 3D",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/laszukdawid/SweetHome3D",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/laszukdawid/SweetHome3D",
+          "commit": "ca29ca56d454d86f8350ca11eddc8c4ea7dd146d"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "sweet-home-3d",
+        "kind": "apt",
+        "package": "sweethome3d",
+        "locators": [
+          "sweethome3d"
+        ]
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "SweetHome3D"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "sweet-home-3d-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "openstack",
+      "name": "OpenStack",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://github.com/openstack/openstack",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/openstack/openstack",
+          "commit": "cf5bfcd5259f3dfdae850962c22346ab77fb0a0d"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "openstack",
+        "kind": "container",
+        "package": "openstack",
+        "locators": [
+          "openstack"
+        ]
+      },
+      "execution": {
+        "type": "service",
+        "locator": [
+          "openstack"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "openstack-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    },
+    {
+      "id": "paraview",
+      "name": "ParaView",
+      "source": {
+        "state": "resolved",
+        "homepage": null,
+        "repository": "https://gitlab.kitware.com/paraview/paraview",
+        "identity": {
+          "type": "source",
+          "repository": "https://gitlab.kitware.com/paraview/paraview",
+          "commit": "dd4543b17e0f6941cd94261e3f0ed0d64309747c"
+        }
+      },
+      "license": null,
+      "install_recipe": {
+        "state": "implemented",
+        "id": "paraview",
+        "kind": "apt",
+        "package": "paraview"
+      },
+      "execution": {
+        "type": "binary",
+        "locator": [
+          "pvpython"
+        ]
+      },
+      "probe": {
+        "state": "implemented",
+        "id": "paraview-hello"
+      },
+      "expected_signal": {
+        "kind": "component-ready"
+      },
+      "attribution": null
+    }
+  ],
+  "mappings": [
+    {
+      "id": "3dexperience-to-engineering-tools",
+      "inventory_id": "3dexperience",
+      "replacement": "engineering-tools OpenCAE-style platform",
+      "fit": "C",
+      "components": [
+        "engineering-tools"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "3dexperience-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "catia-to-freecad",
+      "inventory_id": "catia",
+      "replacement": "FreeCAD",
+      "fit": "B",
+      "components": [
+        "freecad"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "catia-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-to-freecad",
+      "inventory_id": "solidworks",
+      "replacement": "FreeCAD",
+      "fit": "B",
+      "components": [
+        "freecad"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "catia-magic-to-eclipse-papyrus",
+      "inventory_id": "catia-magic",
+      "replacement": "Eclipse Papyrus",
+      "fit": "B",
+      "components": [
+        "eclipse-papyrus"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "catia-magic-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "cameo-to-eclipse-papyrus",
+      "inventory_id": "cameo",
+      "replacement": "Eclipse Papyrus",
+      "fit": "B",
+      "components": [
+        "eclipse-papyrus"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "cameo-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "dymola-to-openmodelica",
+      "inventory_id": "dymola",
+      "replacement": "OpenModelica",
+      "fit": "A",
+      "components": [
+        "openmodelica"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "dymola-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "draftsight-to-librecad",
+      "inventory_id": "draftsight",
+      "replacement": "LibreCAD",
+      "fit": "B",
+      "components": [
+        "librecad"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "draftsight-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "spatial-acis-to-open-cascade-technology",
+      "inventory_id": "spatial-acis",
+      "replacement": "Open CASCADE Technology",
+      "fit": "A/B",
+      "components": [
+        "open-cascade-technology"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "spatial-acis-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "cgm-to-open-cascade-technology",
+      "inventory_id": "cgm",
+      "replacement": "Open CASCADE Technology",
+      "fit": "A/B",
+      "components": [
+        "open-cascade-technology"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "cgm-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "abaqus-cae-to-salome-meca-and-code-aster",
+      "inventory_id": "abaqus-cae",
+      "replacement": "SALOME-Meca + Code_Aster",
+      "fit": "A/B",
+      "components": [
+        "salome-meca",
+        "code-aster"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "abaqus-cae-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "abaqus-solver-to-code-aster",
+      "inventory_id": "abaqus-solver",
+      "replacement": "Code_Aster",
+      "fit": "A/B",
+      "components": [
+        "code-aster"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "abaqus-solver-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "abaqus-style-simpler-solver-workflows-to-calculix",
+      "inventory_id": "abaqus-style-simpler-solver-workflows",
+      "replacement": "CalculiX",
+      "fit": "A/B",
+      "components": [
+        "calculix"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "abaqus-style-simpler-solver-workflows-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-simulation-to-calculix",
+      "inventory_id": "solidworks-simulation",
+      "replacement": "CalculiX",
+      "fit": "A/B",
+      "components": [
+        "calculix"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-simulation-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "simulia-fluid-dynamics-engineer-to-openfoam",
+      "inventory_id": "simulia-fluid-dynamics-engineer",
+      "replacement": "OpenFOAM",
+      "fit": "A",
+      "components": [
+        "openfoam"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "simulia-fluid-dynamics-engineer-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "powerflow-to-openlb",
+      "inventory_id": "powerflow",
+      "replacement": "OpenLB",
+      "fit": "A/B",
+      "components": [
+        "openlb"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "powerflow-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "xflow-to-openlb",
+      "inventory_id": "xflow",
+      "replacement": "OpenLB",
+      "fit": "A/B",
+      "components": [
+        "openlb"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "xflow-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "cst-studio-suite-to-openems",
+      "inventory_id": "cst-studio-suite",
+      "replacement": "openEMS",
+      "fit": "B",
+      "components": [
+        "openems"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "cst-studio-suite-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "opera-em-to-elmer-fem",
+      "inventory_id": "opera-em",
+      "replacement": "Elmer FEM",
+      "fit": "A/B",
+      "components": [
+        "elmer-fem"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "opera-em-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "simpack-to-project-chrono",
+      "inventory_id": "simpack",
+      "replacement": "Project Chrono",
+      "fit": "A/B",
+      "components": [
+        "project-chrono"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "simpack-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "wave6-to-opencfs",
+      "inventory_id": "wave6",
+      "replacement": "openCFS",
+      "fit": "A/B",
+      "components": [
+        "opencfs"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "wave6-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "fe-safe-to-pylife",
+      "inventory_id": "fe-safe",
+      "replacement": "pyLife",
+      "fit": "A/B",
+      "components": [
+        "pylife"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "fe-safe-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "isight-to-openmdao",
+      "inventory_id": "isight",
+      "replacement": "OpenMDAO",
+      "fit": "A",
+      "components": [
+        "openmdao"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "isight-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "tosca-to-topopt-jl-and-code-aster",
+      "inventory_id": "tosca",
+      "replacement": "TopOpt.jl + Code_Aster",
+      "fit": "B",
+      "components": [
+        "topopt-jl",
+        "code-aster"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "tosca-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-cam-to-freecad-cam",
+      "inventory_id": "solidworks-cam",
+      "replacement": "FreeCAD CAM",
+      "fit": "B",
+      "components": [
+        "freecad-cam"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-cam-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-electrical-to-qelectrotech",
+      "inventory_id": "solidworks-electrical",
+      "replacement": "QElectroTech",
+      "fit": "B",
+      "components": [
+        "qelectrotech"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-electrical-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "catia-electrical-ecad-interaction-to-kicad-and-kicad-stepup-and-freecad",
+      "inventory_id": "catia-electrical-ecad-interaction",
+      "replacement": "KiCad + KiCadStepUp + FreeCAD",
+      "fit": "B",
+      "components": [
+        "kicad",
+        "kicad-stepup",
+        "freecad"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "catia-electrical-ecad-interaction-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-visualize-to-blender",
+      "inventory_id": "solidworks-visualize",
+      "replacement": "Blender",
+      "fit": "A",
+      "components": [
+        "blender"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-visualize-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "catia-composer-to-blender",
+      "inventory_id": "catia-composer",
+      "replacement": "Blender",
+      "fit": "B",
+      "components": [
+        "blender"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "catia-composer-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-composer-to-blender",
+      "inventory_id": "solidworks-composer",
+      "replacement": "Blender",
+      "fit": "B",
+      "components": [
+        "blender"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-composer-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "3dexcite-to-blender",
+      "inventory_id": "3dexcite",
+      "replacement": "Blender",
+      "fit": "A/B",
+      "components": [
+        "blender"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "3dexcite-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "enovia-to-git-lfs-and-postgresql-and-nextcloud-and-erpnext",
+      "inventory_id": "enovia",
+      "replacement": "Git LFS + PostgreSQL + Nextcloud + ERPNext",
+      "fit": "C",
+      "components": [
+        "git-lfs",
+        "postgresql",
+        "nextcloud",
+        "erpnext"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "enovia-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "solidworks-pdm-to-git-lfs-and-dvc",
+      "inventory_id": "solidworks-pdm",
+      "replacement": "Git LFS + DVC",
+      "fit": "C",
+      "components": [
+        "git-lfs",
+        "dvc"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "solidworks-pdm-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "delmia-apriso-to-erpnext-manufacturing",
+      "inventory_id": "delmia-apriso",
+      "replacement": "ERPNext Manufacturing",
+      "fit": "B/C",
+      "components": [
+        "erpnext-manufacturing"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "delmia-apriso-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "delmia-ortems-to-frepple",
+      "inventory_id": "delmia-ortems",
+      "replacement": "frePPLe",
+      "fit": "A/B",
+      "components": [
+        "frepple"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "delmia-ortems-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "delmia-quintiq-to-frepple-and-pyomo",
+      "inventory_id": "delmia-quintiq",
+      "replacement": "frePPLe + Pyomo",
+      "fit": "B",
+      "components": [
+        "frepple",
+        "pyomo"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "delmia-quintiq-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "delmia-robotics-to-ros-2-and-moveit-and-gazebo",
+      "inventory_id": "delmia-robotics",
+      "replacement": "ROS 2 + MoveIt + Gazebo",
+      "fit": "A/B",
+      "components": [
+        "ros-2",
+        "moveit",
+        "gazebo"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "delmia-robotics-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "geovia-surpac-to-qgis-and-gempy",
+      "inventory_id": "geovia-surpac",
+      "replacement": "QGIS + GemPy",
+      "fit": "B",
+      "components": [
+        "qgis",
+        "gempy"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "geovia-surpac-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "geovia-minesched-to-pyomo-and-first-party-mine-scheduling-model",
+      "inventory_id": "geovia-minesched",
+      "replacement": "Pyomo with a first-party mine-scheduling model",
+      "fit": "C",
+      "components": [
+        "pyomo",
+        "first-party-mine-scheduling-model"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "geovia-minesched-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "geovia-whittle-to-pyomo-and-first-party-pit-optimization-model",
+      "inventory_id": "geovia-whittle",
+      "replacement": "Pyomo with a first-party pit-optimization model",
+      "fit": "C",
+      "components": [
+        "pyomo",
+        "first-party-pit-optimization-model"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "geovia-whittle-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "netvibes-to-opensearch-and-apache-superset",
+      "inventory_id": "netvibes",
+      "replacement": "OpenSearch + Apache Superset",
+      "fit": "A/B",
+      "components": [
+        "opensearch",
+        "apache-superset"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "netvibes-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "exalead-to-opensearch-and-apache-superset",
+      "inventory_id": "exalead",
+      "replacement": "OpenSearch + Apache Superset",
+      "fit": "A/B",
+      "components": [
+        "opensearch",
+        "apache-superset"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "exalead-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "biovia-pipeline-pilot-to-knime-analytics-platform",
+      "inventory_id": "biovia-pipeline-pilot",
+      "replacement": "KNIME Analytics Platform",
+      "fit": "A",
+      "components": [
+        "knime-analytics-platform"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "biovia-pipeline-pilot-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "biovia-materials-studio-to-ase-and-lammps-and-quantum-espresso",
+      "inventory_id": "biovia-materials-studio",
+      "replacement": "ASE + LAMMPS + Quantum ESPRESSO",
+      "fit": "A/B",
+      "components": [
+        "ase",
+        "lammps",
+        "quantum-espresso"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "biovia-materials-studio-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "biovia-discovery-studio-to-rdkit-and-gromacs-and-autodock-vina",
+      "inventory_id": "biovia-discovery-studio",
+      "replacement": "RDKit + GROMACS + AutoDock Vina",
+      "fit": "B",
+      "components": [
+        "rdkit",
+        "gromacs",
+        "autodock-vina"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "biovia-discovery-studio-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "biovia-eln-to-elabftw",
+      "inventory_id": "biovia-eln",
+      "replacement": "eLabFTW",
+      "fit": "A/B",
+      "components": [
+        "elabftw"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "biovia-eln-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "biovia-lims-to-senaite",
+      "inventory_id": "biovia-lims",
+      "replacement": "SENAITE",
+      "fit": "A/B",
+      "components": [
+        "senaite"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "biovia-lims-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "turbomole-to-psi4",
+      "inventory_id": "turbomole",
+      "replacement": "Psi4",
+      "fit": "A/B",
+      "components": [
+        "psi4"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "turbomole-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "medidata-rave-edc-to-libreclinica",
+      "inventory_id": "medidata-rave-edc",
+      "replacement": "LibreClinica",
+      "fit": "A/B",
+      "components": [
+        "libreclinica"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "medidata-rave-edc-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "3dvia-homebyme-to-sweet-home-3d",
+      "inventory_id": "3dvia-homebyme",
+      "replacement": "Sweet Home 3D",
+      "fit": "A",
+      "components": [
+        "sweet-home-3d"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "3dvia-homebyme-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "outscale-to-openstack",
+      "inventory_id": "outscale",
+      "replacement": "OpenStack",
+      "fit": "A",
+      "components": [
+        "openstack"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "outscale-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    },
+    {
+      "id": "simulia-postprocessing-to-paraview",
+      "inventory_id": "simulia-postprocessing",
+      "replacement": "ParaView",
+      "fit": "A/B",
+      "components": [
+        "paraview"
+      ],
+      "probe": {
+        "state": "probe-unimplemented",
+        "id": "simulia-postprocessing-capability"
+      },
+      "expected_signal": {
+        "kind": "capability-output"
+      }
+    }
+  ]
+}

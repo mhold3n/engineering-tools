@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from engineering_tools.cli import main
+from engineering_tools.cli import _record_hello_jobs, main
 from engineering_tools.jobs import jobs_log_path, read_jobs
 from engineering_tools.project import init_project
 from engineering_tools.registry import list_projects, registry_path
@@ -29,29 +29,27 @@ def _fake_ccx_path(tmp_path: Path, monkeypatch) -> Path:
 def test_hello_project_appends_job(tmp_path: Path, monkeypatch) -> None:
     home = tmp_path / "etools-home"
     monkeypatch.setenv("ETOOLS_HOME", str(home))
-    _fake_ccx_path(tmp_path, monkeypatch)
-
     project = tmp_path / "proj"
     init_project(project, name="Proj")
 
     code = main(["hello", "--project", str(project)])
-    assert code == 0
+    assert code == 1
 
     log = jobs_log_path(project)
     assert log.is_file()
     lines = [ln for ln in log.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    assert len(lines) == 1
-    record = json.loads(lines[0])
-    assert record["command"] == "hello"
-    assert record["status"] == "ok"
-    assert record["tool"] == "CalculiX"
-    assert isinstance(record["outputs"], list)
-    assert record["credit"]
-    assert "created" in record
+    records = [json.loads(line) for line in lines]
+    assert len(records) == 105
+    assert sum(record["tool"].startswith("component:") for record in records) == 54
+    assert sum(record["tool"].startswith("product:") for record in records) == 51
+    statuses = {record["status"] for record in records}
+    # First-party GEOVIA models are resolved+recipe-ready; without receipts they are missing.
+    assert statuses <= {"invalid-pointer", "missing", "unverified", "probe-unimplemented"}
+    assert "invalid-pointer" in statuses
+    assert all(record["command"] == "hello" for record in records)
 
     jobs = read_jobs(project, limit=5)
-    assert len(jobs) == 1
-    assert jobs[0]["id"] == record["id"]
+    assert len(jobs) == 5
 
     # registry updated timestamp bumped
     entry = list_projects()[0]
@@ -61,11 +59,9 @@ def test_hello_project_appends_job(tmp_path: Path, monkeypatch) -> None:
 def test_projects_and_jobs_cli(tmp_path: Path, monkeypatch) -> None:
     home = tmp_path / "etools-home"
     monkeypatch.setenv("ETOOLS_HOME", str(home))
-    _fake_ccx_path(tmp_path, monkeypatch)
-
     project = tmp_path / "cli-plm"
     assert main(["init", str(project), "--name", "CLI PLM"]) == 0
-    assert main(["hello", "--project", str(project)]) == 0
+    assert main(["hello", "--project", str(project)]) == 1
 
     assert main(["projects", "--json"]) == 0
     # Capture via list_projects for assertions (CLI prints to stdout)
@@ -76,8 +72,25 @@ def test_projects_and_jobs_cli(tmp_path: Path, monkeypatch) -> None:
     assert main(["jobs", str(project), "--limit", "10"]) == 0
     assert main(["jobs", str(project), "--json"]) == 0
     jobs = read_jobs(project, limit=10)
-    assert len(jobs) == 1
-    assert jobs[0]["command"] == "hello"
+    assert len(jobs) == 10
+    assert all(job["command"] == "hello" for job in jobs)
+
+
+def test_record_hello_jobs_preserves_typed_failures_and_touches_once(tmp_path, monkeypatch):
+    project = tmp_path / "typed"
+    touched = []
+    monkeypatch.setattr("engineering_tools.cli.touch_project", lambda path: touched.append(path))
+    report = {
+        "components": [{"id": "missing-tool", "status": "missing", "message": "missing", "workdir": None, "outputs": [], "credit": None}],
+        "products": [{"id": "closed-product", "status": "probe-unimplemented", "message": "pending", "workdir": None, "outputs": [], "credit": None}],
+    }
+    _record_hello_jobs(str(project), report)
+    rows = list(reversed(read_jobs(project, limit=0)))
+    assert [(row["tool"], row["status"]) for row in rows] == [
+        ("component:missing-tool", "missing"),
+        ("product:closed-product", "probe-unimplemented"),
+    ]
+    assert touched == [str(project)]
 
 
 def test_etools_home_isolation(tmp_path: Path, monkeypatch) -> None:

@@ -11,12 +11,16 @@ from typing import Optional, Sequence
 from . import __version__
 from .bom_cli import cmd_bom_dispatch
 from .hello import run_hello
+from .install import install_components
+from .install_waves import INSTALL_WAVES, all_wave_component_ids, wave_component_ids
 from .jobs import append_job, read_jobs
+from .manifest import load_manifest
 from .profile import detect_profile, summarize_profile
 from .project import init_project, is_project
 from .registry import list_projects, touch_project
 from .run import SUPPORTED_TOOLS
 from .run_cli import cmd_run_dispatch
+from .verification import hello_report_path
 
 
 def _cmd_doctor(_args: argparse.Namespace) -> int:
@@ -43,30 +47,93 @@ def _cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
-def _record_hello_job(project: str, result: dict) -> None:
-    status = "ok" if result.get("ok") else "fail"
-    append_job(
-        project,
-        tool=result.get("backend"),
-        command="hello",
-        status=status,
-        workdir=result.get("workdir"),
-        outputs=list(result.get("outputs") or []),
-        message=str(result.get("message") or ""),
-        credit=result.get("credit"),
-    )
+def _record_hello_jobs(project: str, report: dict) -> None:
+    for kind, rows in (("component", report["components"]), ("product", report["products"])):
+        for result in rows:
+            append_job(
+                project,
+                tool=f"{kind}:{result['id']}",
+                command="hello",
+                status=result["status"],
+                workdir=result.get("workdir"),
+                outputs=list(result.get("outputs") or []),
+                message=str(result.get("message") or ""),
+                credit=result.get("credit"),
+            )
     touch_project(project)
 
 
 def _cmd_hello(args: argparse.Namespace) -> int:
-    result = run_hello(project=args.project)
-    print(result["message"])
-    if args.project:
-        print(f"Project: {result['project']}")
-        _record_hello_job(args.project, result)
+    # Keep probe library chatter off stdout when emitting machine-readable JSON.
     if args.json:
-        print(json.dumps({k: v for k, v in result.items() if k != "summary"}, indent=2))
-    return 0 if result["ok"] else 1
+        import contextlib
+        import io
+
+        sink = io.StringIO()
+        with contextlib.redirect_stdout(sink):
+            report = run_hello(project=args.project)
+    else:
+        report = run_hello(project=args.project)
+    if args.project and report["status"] != "invalid-manifest":
+        _record_hello_jobs(args.project, report)
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print("Components:")
+        for item in report["components"]:
+            print(f"  [{item['status']}] {item['name']}: {item['message']}")
+        print("Products:")
+        for item in report["products"]:
+            print(f"  [{item['status']}] {item['name']} -> {item['replacement']}: {item['message']}")
+        print(f"Counts: {json.dumps(report['counts'], sort_keys=True)}")
+        print(f"Report: {hello_report_path()}")
+        print(f"Status: {report['status']}")
+    return 0 if report["ok"] else 1
+
+
+def _cmd_install(args: argparse.Namespace) -> int:
+    """Install pinned components outside the git worktree; continue on per-item failure."""
+    manifest = load_manifest()
+    by_id = {item["id"]: item for item in manifest["components"]}
+    selected: list[dict] = []
+    if args.wave:
+        try:
+            ids = wave_component_ids(args.wave)
+        except KeyError:
+            print(f"unknown wave: {args.wave}", file=sys.stderr)
+            print("known waves: " + ", ".join(INSTALL_WAVES), file=sys.stderr)
+            return 2
+        missing = [component_id for component_id in ids if component_id not in by_id]
+        if missing:
+            print(f"wave references unknown components: {', '.join(missing)}", file=sys.stderr)
+            return 2
+        selected = [by_id[component_id] for component_id in ids]
+    elif args.all:
+        ids = all_wave_component_ids()
+        selected = [by_id[component_id] for component_id in ids if component_id in by_id]
+    elif args.component_id:
+        if args.component_id not in by_id:
+            print(f"unknown component: {args.component_id}", file=sys.stderr)
+            return 2
+        selected = [by_id[args.component_id]]
+    else:
+        print("specify a component id, --wave, or --all", file=sys.stderr)
+        return 2
+
+    summary = install_components(
+        selected, worktree_root=Path.cwd(), force=bool(args.force)
+    )
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        for row in summary["results"]:
+            print(f"  [{row['status']}] {row['id']}: {row.get('message')}")
+        counts = summary["counts"]
+        print(
+            f"installed={counts['installed']} skipped={counts['skipped']} "
+            f"failed={counts['failed']} ok={summary['ok']}"
+        )
+    return 0 if summary["ok"] else 1
 
 
 def _cmd_projects(args: argparse.Namespace) -> int:
@@ -133,8 +200,8 @@ def _cmd_run_entry(args: argparse.Namespace) -> int:
     input_file = args.input_flag or args.input_pos
     if not tool or not input_file:
         print(
-            "Usage: etools run --tool calculix|freecad --input FILE --project PATH\n"
-            "   or: etools run calculix|freecad FILE --project PATH",
+            "Usage: etools run --tool calculix|freecad|openfoam --input INPUT --project PATH\n"
+            "   or: etools run calculix|freecad|openfoam INPUT --project PATH",
             file=sys.stderr,
         )
         return 2
@@ -163,10 +230,40 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--name", default=None, help="Project display name")
     init.set_defaults(func=_cmd_init)
 
-    hello = sub.add_parser("hello", help="Smoke-check FreeCAD / CalculiX / PATH tools")
+    hello = sub.add_parser("hello", help="Verify every declared stack component and product mapping")
     hello.add_argument("--project", default=None, help="Optional project path to note")
-    hello.add_argument("--json", action="store_true", help="Also print JSON result")
+    hello.add_argument("--json", action="store_true", help="Print JSON result")
     hello.set_defaults(func=_cmd_hello)
+
+    install = sub.add_parser(
+        "install",
+        help="Install pinned stack components outside the git worktree",
+        description=(
+            "Fetch pinned upstreams and install outside the repository.\n\n"
+            "  etools install <component-id>\n"
+            "  etools install --wave 1-cad-viz\n"
+            "  etools install --all\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    install.add_argument("component_id", nargs="?", default=None, help="Component id to install")
+    install.add_argument(
+        "--wave",
+        default=None,
+        help="Install wave name (e.g. 1-cad-viz, 2-cae-core)",
+    )
+    install.add_argument(
+        "--all",
+        action="store_true",
+        help="Install every in-scope (non-3DEXPERIENCE) wave component",
+    )
+    install.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-fetch and re-verify even when a matching receipt exists",
+    )
+    install.add_argument("--json", action="store_true", help="Print JSON summary")
+    install.set_defaults(func=_cmd_install)
 
     projects = sub.add_parser("projects", help="List registered projects")
     projects.add_argument("--json", action="store_true", help="Print JSON")
@@ -201,15 +298,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser(
         "run",
-        help="Run a custom CalculiX .inp or FreeCAD .py deck and log the job",
+        help="Run a custom CalculiX, FreeCAD, or OpenFOAM input and log the job",
         description=(
             "Run a custom solver deck and append jobs.jsonl.\n\n"
             "Primary UX:\n"
             "  etools run --tool calculix --input deck.inp --project .\n"
             "  etools run --tool freecad --input script.py --project .\n\n"
+            "  etools run --tool openfoam --input ./case --project .\n\n"
             "Shorthand (same meaning):\n"
             "  etools run calculix deck.inp --project .\n"
-            "  etools run freecad script.py --project ."
+            "  etools run freecad script.py --project .\n"
+            "  etools run openfoam ./case --project ."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -218,7 +317,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=None,
         choices=list(SUPPORTED_TOOLS),
-        help="Shorthand tool name (calculix|freecad)",
+        help="Shorthand tool name (calculix|freecad|openfoam)",
     )
     run.add_argument("input_pos", nargs="?", default=None, help="Shorthand input file path")
     run.add_argument(
@@ -226,13 +325,13 @@ def build_parser() -> argparse.ArgumentParser:
         dest="tool_flag",
         default=None,
         choices=list(SUPPORTED_TOOLS),
-        help="Solver/tool: calculix or freecad",
+        help="Solver/tool: calculix, freecad, or openfoam",
     )
     run.add_argument(
         "--input",
         dest="input_flag",
         default=None,
-        help="Input .inp (CalculiX) or .py (FreeCAD)",
+        help="Input .inp (CalculiX), .py (FreeCAD), or case directory (OpenFOAM)",
     )
     run.add_argument(
         "--project",
@@ -246,7 +345,21 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _ensure_etools_bin_on_path() -> None:
+    """Prepend ETOOLS_HOME/bin so pip console scripts installed by etools are visible."""
+    import os
+
+    from .registry import etools_home
+
+    bin_dir = str((etools_home() / "bin").expanduser())
+    current = os.environ.get("PATH", "")
+    parts = current.split(os.pathsep) if current else []
+    if bin_dir not in parts:
+        os.environ["PATH"] = bin_dir + (os.pathsep + current if current else "")
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    _ensure_etools_bin_on_path()
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     return int(args.func(args))

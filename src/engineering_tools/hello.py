@@ -1,197 +1,136 @@
-"""Minimal smoke-check against detected CAD/CAE tools."""
+"""Exhaustive component and product verification."""
 
 from __future__ import annotations
 
-import shutil
 import subprocess
-import tempfile
-from importlib import resources
+from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable
 
-from .profile import detect_profile, summarize_profile
+from .hello_probes import COMPONENT_PROBES
+from .manifest import ManifestError, load_manifest, manifest_digest
+from .verification import installation_for, load_installations, write_hello_report
 
-CCX_SAMPLE = "hello_beam"
-FC_SAMPLE = "hello_box"
-CALCULIX_CREDIT = (
-    "CalculiX (GPL-2.0+) - http://www.calculix.de/ - called as an upstream solver, "
-    "not vendored"
-)
-FREECAD_CREDIT = (
-    "FreeCAD (LGPL-2.0-or-later) - https://www.freecad.org/ - called as an upstream "
-    "app, not vendored"
-)
+PRODUCT_PROBES: dict[str, Callable[[dict[str, dict[str, Any]]], dict[str, Any]]] = {}
 
 
-def load_calculix_sample() -> str:
-    """Return the packaged CalculiX .inp text."""
-    root = resources.files("engineering_tools")
-    return (root / "data" / "calculix" / f"{CCX_SAMPLE}.inp").read_text(encoding="utf-8")
+def _created() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def load_freecad_sample() -> str:
-    """Return the packaged FreeCAD hello script text."""
-    root = resources.files("engineering_tools")
-    return (root / "data" / "freecad" / f"{FC_SAMPLE}.py").read_text(encoding="utf-8")
-
-
-def _ccx_work_dir(project: Optional[str]) -> Path:
-    if project:
-        path = Path(project).expanduser().resolve() / "artifacts" / "calculix-hello"
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-    return Path(tempfile.mkdtemp(prefix="etools-ccx-"))
-
-
-def _fc_work_dir(project: Optional[str]) -> Path:
-    if project:
-        path = Path(project).expanduser().resolve() / "artifacts" / "freecad-hello"
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-    return Path(tempfile.mkdtemp(prefix="etools-fc-"))
-
-
-def _try_calculix(ccx: str, project: Optional[str] = None) -> tuple[bool, str, dict[str, Any]]:
-    work = _ccx_work_dir(project)
-    inp_path = work / f"{CCX_SAMPLE}.inp"
-    inp_path.write_text(load_calculix_sample(), encoding="utf-8")
-    extra: dict[str, Any] = {
-        "sample": str(inp_path),
-        "workdir": str(work),
-        "credit": CALCULIX_CREDIT,
-    }
+def _git_revision() -> str | None:
     try:
         proc = subprocess.run(
-            [ccx, CCX_SAMPLE],
-            cwd=work,
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parents[2],
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=2,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return (
-            False,
-            f"CalculiX found at {ccx} but run failed: {exc}. {CALCULIX_CREDIT}",
-            extra,
-        )
-
-    frd = work / f"{CCX_SAMPLE}.frd"
-    dat = work / f"{CCX_SAMPLE}.dat"
-    extra["returncode"] = proc.returncode
-    extra["outputs"] = [str(p) for p in (frd, dat) if p.exists()]
-
-    if proc.returncode == 0:
-        outs = ", ".join(extra["outputs"]) or str(work)
-        return True, f"CalculiX hello_beam OK via {ccx}. Outputs: {outs}. {CALCULIX_CREDIT}", extra
-
-    err = (proc.stderr or proc.stdout or "").strip()
-    tail = err.splitlines()[-1] if err else f"exit {proc.returncode}"
-    msg = (
-        f"CalculiX found at {ccx}; sample staged at {inp_path} "
-        f"but ccx failed ({tail}). {CALCULIX_CREDIT}"
-    )
-    return True, msg, extra
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return proc.stdout.strip() if proc.returncode == 0 else None
 
 
-def _find_freecad_cmd(path_env: Optional[str] = None) -> Optional[str]:
-    for name in ("FreeCADCmd", "freecadcmd", "freecad", "FreeCAD"):
-        found = shutil.which(name, path=path_env)
-        if found:
-            return found
-    return None
-
-
-def _try_freecad(cmd: str, project: Optional[str] = None) -> tuple[bool, str, dict[str, Any]]:
-    """Run packaged hello_box.py; optionally save an .FCStd into project artifacts."""
-    work = _fc_work_dir(project)
-    script = work / f"{FC_SAMPLE}.py"
-    script.write_text(load_freecad_sample(), encoding="utf-8")
-    out_fcstd = work / f"{FC_SAMPLE}.FCStd"
-    extra: dict[str, Any] = {
-        "sample": str(script),
-        "workdir": str(work),
-        "credit": FREECAD_CREDIT,
+def _unavailable_component(component: dict[str, Any], status: str, message: str) -> dict[str, Any]:
+    return {
+        "kind": "component", "id": component["id"], "name": component["name"],
+        "status": status, "message": message, "locator": None, "workdir": None,
+        "outputs": [], "credit": None, "returncode": None,
     }
+
+
+def _evaluate_component(component: dict[str, Any], installations: dict[str, Any], project: str | Path | None) -> dict[str, Any]:
+    if component["source"]["state"] != "resolved":
+        return _unavailable_component(component, "invalid-pointer", "immutable upstream source is unresolved")
+    if component["install_recipe"]["state"] != "implemented":
+        return _unavailable_component(component, "unverified", "installation recipe is not implemented")
+    receipt = installation_for(component["id"], installations)
+    if receipt is None:
+        return _unavailable_component(component, "missing", "installation receipt is missing")
+    if not receipt.get("immutable_id") or receipt.get("integrity_verified") is not True:
+        return _unavailable_component(component, "unverified", "installation integrity is unverified")
+    probe = component["probe"]
+    if probe["state"] != "implemented":
+        return _unavailable_component(component, "probe-unimplemented", "component probe is not implemented")
+    # Guard override/edited manifests that skip validation or omit probe.id.
+    probe_id = probe.get("id")
+    if not isinstance(probe_id, str) or not probe_id:
+        return _unavailable_component(component, "invalid-manifest", "implemented component probe requires nonempty id")
+    implementation = COMPONENT_PROBES.get(probe_id)
+    if implementation is None:
+        return _unavailable_component(component, "invalid-manifest", f"unknown implemented probe {probe_id!r}")
     try:
-        proc = subprocess.run(
-            [cmd, str(script), str(out_fcstd)],
-            cwd=work,
-            capture_output=True,
-            text=True,
-            timeout=90,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return (
-            False,
-            f"FreeCAD found at {cmd} but run failed: {exc}. {FREECAD_CREDIT}",
-            extra,
-        )
-
-    extra["returncode"] = proc.returncode
-    extra["outputs"] = [str(out_fcstd)] if out_fcstd.exists() else []
-    stdout = (proc.stdout or "").strip()
-
-    if proc.returncode == 0:
-        outs = ", ".join(extra["outputs"]) or "in-memory"
-        detail = stdout or "FreeCAD hello_box OK"
-        return (
-            True,
-            f"FreeCAD hello_box OK via {cmd}. Outputs: {outs}. {detail}. {FREECAD_CREDIT}",
-            extra,
-        )
-
-    err = (proc.stderr or proc.stdout or "").strip()
-    tail = err.splitlines()[-1] if err else f"exit {proc.returncode}"
-    msg = (
-        f"FreeCAD found at {cmd}; sample staged at {script} "
-        f"but headless run failed ({tail}). {FREECAD_CREDIT}"
-    )
-    return True, msg, extra
+        result = implementation(project=project)
+    except Exception as exc:
+        return _unavailable_component(component, "broken", f"component probe raised {type(exc).__name__}: {exc}")
+    normalized = dict(result)
+    normalized.update(kind="component", id=component["id"], name=component["name"])
+    return normalized
 
 
-def run_hello(project: Optional[str] = None) -> dict[str, Any]:
-    """Prefer CalculiX sample, then FreeCAD sample, then detect-only."""
-    detected = detect_profile()
-    summary = summarize_profile(detected)
-    result: dict[str, Any] = {
-        "ok": False,
-        "project": str(Path(project).expanduser().resolve()) if project else None,
-        "message": "",
-        "tools_found": summary["found_count"],
-        "summary": summary,
+def _evaluate_product(mapping: dict[str, Any], inventory: dict[str, Any], results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    required = mapping["components"]
+    blocked = [component_id for component_id in required if results[component_id]["status"] != "ok"]
+    base = {
+        "kind": "product", "id": inventory["id"], "name": inventory["name"],
+        "replacement": mapping["replacement"], "components": list(required),
+        "blocked_by": blocked,
     }
+    if blocked:
+        status = results[blocked[0]]["status"]
+        return {**base, "status": status, "message": f"blocked by components: {', '.join(blocked)}"}
+    probe = mapping["probe"]
+    if probe["state"] != "implemented":
+        return {**base, "status": "probe-unimplemented", "message": "product capability probe is not implemented"}
+    # Same defensive contract for product probes as for components.
+    probe_id = probe.get("id")
+    if not isinstance(probe_id, str) or not probe_id:
+        return {**base, "status": "invalid-manifest", "message": "implemented product probe requires nonempty id"}
+    implementation = PRODUCT_PROBES.get(probe_id)
+    if implementation is None:
+        return {**base, "status": "invalid-manifest", "message": f"unknown implemented product probe {probe_id!r}"}
+    try:
+        outcome = implementation(results)
+    except Exception as exc:
+        return {**base, "status": "capability-failed", "message": f"capability probe raised {type(exc).__name__}: {exc}"}
+    status = outcome.get("status")
+    if status not in {"covered", "capability-failed"}:
+        return {**base, "status": "invalid-manifest", "message": "product probe returned invalid status"}
+    return {**base, "status": status, "message": str(outcome.get("message") or status)}
 
-    ccx = shutil.which("ccx")
-    if ccx:
-        ok, message, extra = _try_calculix(ccx, project=project)
-        result["ok"] = ok
-        result["message"] = message
-        result["backend"] = "CalculiX"
-        result.update(extra)
-        return result
 
-    freecad = _find_freecad_cmd()
-    if freecad:
-        ok, message, extra = _try_freecad(freecad, project=project)
-        result["ok"] = ok
-        result["message"] = message
-        result["backend"] = "FreeCAD"
-        result.update(extra)
-        return result
+def _counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    return dict(sorted(Counter(row["status"] for row in rows).items()))
 
-    if summary["found_count"]:
-        names = ", ".join(summary["found"])
-        result["ok"] = True
-        result["message"] = f"Tools found: {names}"
-        result["backend"] = "detected"
-        return result
 
-    result["ok"] = False
-    result["message"] = (
-        "No profile tools found on PATH. Install FreeCAD and/or CalculiX "
-        "(ccx), or other CAELinux-style packages, then re-run `etools doctor`."
-    )
-    result["backend"] = None
-    return result
+def run_hello(project: str | Path | None = None, manifest_path: str | Path | None = None) -> dict[str, Any]:
+    """Evaluate every declared component and proprietary product mapping."""
+    resolved_project = str(Path(project).expanduser().resolve()) if project else None
+    common = {"schema_version": 1, "created": _created(), "git_revision": _git_revision(), "project": resolved_project}
+    try:
+        manifest = load_manifest(manifest_path)
+    except ManifestError as exc:
+        report = {**common, "ok": False, "status": "invalid-manifest", "manifest_digest": None,
+                  "inventory_state": None, "components": [], "products": [],
+                  "counts": {"components": {}, "products": {}}, "errors": list(exc.errors)}
+        write_hello_report(report)
+        return report
+
+    installations = load_installations()
+    components = [_evaluate_component(item, installations, project) for item in manifest["components"]]
+    by_component = {item["id"]: item for item in components}
+    inventory = {item["id"]: item for item in manifest["inventory"]}
+    products = [_evaluate_product(mapping, inventory[mapping["inventory_id"]], by_component) for mapping in manifest["mappings"]]
+    inventory_frozen = manifest["inventory_state"] == "audited" and all(item["audit_state"] == "audited" for item in manifest["inventory"])
+    all_covered = bool(products) and all(item["status"] == "covered" for item in products)
+    invalid = any(item["status"] == "invalid-manifest" for item in components + products)
+    ok = inventory_frozen and all_covered and not invalid
+    status = "covered" if ok else "invalid-manifest" if invalid else "inventory-unfrozen" if not inventory_frozen else "incomplete"
+    report = {**common, "ok": ok, "status": status, "manifest_digest": manifest_digest(manifest),
+              "inventory_state": manifest["inventory_state"], "components": components, "products": products,
+              "counts": {"components": _counts(components), "products": _counts(products)}}
+    write_hello_report(report)
+    return report

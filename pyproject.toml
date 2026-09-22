@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "engineering-tools"
-version = "0.3.0"
+version = "0.4.0"
 description = "MIT PLM/workflow glue for a CAELinux-style open-source engineering stack"
 readme = "README.md"
 license = { text = "MIT" }
@@ -32,7 +32,15 @@ etools = "engineering_tools.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-engineering_tools = ["data/calculix/*.inp", "data/freecad/*.py"]
+engineering_tools = [
+  "data/stack.json",
+  "data/calculix/*.inp",
+  "data/freecad/*.py",
+  "data/openfoam/hello_cavity/README.md",
+  "data/openfoam/hello_cavity/0/*",
+  "data/openfoam/hello_cavity/constant/*",
+  "data/openfoam/hello_cavity/system/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

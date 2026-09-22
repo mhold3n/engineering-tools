@@ -8,11 +8,17 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from .hello import CALCULIX_CREDIT, FREECAD_CREDIT, _find_freecad_cmd
+from .hello_probes import (
+    CALCULIX_CREDIT,
+    FREECAD_CREDIT,
+    OPENFOAM_CREDIT,
+    _find_freecad_cmd,
+    _openfoam_command,
+)
 from .jobs import append_job
 from .registry import touch_project
 
-SUPPORTED_TOOLS = ("calculix", "freecad")
+SUPPORTED_TOOLS = ("calculix", "freecad", "openfoam")
 
 
 def _resolve_ccx() -> Optional[str]:
@@ -46,7 +52,7 @@ def run_deck(
     input_file: str | Path,
     workdir: Optional[str | Path] = None,
 ) -> dict[str, Any]:
-    """Execute a CalculiX .inp or FreeCAD .py under the project and log a job.
+    """Execute a CalculiX/FreeCAD input or OpenFOAM case and log a job.
 
     UX: ``etools run --tool calculix|freecad --input FILE --project PATH``.
     """
@@ -59,7 +65,10 @@ def run_deck(
     (root / "artifacts").mkdir(exist_ok=True)
 
     src = Path(input_file).expanduser().resolve()
-    if not src.is_file():
+    if tool_key == "openfoam":
+        if not src.is_dir() or not (src / "system").is_dir():
+            raise FileNotFoundError(f"OpenFOAM case directory requires system/: {src}")
+    elif not src.is_file():
         raise FileNotFoundError(f"input file not found: {src}")
 
     run_id = uuid.uuid4().hex[:12]
@@ -82,7 +91,9 @@ def run_deck(
 
     if tool_key == "calculix":
         return _run_calculix(root, src, work, run_id, result)
-    return _run_freecad(root, src, work, run_id, result)
+    if tool_key == "freecad":
+        return _run_freecad(root, src, work, run_id, result)
+    return _run_openfoam(root, src, work, run_id, result)
 
 
 def _run_calculix(
@@ -203,6 +214,53 @@ def _run_freecad(
         tail = err.splitlines()[-1] if err else f"exit {proc.returncode}"
         result["message"] = f"FreeCAD run failed ({tail}) via {cmd}. {credit}"
 
+    _log_and_touch(root, result)
+    return result
+
+
+def _run_openfoam(
+    root: Path,
+    src: Path,
+    work: Path,
+    run_id: str,
+    result: dict[str, Any],
+) -> dict[str, Any]:
+    result["credit"] = OPENFOAM_CREDIT
+    resolved = _openfoam_command()
+    if not resolved:
+        result["message"] = f"OpenFOAM blockMesh or foamExec not found on PATH. {OPENFOAM_CREDIT}"
+        _log_and_touch(root, result)
+        return result
+    command, locator = resolved
+    try:
+        if src != work:
+            shutil.copytree(src, work, dirs_exist_ok=True)
+        proc = subprocess.run(
+            command,
+            cwd=work,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        result["message"] = f"OpenFOAM blockMesh failed: {exc}. {OPENFOAM_CREDIT}"
+        _log_and_touch(root, result)
+        return result
+
+    result["returncode"] = proc.returncode
+    mesh = work / "constant" / "polyMesh"
+    result["outputs"] = [str(path) for path in sorted(mesh.rglob("*")) if path.is_file()] if mesh.is_dir() else []
+    points = mesh / "points"
+    if proc.returncode == 0 and points.is_file():
+        result["ok"] = True
+        result["message"] = f"OpenFOAM blockMesh run OK via {locator}. {OPENFOAM_CREDIT}"
+    elif proc.returncode:
+        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
+        tail = detail[-1] if detail else f"exit {proc.returncode}"
+        result["message"] = f"OpenFOAM blockMesh failed ({tail}) via {locator}. {OPENFOAM_CREDIT}"
+    else:
+        result["message"] = f"OpenFOAM blockMesh did not create constant/polyMesh/points. {OPENFOAM_CREDIT}"
     _log_and_touch(root, result)
     return result
 

@@ -142,3 +142,53 @@ def test_run_missing_tool(tmp_path: Path, monkeypatch) -> None:
     jobs = read_jobs(project)
     assert jobs[0]["status"] == "fail"
     assert "not found" in jobs[0]["message"].lower() or "ccx" in jobs[0]["message"].lower()
+
+
+def _fake_block_mesh(tmp_path: Path, monkeypatch) -> None:
+    fake_bin = tmp_path / "openfoam-bin"
+    fake_bin.mkdir()
+    block_mesh = fake_bin / "blockMesh"
+    block_mesh.write_text(
+        "#!/bin/sh\nmkdir -p constant/polyMesh\ntouch constant/polyMesh/points\n",
+        encoding="utf-8",
+    )
+    block_mesh.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + "/usr/bin:/bin")
+
+
+def _openfoam_case(path: Path) -> Path:
+    (path / "system").mkdir(parents=True)
+    (path / "constant").mkdir()
+    (path / "0").mkdir()
+    (path / "system" / "controlDict").write_text("application icoFoam;\n", encoding="utf-8")
+    return path
+
+
+def test_run_openfoam_logs_mesh_artifact(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
+    _fake_block_mesh(tmp_path, monkeypatch)
+    project = init_project(tmp_path / "foam-project")
+    case = _openfoam_case(tmp_path / "case")
+    code = main(["run", "openfoam", str(case), "--project", str(project)])
+    assert code == 0
+    job = read_jobs(project)[0]
+    assert job["tool"] == "openfoam"
+    assert job["status"] == "ok"
+    assert any(path.endswith("constant/polyMesh/points") for path in job["outputs"])
+
+
+def test_run_openfoam_rejects_case_without_system(tmp_path: Path, monkeypatch) -> None:
+    project = init_project(tmp_path / "foam-project")
+    case = tmp_path / "bad-case"
+    case.mkdir()
+    assert main(["run", "openfoam", str(case), "--project", str(project)]) == 2
+
+
+def test_run_openfoam_missing_block_mesh_logs_failure(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
+    monkeypatch.setenv("PATH", "/nonexistent-etools-path")
+    project = init_project(tmp_path / "foam-project")
+    case = _openfoam_case(tmp_path / "case")
+    code = main(["run", "--tool", "openfoam", "--input", str(case), "--project", str(project)])
+    assert code == 1
+    assert read_jobs(project)[0]["status"] == "fail"
