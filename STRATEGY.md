@@ -18,7 +18,7 @@ BETA  = interoperability + workflow quality + system-level integration
 
 Alpha requires exactly one reproducibly installable, independently functioning open-source response for every audited Dassault inventory item. Fixed composites count as one response; alternative menus do not. Package size never changes inclusion or priority. Beta improves handoffs and whole-system workflows after Alpha coverage exists.
 
-Current inventory and replacement map remain provisional. `inventory-unfrozen` prevents Alpha certification until independent inventory audit removes artificial rows, adds omissions, normalizes granularity, and freezes evidence. Complete this audit before mass installation.
+Inventory is **audited** as of 2026-09-22 (see `docs/superpowers/specs/2026-09-22-inventory-audit-freeze.md`) after the pointer-repo phase reached 53/53 component `ok` on the Ubuntu 24.04 reference VM. Aggregate Alpha `hello` still stays red until product capability probes cover each mapping. The 3DEXPERIENCE platform composition mapping remains deferred.
 
 ## Why CAELinux (and why not freeze on it)
 

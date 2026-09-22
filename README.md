@@ -50,19 +50,21 @@ receipts under `ETOOLS_HOME/installations.json`:
 etools install --wave 1-cad-viz
 etools install --wave 7-first-party
 etools install --all
-etools hello --json   # phase gate: in-scope components status=ok; aggregate may stay red
+etools hello --json   # components may be ok; products need capability probes for Alpha
 ```
 
 Waves: `1-cad-viz`, `2-cae-core`, `3-electrical`, `4-science`, `5-mbse-plm-light`,
-`6-mega-ops`, `7-first-party` (53 components). 3DEXPERIENCE platform composition
-and product capability probes are deferred. Reference platform is Ubuntu 24.04
-x86-64; hosted CI does not certify VM installs.
+`6-mega-ops`, `7-first-party` (53 components). Pointer-repo DoD is met when those
+53 report `status: ok` with verified receipts on Ubuntu 24.04 x86-64. Inventory is
+audited (`docs/superpowers/specs/2026-09-22-inventory-audit-freeze.md`). Product
+capability probes and 3DEXPERIENCE GUI composition are the next phases. Hosted CI
+does not certify VM installs.
 
 ### Alpha pulse
 
 `hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
 
-Current packaged inventory is provisional, so default `hello` intentionally exits nonzero. This is completion evidence, not optional-package filtering. OpenFOAM `blockMesh` can prove OpenFOAM component health; it cannot cover SIMULIA Fluid Dynamics Engineer. CFD coverage requires microscopic solver execution, field output, and numerical sanity check.
+Packaged inventory is audited, so `inventory-unfrozen` is cleared. Default `hello` still exits nonzero (`incomplete`) until product capability probes cover mappings. This is completion evidence, not optional-package filtering. OpenFOAM `blockMesh` can prove OpenFOAM component health; it cannot cover SIMULIA Fluid Dynamics Engineer. CFD coverage requires microscopic solver execution, field output, and numerical sanity check.
 
 ### Hello samples
 

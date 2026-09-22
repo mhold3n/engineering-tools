@@ -66,7 +66,8 @@ def test_packaged_manifest_covers_each_inventory_row_once() -> None:
     mapped_ids = [item["inventory_id"] for item in data["mappings"]]
     assert set(mapped_ids) == inventory_ids
     assert len(mapped_ids) == len(set(mapped_ids))
-    assert data["inventory_state"] == "provisional"
+    assert data["inventory_state"] == "audited"
+    assert all(item["audit_state"] == "audited" for item in data["inventory"])
 
 
 @pytest.mark.parametrize(

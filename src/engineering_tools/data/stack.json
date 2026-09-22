@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "inventory_state": "provisional",
+  "inventory_state": "audited",
   "inventory": [
     {
       "id": "3dexperience",
       "name": "3DEXPERIENCE",
       "portfolio": "3DEXPERIENCE",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -18,10 +18,10 @@
       "name": "CATIA",
       "portfolio": "CATIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -29,10 +29,10 @@
       "name": "SOLIDWORKS",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -40,10 +40,10 @@
       "name": "CATIA Magic",
       "portfolio": "CATIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -51,10 +51,10 @@
       "name": "Cameo",
       "portfolio": "CATIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -62,10 +62,10 @@
       "name": "Dymola",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -73,10 +73,10 @@
       "name": "DraftSight",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -84,10 +84,10 @@
       "name": "Spatial ACIS",
       "portfolio": "Dassault",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -95,10 +95,10 @@
       "name": "CGM",
       "portfolio": "CATIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -106,10 +106,10 @@
       "name": "Abaqus/CAE",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -117,10 +117,10 @@
       "name": "Abaqus solver",
       "portfolio": "SIMULIA",
       "granularity": "capability",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -128,10 +128,10 @@
       "name": "Abaqus-style simpler solver workflows",
       "portfolio": "SIMULIA",
       "granularity": "capability",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -139,10 +139,10 @@
       "name": "SOLIDWORKS Simulation",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -150,10 +150,10 @@
       "name": "SIMULIA Fluid Dynamics Engineer",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -161,10 +161,10 @@
       "name": "PowerFLOW",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -172,10 +172,10 @@
       "name": "XFlow",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -183,10 +183,10 @@
       "name": "CST Studio Suite",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -194,10 +194,10 @@
       "name": "Opera EM",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -205,10 +205,10 @@
       "name": "Simpack",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -216,10 +216,10 @@
       "name": "Wave6",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -227,10 +227,10 @@
       "name": "fe-safe",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -238,10 +238,10 @@
       "name": "Isight",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -249,10 +249,10 @@
       "name": "Tosca",
       "portfolio": "SIMULIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -260,10 +260,10 @@
       "name": "SOLIDWORKS CAM",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -271,10 +271,10 @@
       "name": "SOLIDWORKS Electrical",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -282,10 +282,10 @@
       "name": "CATIA electrical/ECAD interaction",
       "portfolio": "CATIA",
       "granularity": "capability",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -293,10 +293,10 @@
       "name": "SOLIDWORKS Visualize",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -304,10 +304,10 @@
       "name": "CATIA Composer",
       "portfolio": "CATIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -315,10 +315,10 @@
       "name": "SOLIDWORKS Composer",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -326,10 +326,10 @@
       "name": "3DEXCITE",
       "portfolio": "3DEXCITE",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -337,10 +337,10 @@
       "name": "ENOVIA",
       "portfolio": "ENOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -348,10 +348,10 @@
       "name": "SOLIDWORKS PDM",
       "portfolio": "SOLIDWORKS",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -359,10 +359,10 @@
       "name": "DELMIA Apriso",
       "portfolio": "DELMIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -370,10 +370,10 @@
       "name": "DELMIA Ortems",
       "portfolio": "DELMIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -381,10 +381,10 @@
       "name": "DELMIA Quintiq",
       "portfolio": "DELMIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -392,10 +392,10 @@
       "name": "DELMIA robotics",
       "portfolio": "DELMIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -403,10 +403,10 @@
       "name": "GEOVIA Surpac",
       "portfolio": "GEOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -414,10 +414,10 @@
       "name": "GEOVIA MineSched",
       "portfolio": "GEOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -425,10 +425,10 @@
       "name": "GEOVIA Whittle",
       "portfolio": "GEOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -436,10 +436,10 @@
       "name": "NETVIBES",
       "portfolio": "NETVIBES",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -447,10 +447,10 @@
       "name": "EXALEAD",
       "portfolio": "EXALEAD",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -458,10 +458,10 @@
       "name": "BIOVIA Pipeline Pilot",
       "portfolio": "BIOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -469,10 +469,10 @@
       "name": "BIOVIA Materials Studio",
       "portfolio": "BIOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -480,10 +480,10 @@
       "name": "BIOVIA Discovery Studio",
       "portfolio": "BIOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -491,10 +491,10 @@
       "name": "BIOVIA ELN",
       "portfolio": "BIOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -502,10 +502,10 @@
       "name": "BIOVIA LIMS",
       "portfolio": "BIOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -513,10 +513,10 @@
       "name": "TURBOMOLE",
       "portfolio": "BIOVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -524,10 +524,10 @@
       "name": "MEDIDATA Rave EDC",
       "portfolio": "MEDIDATA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -535,10 +535,10 @@
       "name": "3DVIA HomeByMe",
       "portfolio": "3DVIA",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -546,10 +546,10 @@
       "name": "OUTSCALE",
       "portfolio": "OUTSCALE",
       "granularity": "product",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     },
     {
@@ -557,10 +557,10 @@
       "name": "SIMULIA postprocessing",
       "portfolio": "SIMULIA",
       "granularity": "capability",
-      "audit_state": "provisional",
+      "audit_state": "audited",
       "evidence": {
-        "state": "audit-pending",
-        "source": "2026-09-11 design input"
+        "state": "audited",
+        "source": "2026-09-22 inventory audit freeze after 53-component pointer-repo DoD on Ubuntu 24.04 reference VM"
       }
     }
   ],

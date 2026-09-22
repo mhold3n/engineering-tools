@@ -34,9 +34,11 @@ def test_hello_json_is_parseable_and_packaged_manifest_is_red(tmp_path, monkeypa
     code = main(["hello", "--json"])
     report = json.loads(capsys.readouterr().out)
     assert code == 1
-    assert report["inventory_state"] == "provisional"
+    # Inventory is audited; Alpha stays red until product capability probes cover mappings.
+    assert report["inventory_state"] == "audited"
+    # Inventory is audited; Alpha stays red until product capability probes cover mappings.
+    assert report["status"] == "incomplete"
     assert report["ok"] is False
-
 
 def test_hello_with_project(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
