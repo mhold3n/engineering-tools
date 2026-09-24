@@ -153,10 +153,12 @@ def _docker_script(tmp_path: Path, *, present: dict[str, str], run_text: str) ->
         "if args[:2] == ['image', 'inspect']:\n"
         "    raise SystemExit(0 if args[2] in PRESENT.values() or args[2] in PRESENT else 1)\n"
         "if args[:1] == ['images']:\n"
-        "    repo = args[-1]\n"
-        "    tag = PRESENT.get(repo) or PRESENT.get(repo.split(':')[0])\n"
-        "    if tag:\n"
-        "        print(tag if ':' in tag else repo + ':' + tag)\n"
+        "    tags = set(PRESENT.values())\n"
+        "    tags.update(key for key in PRESENT if ':' in key)\n"
+        "    needle = args[-1] if args[-1] and not args[-1].startswith('{{') else ''\n"
+        "    for tag in sorted(tags):\n"
+        "        if not needle or needle in tag or tag.startswith(needle):\n"
+        "            print(tag)\n"
         "    raise SystemExit(0)\n"
         "if args[:1] == ['run']:\n"
         "    sys.stdout.write(RUN_TEXT)\n"
@@ -220,7 +222,7 @@ def test_abaqus_cae_fails_without_local_salome_image(tmp_path, monkeypatch) -> N
     monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
     outcome = probe_abaqus_cae({})
     assert outcome["status"] == "capability-failed"
-    assert "not present locally" in outcome["message"]
+    assert "no local SALOME image" in outcome["message"]
 
 
 def test_enovia_joins_lfs_psql_erpnext_and_nextcloud_php(tmp_path, monkeypatch) -> None:
@@ -260,4 +262,29 @@ def test_netvibes_uses_local_opensearch_tag_without_pull(tmp_path, monkeypatch) 
     assert outcome["status"] == "covered"
     assert "2.19.6" in outcome["message"]
     assert probe_exalead({})["status"] == "covered"
+
+
+def test_abaqus_cae_accepts_any_local_salome_named_image(tmp_path, monkeypatch) -> None:
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    executable(
+        binary_dir / "salome",
+        'exec sudo docker run --rm ghcr.io/codeaster/salome-meca:latest "$@"\n',
+    )
+    executable(
+        binary_dir / "as_run",
+        'exec sudo docker run --rm negetem/codeaster:latest as_run "$@"\n',
+    )
+    _docker_script(
+        tmp_path,
+        present={
+            "tefe/salome-meca:latest": "tefe/salome-meca:latest",
+            "negetem/codeaster:latest": "negetem/codeaster:latest",
+        },
+        run_text="Usage: as_run action\n  Functions :\n",
+    )
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    outcome = probe_abaqus_cae({})
+    assert outcome["status"] == "covered"
+    assert "tefe/salome-meca" in outcome["message"]
 

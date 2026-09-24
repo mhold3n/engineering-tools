@@ -569,14 +569,20 @@
       "id": "engineering-tools",
       "name": "engineering-tools",
       "source": {
-        "state": "source-unresolved",
-        "homepage": null,
-        "repository": null
+        "state": "resolved",
+        "homepage": "https://github.com/mhold3n/engineering-tools",
+        "repository": "https://github.com/mhold3n/engineering-tools",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/mhold3n/engineering-tools",
+          "commit": "engineering-tools"
+        }
       },
-      "license": null,
+      "license": "MIT",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "engineering-tools"
+        "state": "implemented",
+        "id": "engineering-tools",
+        "kind": "first-party-module"
       },
       "execution": {
         "type": "other",
@@ -585,7 +591,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "engineering-tools-hello"
       },
       "expected_signal": {
@@ -2567,7 +2573,7 @@
         "engineering-tools"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "3dexperience-capability"
       },
       "expected_signal": {

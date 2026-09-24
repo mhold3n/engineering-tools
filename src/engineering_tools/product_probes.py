@@ -59,9 +59,12 @@ def make_reuse_component_product_probe(
 
 
 # Single-component mappings that reuse the component hello row.
-# Deferred: 3DEXPERIENCE platform, microscopic CFD (Fluid Dynamics Engineer),
-# and every multi-component mapping.
+# 3DEXPERIENCE reuses the engineering-tools CLI kernel, not a GUI composition.
 _REUSE_COMPONENT_BY_PROBE: dict[str, tuple[str, str]] = {
+    "3dexperience-capability": (
+        "engineering-tools",
+        "3DEXPERIENCE→engineering-tools CLI kernel (not GUI)",
+    ),
     "catia-capability": ("freecad", "CATIA→FreeCAD"),
     "solidworks-capability": ("freecad", "SolidWorks→FreeCAD"),
     "draftsight-capability": ("librecad", "DraftSight→LibreCAD"),

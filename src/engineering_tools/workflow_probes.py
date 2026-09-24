@@ -331,6 +331,16 @@ def _present_image(requested: str, docker: list[str]) -> str | None:
     return None
 
 
+def _present_named_image(docker: list[str], needle: str) -> str | None:
+    """Return any local image whose name contains needle. Never pull."""
+    listed = _run([*docker, "images", "--format", "{{.Repository}}:{{.Tag}}"], timeout=20)
+    for line in (listed.stdout or "").splitlines():
+        tag = line.strip()
+        if needle.lower() in tag.lower() and not tag.endswith(":<none>"):
+            return tag
+    return None
+
+
 def _docker_run(docker: list[str], extra: list[str], timeout: int = 60) -> subprocess.CompletedProcess[str]:
     return _run([*docker, "run", "--rm", "--pull=never", *extra], timeout=timeout)
 
@@ -386,11 +396,14 @@ def probe_abaqus_cae(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not docker:
         return _failed(label, "docker is required")
     requested = _image_from_wrapper(("salome",))
-    if not requested:
-        return _failed(label, "salome wrapper does not name a docker image")
-    present = _present_image(requested, docker)
+    present = _present_image(requested, docker) if requested else None
+    if present is None:
+        present = _present_named_image(docker, "salome")
     if not present:
-        return _failed(label, f"SALOME-Meca image {requested} is not present locally")
+        return _failed(
+            label,
+            f"no local SALOME image (wrapper {requested!r}; GHCR latest requires auth and was not pulled)",
+        )
     usage = _code_aster_usage()
     if usage is None:
         return _failed(label, "Code_Aster as_run --help did not run on a local image")
