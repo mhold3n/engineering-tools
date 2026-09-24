@@ -9,6 +9,14 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from .workflow_probes import (
+    probe_biovia_discovery,
+    probe_biovia_materials,
+    probe_delmia_quintiq,
+    probe_delmia_robotics,
+    probe_solidworks_pdm,
+)
+
 
 def make_reuse_component_product_probe(
     component_id: str,
@@ -144,3 +152,8 @@ PRODUCT_PROBES["geovia-whittle-capability"] = _numeric_product_probe(
 PRODUCT_PROBES["geovia-surpac-capability"] = _numeric_product_probe(
     _surpac_ok, label="GEOVIA Surpac"
 )
+PRODUCT_PROBES["solidworks-pdm-capability"] = probe_solidworks_pdm
+PRODUCT_PROBES["delmia-quintiq-capability"] = probe_delmia_quintiq
+PRODUCT_PROBES["delmia-robotics-capability"] = probe_delmia_robotics
+PRODUCT_PROBES["biovia-materials-studio-capability"] = probe_biovia_materials
+PRODUCT_PROBES["biovia-discovery-studio-capability"] = probe_biovia_discovery

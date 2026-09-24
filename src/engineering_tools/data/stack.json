@@ -3071,7 +3071,7 @@
         "dvc"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "solidworks-pdm-capability"
       },
       "expected_signal": {
@@ -3120,7 +3120,7 @@
         "pyomo"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "delmia-quintiq-capability"
       },
       "expected_signal": {
@@ -3138,7 +3138,7 @@
         "gazebo"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "delmia-robotics-capability"
       },
       "expected_signal": {
@@ -3257,7 +3257,7 @@
         "quantum-espresso"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "biovia-materials-studio-capability"
       },
       "expected_signal": {
@@ -3275,7 +3275,7 @@
         "autodock-vina"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "biovia-discovery-studio-capability"
       },
       "expected_signal": {

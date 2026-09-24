@@ -64,7 +64,7 @@ does not certify VM installs.
 
 `hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
 
-Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-component product mappings reuse component hello results when those components are `ok`. The OpenFOAM component probe meshes the cavity and runs a short `icoFoam` solve; that result covers SIMULIA Fluid Dynamics Engineer. GEOVIA Surpac, MineSched, and Whittle run in-process numeric checks. Pyomo hello solves a one-variable LP when `glpk`, `cbc`, or HiGHS is installed. The 3DEXPERIENCE platform mapping and the remaining multi-tool workflows stay `probe-unimplemented`.
+Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-component product mappings reuse component hello results when those components are `ok`. The OpenFOAM component probe meshes the cavity and runs a short `icoFoam` solve; that result covers SIMULIA Fluid Dynamics Engineer. GEOVIA Surpac, MineSched, and Whittle run in-process numeric checks. Pyomo hello solves a one-variable LP when `glpk`, `cbc`, or HiGHS is installed. SOLIDWORKS PDM, DELMIA Quintiq, DELMIA Robotics, and the two BIOVIA studio mappings run a joint local workflow. SALOME, Code_Aster, Nextcloud, and OpenSearch stay `probe-unimplemented` because their wrappers start a container session. The 3DEXPERIENCE platform mapping stays unimplemented.
 
 ### Hello samples
 
