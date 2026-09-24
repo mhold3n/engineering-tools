@@ -10,11 +10,17 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from .workflow_probes import (
+    probe_abaqus_cae,
     probe_biovia_discovery,
     probe_biovia_materials,
+    probe_catia_electrical,
     probe_delmia_quintiq,
     probe_delmia_robotics,
+    probe_enovia,
+    probe_exalead,
+    probe_netvibes,
     probe_solidworks_pdm,
+    probe_tosca,
 )
 
 
@@ -157,3 +163,9 @@ PRODUCT_PROBES["delmia-quintiq-capability"] = probe_delmia_quintiq
 PRODUCT_PROBES["delmia-robotics-capability"] = probe_delmia_robotics
 PRODUCT_PROBES["biovia-materials-studio-capability"] = probe_biovia_materials
 PRODUCT_PROBES["biovia-discovery-studio-capability"] = probe_biovia_discovery
+PRODUCT_PROBES["catia-electrical-ecad-interaction-capability"] = probe_catia_electrical
+PRODUCT_PROBES["tosca-capability"] = probe_tosca
+PRODUCT_PROBES["abaqus-cae-capability"] = probe_abaqus_cae
+PRODUCT_PROBES["enovia-capability"] = probe_enovia
+PRODUCT_PROBES["netvibes-capability"] = probe_netvibes
+PRODUCT_PROBES["exalead-capability"] = probe_exalead

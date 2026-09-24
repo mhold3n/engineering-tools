@@ -2712,7 +2712,7 @@
         "code-aster"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "abaqus-cae-capability"
       },
       "expected_signal": {
@@ -2921,7 +2921,7 @@
         "code-aster"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "tosca-capability"
       },
       "expected_signal": {
@@ -2971,7 +2971,7 @@
         "freecad"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "catia-electrical-ecad-interaction-capability"
       },
       "expected_signal": {
@@ -3054,7 +3054,7 @@
         "erpnext"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "enovia-capability"
       },
       "expected_signal": {
@@ -3206,7 +3206,7 @@
         "apache-superset"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "netvibes-capability"
       },
       "expected_signal": {
@@ -3223,7 +3223,7 @@
         "apache-superset"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "exalead-capability"
       },
       "expected_signal": {

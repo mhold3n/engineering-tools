@@ -1,14 +1,19 @@
 """Joint product probes for multi-component mappings.
 
 Each probe runs only after hello has already marked every required component ok.
-The check itself has to exercise the tools together. Docker session wrappers
-(SALOME, Code_Aster, Nextcloud, OpenSearch) are intentionally absent: invoking
-them starts a container that does not exit, so they stay unimplemented.
+The check itself has to exercise the tools together.
+
+Container-backed locators are never invoked as written: those wrappers often
+start a session or pull a missing tag. Probes parse the wrapper image, use a
+tag already present on the host, and `docker run --pull=never` with a command
+that exits.
 """
 
 from __future__ import annotations
 
 import os
+import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -249,3 +254,253 @@ def probe_biovia_discovery(results: dict[str, dict[str, Any]]) -> dict[str, Any]
     if dock.returncode != 0 or "receptor" not in usage:
         return _failed(label, "vina --help failed")
     return _covered(label, "RDKit CCO, GROMACS version, Vina usage")
+
+
+_IMAGE_VALUE_FLAGS = {
+    "-v",
+    "-w",
+    "-e",
+    "-u",
+    "-p",
+    "--volume",
+    "--workdir",
+    "--env",
+    "--user",
+    "--publish",
+    "--name",
+    "--entrypoint",
+    "--network",
+    "--add-host",
+}
+
+
+def _docker_argv() -> list[str] | None:
+    """Return docker CLI argv, using passwordless sudo when the socket needs it."""
+    docker = shutil.which("docker")
+    if not docker:
+        return None
+    probe = _run([docker, "image", "ls"], timeout=15)
+    if probe.returncode == 0:
+        return [docker]
+    sudo = shutil.which("sudo")
+    if sudo:
+        return [sudo, "-n", docker]
+    return [docker]
+
+
+def _image_from_wrapper(binary_names: tuple[str, ...]) -> str | None:
+    """Read the first docker-run image name out of an etools-bin wrapper."""
+    for name in binary_names:
+        path = shutil.which(name)
+        if not path:
+            continue
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+        match = re.search(r"docker\s+run\b[^\n]*", text)
+        if not match:
+            continue
+        cleaned = match.group(0).replace('"', "").replace("'", "")
+        try:
+            tokens = shlex.split(cleaned, posix=True)
+        except ValueError:
+            tokens = cleaned.split()
+        skip_next = False
+        for token in tokens[2:]:
+            if skip_next:
+                skip_next = False
+                continue
+            if token in _IMAGE_VALUE_FLAGS:
+                skip_next = True
+                continue
+            if token.startswith("-"):
+                continue
+            return token
+    return None
+
+
+def _present_image(requested: str, docker: list[str]) -> str | None:
+    """Return requested image if local, else another tag of the same repository. Never pull."""
+    inspect = _run([*docker, "image", "inspect", requested], timeout=20)
+    if inspect.returncode == 0:
+        return requested
+    repo = requested.rsplit(":", 1)[0]
+    listed = _run([*docker, "images", "--format", "{{.Repository}}:{{.Tag}}", repo], timeout=20)
+    for line in (listed.stdout or "").splitlines():
+        tag = line.strip()
+        if tag and not tag.endswith(":<none>"):
+            return tag
+    return None
+
+
+def _docker_run(docker: list[str], extra: list[str], timeout: int = 60) -> subprocess.CompletedProcess[str]:
+    return _run([*docker, "run", "--rm", "--pull=never", *extra], timeout=timeout)
+
+
+def probe_catia_electrical(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Join KiCad CLI, KiCadStepUp tree, and FreeCADCmd in one check."""
+    del results
+    label = "CATIA electrical→KiCad+KiCadStepUp+FreeCAD"
+    kicad = shutil.which("kicad-cli") or shutil.which("kicad")
+    freecad = shutil.which("FreeCADCmd") or shutil.which("freecad")
+    if not kicad or not freecad:
+        return _failed(label, "kicad-cli and FreeCADCmd are required")
+    stepup = _receipt_locator("kicad-stepup")
+    if not stepup:
+        return _failed(label, "kicad-stepup receipt is missing")
+    root = Path(stepup)
+    marker = next((root / name for name in ("InitGui.py", "kicadStepUpCMD.py", "README.md") if (root / name).is_file()), None)
+    if marker is None:
+        return _failed(label, f"KiCadStepUp files missing under {stepup}")
+    try:
+        version = _run([kicad, "version"] if Path(kicad).name == "kicad-cli" else [kicad, "--version"], timeout=30)
+        cad = _run([freecad, "-c", "print(42)"], timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return _failed(label, str(exc))
+    kicad_out = (version.stdout or version.stderr or "").strip().splitlines()
+    if version.returncode != 0 or not kicad_out:
+        return _failed(label, "kicad version failed")
+    if cad.returncode != 0 or "42" not in (cad.stdout or ""):
+        return _failed(label, "FreeCADCmd -c failed")
+    return _covered(label, f"kicad {kicad_out[0]}; {marker.name}; FreeCADCmd 42")
+
+
+def probe_tosca(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Load TopOpt.jl and print Code_Aster as_run usage from a local image."""
+    del results
+    label = "Tosca→TopOpt.jl+Code_Aster"
+    from .hello_probes import probe_topopt_jl
+
+    topopt = probe_topopt_jl()
+    if topopt.get("status") != "ok":
+        return _failed(label, f"TopOpt.jl {topopt.get('status')}: {topopt.get('message')}")
+    usage = _code_aster_usage()
+    if usage is None:
+        return _failed(label, "Code_Aster as_run --help did not run on a local image")
+    return _covered(label, f"{topopt.get('message')}; as_run usage")
+
+
+def probe_abaqus_cae(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Require a local SALOME-Meca image and Code_Aster as_run usage."""
+    del results
+    label = "Abaqus CAE→SALOME-Meca+Code_Aster"
+    docker = _docker_argv()
+    if not docker:
+        return _failed(label, "docker is required")
+    requested = _image_from_wrapper(("salome",))
+    if not requested:
+        return _failed(label, "salome wrapper does not name a docker image")
+    present = _present_image(requested, docker)
+    if not present:
+        return _failed(label, f"SALOME-Meca image {requested} is not present locally")
+    usage = _code_aster_usage()
+    if usage is None:
+        return _failed(label, "Code_Aster as_run --help did not run on a local image")
+    return _covered(label, f"salome image {present}; as_run usage")
+
+
+def _code_aster_usage() -> str | None:
+    docker = _docker_argv()
+    if not docker:
+        return None
+    requested = _image_from_wrapper(("as_run", "aster")) or "negetem/codeaster:latest"
+    present = _present_image(requested, docker)
+    if not present:
+        return None
+    try:
+        help_proc = _docker_run(docker, ["-w", "/opt/aster", present, "--help"], timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    text = (help_proc.stdout or "") + (help_proc.stderr or "")
+    if "as_run" not in text and "Functions" not in text:
+        return None
+    return text
+
+
+def probe_enovia(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Join Git LFS, psql, ERPNext tree, and Nextcloud php -v on a local image."""
+    del results
+    label = "ENOVIA→Git LFS+PostgreSQL+Nextcloud+ERPNext"
+    git_lfs = shutil.which("git-lfs")
+    psql = shutil.which("psql")
+    if not git_lfs or not psql:
+        return _failed(label, "git-lfs and psql are required")
+    erpnext = _receipt_locator("erpnext")
+    if not erpnext:
+        return _failed(label, "erpnext receipt is missing")
+    root = Path(erpnext)
+    marker = next((root / rel for rel in ("erpnext/__init__.py", "erpnext/hooks.py") if (root / rel).is_file()), None)
+    if marker is None:
+        return _failed(label, f"ERPNext files missing under {erpnext}")
+    docker = _docker_argv()
+    if not docker:
+        return _failed(label, "docker is required")
+    requested = _image_from_wrapper(("nextcloud",))
+    if not requested:
+        return _failed(label, "nextcloud wrapper does not name a docker image")
+    present = _present_image(requested, docker)
+    if not present:
+        return _failed(label, f"Nextcloud image {requested} is not present locally")
+    try:
+        lfs = _run([git_lfs, "version"], timeout=20)
+        postgres = _run([psql, "--version"], timeout=20)
+        php = _docker_run(docker, ["--entrypoint", "php", present, "-v"], timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return _failed(label, str(exc))
+    if lfs.returncode != 0 or "git-lfs" not in ((lfs.stdout or "") + (lfs.stderr or "")).lower():
+        return _failed(label, "git-lfs version failed")
+    if postgres.returncode != 0 or "PostgreSQL" not in (postgres.stdout or ""):
+        return _failed(label, "psql --version failed")
+    if php.returncode != 0 or "PHP" not in ((php.stdout or "") + (php.stderr or "")):
+        return _failed(label, "nextcloud php -v failed")
+    return _covered(label, f"git-lfs; {postgres.stdout.strip().splitlines()[0]}; {marker.name}; PHP in {present}")
+
+
+def _opensearch_and_superset(label: str) -> dict[str, Any]:
+    docker = _docker_argv()
+    if not docker:
+        return _failed(label, "docker is required")
+    requested = _image_from_wrapper(("opensearch",))
+    if not requested:
+        return _failed(label, "opensearch wrapper does not name a docker image")
+    present = _present_image(requested, docker)
+    if not present:
+        return _failed(label, f"OpenSearch image {requested} is not present locally")
+    env = _pythonpath(_receipt_locator("apache-superset"))
+    try:
+        version = _docker_run(
+            docker,
+            [
+                "--entrypoint",
+                "bash",
+                present,
+                "-lc",
+                "/usr/share/opensearch/bin/opensearch --version",
+            ],
+            timeout=60,
+        )
+        superset = _run(
+            [sys.executable, "-c", "import superset; print(getattr(superset, '__version__', 'ok'))"],
+            env=env,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return _failed(label, str(exc))
+    banner = (version.stdout or "") + (version.stderr or "")
+    if "Version:" not in banner:
+        return _failed(label, f"opensearch --version failed on {present}")
+    if superset.returncode != 0:
+        detail = (superset.stderr or superset.stdout or "superset import failed").strip().splitlines()
+        return _failed(label, detail[-1] if detail else "superset import failed")
+    version_line = next((line.strip() for line in banner.splitlines() if "Version:" in line), "Version")
+    return _covered(label, f"{version_line} via {present}; superset import")
+
+
+def probe_netvibes(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """OpenSearch --version on a local image and import Apache Superset."""
+    del results
+    return _opensearch_and_superset("Netvibes→OpenSearch+Superset")
+
+
+def probe_exalead(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Same OpenSearch+Superset check as Netvibes; Exalead maps to the same pair."""
+    del results
+    return _opensearch_and_superset("Exalead→OpenSearch+Superset")
