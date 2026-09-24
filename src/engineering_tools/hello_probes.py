@@ -92,12 +92,34 @@ def probe_freecad(project: str | Path | None = None) -> dict[str, Any]:
     return _result("freecad", "FreeCAD", status, message, locator=command, workdir=work, outputs=outputs, credit=FREECAD_CREDIT, returncode=proc.returncode)
 
 
-def _openfoam_command() -> tuple[list[str], str] | None:
-    if block_mesh := shutil.which("blockMesh"):
-        return [block_mesh], block_mesh
+def _openfoam_tool(name: str) -> tuple[list[str], str] | None:
+    """Resolve a direct OpenFOAM binary, or foamExec wrapping that application name."""
+    if found := shutil.which(name):
+        return [found], found
     if foam_exec := shutil.which("foamExec"):
-        return [foam_exec, "blockMesh"], f"{foam_exec} blockMesh"
+        return [foam_exec, name], f"{foam_exec} {name}"
     return None
+
+
+def _openfoam_command() -> tuple[list[str], str] | None:
+    """blockMesh locator used by `etools run --tool openfoam`."""
+    return _openfoam_tool("blockMesh")
+
+
+def _run_openfoam(command: list[str], work: Path) -> subprocess.CompletedProcess[str]:
+    """Run one OpenFOAM tool, sourcing the distro bashrc when it is installed."""
+    bashrc_candidates = (
+        "/usr/share/openfoam/etc/bashrc",
+        "/opt/openfoam/etc/bashrc",
+        "/usr/lib/openfoam/openfoam1912/etc/bashrc",
+    )
+    bashrc = next((path for path in bashrc_candidates if Path(path).is_file()), None)
+    if bashrc:
+        quoted = " ".join(shlex.quote(part) for part in command)
+        argv = ["bash", "-lc", f"set +u; . {shlex.quote(bashrc)}; {quoted}"]
+    else:
+        argv = command
+    return subprocess.run(argv, cwd=work, capture_output=True, text=True, timeout=180, check=False)
 
 
 def _copy_resource_tree(source, destination: Path) -> None:
@@ -110,46 +132,108 @@ def _copy_resource_tree(source, destination: Path) -> None:
             target.write_bytes(child.read_bytes())
 
 
+def _velocity_field(work: Path) -> Path | None:
+    """Return the first written velocity field after time 0."""
+    for path in sorted(work.glob("*/U")):
+        if path.parent.name != "0" and path.is_file() and path.stat().st_size > 0:
+            return path
+    return None
+
+
 def probe_openfoam(project: str | Path | None = None) -> dict[str, Any]:
-    """Run blockMesh under the Debian/Ubuntu OpenFOAM bashrc environment when present."""
-    resolved = _openfoam_command()
-    if not resolved:
+    """Mesh the cavity, then run a short icoFoam laminar solve and keep the U field."""
+    mesh = _openfoam_tool("blockMesh")
+    if not mesh:
         return _result("openfoam", "OpenFOAM", "missing", "blockMesh or foamExec not found")
-    command, locator = resolved
+    mesh_cmd, locator = mesh
     work = _work_dir(project, "openfoam-hello", "etools-openfoam-")
     root = resources.files("engineering_tools")
     _copy_resource_tree(root / "data" / "openfoam" / "hello_cavity", work)
-    # Distro OpenFOAM requires etc/bashrc so controlDict / WM_* resolve.
-    bashrc_candidates = (
-        "/usr/share/openfoam/etc/bashrc",
-        "/opt/openfoam/etc/bashrc",
-        "/usr/lib/openfoam/openfoam1912/etc/bashrc",
-    )
-    bashrc = next((p for p in bashrc_candidates if Path(p).is_file()), None)
-    if bashrc:
-        quoted = " ".join(shlex.quote(part) for part in command)
-        shell_cmd = f"set +u; . {shlex.quote(bashrc)}; {quoted}"
-        run_argv = ["bash", "-lc", shell_cmd]
-    else:
-        run_argv = command
     try:
-        proc = subprocess.run(run_argv, cwd=work, capture_output=True, text=True, timeout=120, check=False)
+        mesh_proc = _run_openfoam(mesh_cmd, work)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return _result("openfoam", "OpenFOAM", "broken", f"OpenFOAM blockMesh failed: {exc}", locator=locator, workdir=work, credit=OPENFOAM_CREDIT)
     points = work / "constant" / "polyMesh" / "points"
-    outputs = [str(points)] if points.is_file() else []
-    if proc.returncode:
-        detail = (proc.stderr or proc.stdout or "").strip().splitlines()
-        status, message = (
+    if mesh_proc.returncode:
+        detail = (mesh_proc.stderr or mesh_proc.stdout or "").strip().splitlines()
+        return _result(
+            "openfoam",
+            "OpenFOAM",
             "broken",
-            f"OpenFOAM blockMesh failed with exit {proc.returncode}"
+            f"OpenFOAM blockMesh failed with exit {mesh_proc.returncode}"
             + (f": {detail[-1]}" if detail else ""),
+            locator=locator,
+            workdir=work,
+            credit=OPENFOAM_CREDIT,
+            returncode=mesh_proc.returncode,
         )
-    elif not points.is_file():
-        status, message = "broken", "OpenFOAM blockMesh did not create constant/polyMesh/points"
-    else:
-        status, message = "ok", f"OpenFOAM blockMesh ok via {locator}"
-    return _result("openfoam", "OpenFOAM", status, message, locator=locator, workdir=work, outputs=outputs, credit=OPENFOAM_CREDIT, returncode=proc.returncode)
+    if not points.is_file():
+        return _result(
+            "openfoam",
+            "OpenFOAM",
+            "broken",
+            "OpenFOAM blockMesh did not create constant/polyMesh/points",
+            locator=locator,
+            workdir=work,
+            credit=OPENFOAM_CREDIT,
+            returncode=mesh_proc.returncode,
+        )
+    solver = _openfoam_tool("icoFoam")
+    if not solver:
+        return _result(
+            "openfoam",
+            "OpenFOAM",
+            "broken",
+            "icoFoam or foamExec not found after blockMesh",
+            locator=locator,
+            workdir=work,
+            outputs=[str(points)],
+            credit=OPENFOAM_CREDIT,
+        )
+    solver_cmd, solver_locator = solver
+    try:
+        solve_proc = _run_openfoam(solver_cmd, work)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return _result("openfoam", "OpenFOAM", "broken", f"OpenFOAM icoFoam failed: {exc}", locator=solver_locator, workdir=work, outputs=[str(points)], credit=OPENFOAM_CREDIT)
+    velocity = _velocity_field(work)
+    outputs = [str(points)] + ([str(velocity)] if velocity else [])
+    if solve_proc.returncode:
+        detail = (solve_proc.stderr or solve_proc.stdout or "").strip().splitlines()
+        return _result(
+            "openfoam",
+            "OpenFOAM",
+            "broken",
+            f"OpenFOAM icoFoam failed with exit {solve_proc.returncode}"
+            + (f": {detail[-1]}" if detail else ""),
+            locator=solver_locator,
+            workdir=work,
+            outputs=outputs,
+            credit=OPENFOAM_CREDIT,
+            returncode=solve_proc.returncode,
+        )
+    if velocity is None or "internalField" not in velocity.read_text(encoding="utf-8", errors="replace"):
+        return _result(
+            "openfoam",
+            "OpenFOAM",
+            "broken",
+            "OpenFOAM icoFoam did not write a velocity field",
+            locator=solver_locator,
+            workdir=work,
+            outputs=outputs,
+            credit=OPENFOAM_CREDIT,
+            returncode=solve_proc.returncode,
+        )
+    return _result(
+        "openfoam",
+        "OpenFOAM",
+        "ok",
+        f"OpenFOAM icoFoam cavity ok via {solver_locator}",
+        locator=solver_locator,
+        workdir=work,
+        outputs=outputs,
+        credit=OPENFOAM_CREDIT,
+        returncode=0,
+    )
 
 
 def probe_mine_scheduling(project: str | Path | None = None) -> dict[str, Any]:
@@ -272,6 +356,72 @@ def make_pip_module_probe(component_id: str, name: str, module: str, credit: str
     return probe
 
 
+def probe_pyomo(project: str | Path | None = None) -> dict[str, Any]:
+    """Solve a one-variable LP (minimize x subject to x >= 1) with an available LP solver."""
+    credit = "Pyomo (BSD) - https://www.pyomo.org/"
+    receipt_locator = None
+    try:
+        from .verification import installation_for, load_installations
+
+        receipt = installation_for("pyomo", load_installations())
+        receipt_locator = receipt.get("locator") if receipt else None
+        if receipt_locator:
+            import sys
+
+            sys.path.insert(0, receipt_locator)
+        from pyomo.environ import ConcreteModel, Constraint, Objective, SolverFactory, Var, minimize, value
+    except ImportError:
+        return _result("pyomo", "Pyomo", "missing", "Python module 'pyomo' not importable", locator=receipt_locator, credit=credit)
+    model = ConcreteModel()
+    model.x = Var(bounds=(0, None))
+    model.floor = Constraint(expr=model.x >= 1)
+    model.objective = Objective(expr=model.x, sense=minimize)
+    solver = None
+    solver_name = None
+    for name in ("glpk", "cbc", "appsi_highs"):
+        candidate = SolverFactory(name)
+        try:
+            available = bool(candidate.available(exception_flag=False))
+        except Exception:
+            available = False
+        if available:
+            solver = candidate
+            solver_name = name
+            break
+    if solver is None:
+        return _result(
+            "pyomo",
+            "Pyomo",
+            "broken",
+            "Pyomo imported but no LP solver (glpk, cbc, or highs) is available",
+            locator=receipt_locator,
+            credit=credit,
+        )
+    try:
+        solver.solve(model, tee=False)
+        objective = float(value(model.x))
+    except Exception as exc:
+        return _result("pyomo", "Pyomo", "broken", f"Pyomo solve failed: {exc}", locator=receipt_locator, credit=credit)
+    if abs(objective - 1.0) > 1e-6:
+        return _result(
+            "pyomo",
+            "Pyomo",
+            "broken",
+            f"Pyomo tiny LP objective {objective} via {solver_name}, expected 1",
+            locator=receipt_locator,
+            credit=credit,
+        )
+    return _result(
+        "pyomo",
+        "Pyomo",
+        "ok",
+        f"Pyomo tiny LP objective 1 via {solver_name}",
+        locator=receipt_locator,
+        credit=credit,
+        returncode=0,
+    )
+
+
 def probe_topopt_jl(project: str | Path | None = None) -> dict[str, Any]:
     """Smoke-check TopOpt.jl via Julia (not a pip module)."""
     credit = "TopOpt.jl upstream"
@@ -357,7 +507,7 @@ COMPONENT_PROBES = {
     "openfoam-block-mesh": probe_openfoam,
     "first-party-mine-scheduling-model-hello": probe_mine_scheduling,
     "first-party-pit-optimization-model-hello": probe_pit_optimization,
-    "pyomo-hello": make_pip_module_probe("pyomo", "Pyomo", "pyomo", "Pyomo (BSD) - https://www.pyomo.org/"),
+    "pyomo-hello": probe_pyomo,
     "openmdao-hello": make_pip_module_probe("openmdao", "OpenMDAO", "openmdao", "OpenMDAO (Apache-2.0) - https://openmdao.org/"),
     "dvc-hello": make_binary_probe("dvc", "DVC", ("dvc",), "DVC (Apache-2.0) - https://dvc.org/"),
     "ase-hello": make_pip_module_probe("ase", "ASE", "ase", "ASE (LGPL) - https://wiki.fysik.dtu.dk/ase/"),

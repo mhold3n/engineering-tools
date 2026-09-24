@@ -2776,7 +2776,7 @@
         "openfoam"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "simulia-fluid-dynamics-engineer-capability"
       },
       "expected_signal": {
@@ -3155,7 +3155,7 @@
         "gempy"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "geovia-surpac-capability"
       },
       "expected_signal": {
@@ -3172,7 +3172,7 @@
         "first-party-mine-scheduling-model"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "geovia-minesched-capability"
       },
       "expected_signal": {
@@ -3189,7 +3189,7 @@
         "first-party-pit-optimization-model"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "geovia-whittle-capability"
       },
       "expected_signal": {
