@@ -227,21 +227,21 @@ def test_reuse_component_product_probe_covers_when_components_ok(tmp_path, monke
     assert report["status"] == "covered"
 
 
-def test_packaged_first_slice_product_probes_are_registered() -> None:
+def test_packaged_single_component_reuse_probes_are_registered() -> None:
+    """Single-component mappings reuse component hello except CFD and 3DEXPERIENCE."""
     from engineering_tools.manifest import load_manifest
     from engineering_tools.product_probes import PRODUCT_PROBES
 
-    data = load_manifest()
-    slice1 = {
-        "catia-capability",
-        "solidworks-capability",
-        "draftsight-capability",
-        "solidworks-simulation-capability",
-        "abaqus-style-simpler-solver-workflows-capability",
-        "dymola-capability",
+    deferred = {
+        "3dexperience-capability",
+        "simulia-fluid-dynamics-engineer-capability",
     }
+    data = load_manifest()
     for mapping in data["mappings"]:
         probe = mapping["probe"]
-        if probe["id"] in slice1:
-            assert probe["state"] == "implemented"
-            assert probe["id"] in PRODUCT_PROBES
+        if len(mapping["components"]) != 1 or probe["id"] in deferred:
+            assert probe["state"] == "probe-unimplemented"
+            assert probe["id"] not in PRODUCT_PROBES
+            continue
+        assert probe["state"] == "implemented"
+        assert probe["id"] in PRODUCT_PROBES
