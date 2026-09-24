@@ -2583,7 +2583,7 @@
         "freecad"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "catia-capability"
       },
       "expected_signal": {
@@ -2599,7 +2599,7 @@
         "freecad"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "solidworks-capability"
       },
       "expected_signal": {
@@ -2647,7 +2647,7 @@
         "openmodelica"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "dymola-capability"
       },
       "expected_signal": {
@@ -2663,7 +2663,7 @@
         "librecad"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "draftsight-capability"
       },
       "expected_signal": {
@@ -2744,7 +2744,7 @@
         "calculix"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "abaqus-style-simpler-solver-workflows-capability"
       },
       "expected_signal": {
@@ -2760,7 +2760,7 @@
         "calculix"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "solidworks-simulation-capability"
       },
       "expected_signal": {

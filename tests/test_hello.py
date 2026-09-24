@@ -193,3 +193,55 @@ def test_audited_inventory_without_full_coverage_is_incomplete(tmp_path, monkeyp
     assert report["products"][0]["status"] == "probe-unimplemented"
     assert report["status"] == "incomplete"
     assert report["ok"] is False
+
+
+def test_reuse_component_product_probe_covers_when_components_ok(tmp_path, monkeypatch):
+    from engineering_tools.product_probes import make_reuse_component_product_probe
+
+    write_receipts(tmp_path, monkeypatch, "first", "second")
+    monkeypatch.setattr(
+        hello_module,
+        "COMPONENT_PROBES",
+        {
+            "probe-first": lambda project=None: probe_result("first", "ok"),
+            "probe-second": lambda project=None: probe_result("second", "ok"),
+        },
+    )
+    monkeypatch.setattr(
+        hello_module,
+        "PRODUCT_PROBES",
+        {
+            "mapping-ok": make_reuse_component_product_probe(
+                "first", product_label="Closed→Open"
+            )
+        },
+    )
+    report = run_hello(
+        manifest_path=write_reduced_manifest(
+            tmp_path, inventory_state="audited", mapping_probe_state="implemented"
+        )
+    )
+    assert report["products"][0]["status"] == "covered"
+    assert "reused hello" in report["products"][0]["message"]
+    assert report["ok"] is True
+    assert report["status"] == "covered"
+
+
+def test_packaged_first_slice_product_probes_are_registered() -> None:
+    from engineering_tools.manifest import load_manifest
+    from engineering_tools.product_probes import PRODUCT_PROBES
+
+    data = load_manifest()
+    slice1 = {
+        "catia-capability",
+        "solidworks-capability",
+        "draftsight-capability",
+        "solidworks-simulation-capability",
+        "abaqus-style-simpler-solver-workflows-capability",
+        "dymola-capability",
+    }
+    for mapping in data["mappings"]:
+        probe = mapping["probe"]
+        if probe["id"] in slice1:
+            assert probe["state"] == "implemented"
+            assert probe["id"] in PRODUCT_PROBES

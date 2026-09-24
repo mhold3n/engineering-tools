@@ -64,7 +64,7 @@ does not certify VM installs.
 
 `hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
 
-Packaged inventory is audited, so `inventory-unfrozen` is cleared. Default `hello` still exits nonzero (`incomplete`) until product capability probes cover mappings. This is completion evidence, not optional-package filtering. OpenFOAM `blockMesh` can prove OpenFOAM component health; it cannot cover SIMULIA Fluid Dynamics Engineer. CFD coverage requires microscopic solver execution, field output, and numerical sanity check.
+Packaged inventory is audited, so `inventory-unfrozen` is cleared. Default `hello` still exits nonzero (`incomplete`) until remaining product capability probes cover mappings. Slice 1 (CATIA/SolidWorks/DraftSight/Dymola/simple Abaqus-style Simulation) reuses component hello results when those components are `ok` — see `docs/superpowers/specs/2026-09-23-product-capability-probes-slice1-design.md`. OpenFOAM `blockMesh` can prove OpenFOAM component health; it cannot cover SIMULIA Fluid Dynamics Engineer. CFD coverage requires microscopic solver execution, field output, and numerical sanity check.
 
 ### Hello samples
 
