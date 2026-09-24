@@ -6,13 +6,12 @@ import subprocess
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from .hello_probes import COMPONENT_PROBES
 from .manifest import ManifestError, load_manifest, manifest_digest
+from .product_probes import PRODUCT_PROBES
 from .verification import installation_for, load_installations, write_hello_report
-
-PRODUCT_PROBES: dict[str, Callable[[dict[str, dict[str, Any]]], dict[str, Any]]] = {}
 
 
 def _created() -> str:
