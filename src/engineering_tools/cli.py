@@ -216,7 +216,16 @@ def _cmd_scenario(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             return 2
-    result = run_damper_keyway(root)
+    from .c_cli import parse_coupling_flags
+
+    req = parse_coupling_flags(
+        coupling=getattr(args, "coupling", None),
+        fsi=bool(getattr(args, "fsi", False)),
+    )
+    if req.status == "broken":
+        print(req.detail, file=sys.stderr)
+        return 1
+    result = run_damper_keyway(root, coupling=req.token)
     append_job(
         root,
         tool="damper-keyway",
@@ -386,6 +395,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scenario.add_argument("name", help="Scenario id (damper-keyway)")
     scenario.add_argument("--project", default=None, help="Project path (default: cwd if it is a project)")
+    scenario.add_argument("--coupling", default=None, help="C analysis depth (c)")
+    scenario.add_argument("--fsi", action="store_true", help="Alias for --coupling c")
     scenario.add_argument("--json", action="store_true", help="Print JSON result")
     scenario.set_defaults(func=_cmd_scenario)
 

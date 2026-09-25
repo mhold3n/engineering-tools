@@ -63,7 +63,7 @@ def _pressure_field(work: Path) -> Path | None:
     return None
 
 
-def run_damper_keyway(project: str | Path) -> dict[str, Any]:
+def run_damper_keyway(project: str | Path, coupling: str | None = None) -> dict[str, Any]:
     """Run CAD, pass-1 FEA, CFD, pass-2 wall-Pa FEA, and A/B gates.
 
     probes.json is whatever FreeCAD wrote. It is checked against params and not rewritten.
