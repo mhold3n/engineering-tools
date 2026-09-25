@@ -120,6 +120,32 @@ def _patch_samples(monkeypatch: pytest.MonkeyPatch, probes: dict) -> None:
     monkeypatch.setattr("engineering_tools.c_adapter_openfoam.sample_c_probes", _sample)
 
 
+_C_SESSION_ARTIFACT_KEYS = frozenset(
+    {"status", "steps", "probes", "parity", "snapshot_digest", "backend", "c_ok"}
+)
+
+
+def test_c_session_json_persists_artifact_fields(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reviewer lock: c-session.json always exposes the C artifact field set."""
+    from engineering_tools.c_facade import run_c_fsi
+
+    _c_tools(tmp_path, monkeypatch)
+    ab = tmp_path / "ab"
+    _ab_snapshot_source(ab)
+    _patch_samples(monkeypatch, _matching_probes())
+    out = tmp_path / "c-fsi"
+    run_c_fsi(ab_dir=ab, out=out, params=load_params())
+    persisted = json.loads((out / "c-session.json").read_text(encoding="utf-8"))
+    assert set(persisted) >= _C_SESSION_ARTIFACT_KEYS
+    assert persisted["backend"] == "precice"
+    assert isinstance(persisted["steps"], list)
+    assert isinstance(persisted["probes"], dict)
+    assert isinstance(persisted["parity"], list)
+    assert isinstance(persisted["snapshot_digest"], str)
+    assert isinstance(persisted["status"], str)
+    assert isinstance(persisted["c_ok"], bool)
+
+
 def test_run_c_fsi_persists_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from engineering_tools.c_facade import run_c_fsi
 
