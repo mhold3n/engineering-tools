@@ -9,6 +9,7 @@ it never reads an on-disk precice-config.xml as input.
 from __future__ import annotations
 
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
@@ -92,3 +93,25 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def run_step(config_path: Path, step: int) -> bool:
+    """Launch one preCICE driver invocation for coupling index `step`.
+
+    Agents: this is the only first-party place that executes the `precice`
+    binary. The façade calls it; damper_scenario must not. The CI fake
+    ignores `step` and exits 0 when given the config path. A non-zero exit
+    is a failed coupling window (the façade marks the session broken).
+    """
+    del step  # The driver reads windows from the generated config.
+    try:
+        proc = subprocess.run(
+            ["precice", str(config_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return proc.returncode == 0

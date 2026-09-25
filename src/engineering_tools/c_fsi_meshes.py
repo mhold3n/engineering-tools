@@ -5,13 +5,17 @@ in `damper_cfd`) and B's four-brick sandwich (`write_solid_inp` in
 `damper_fea`). Do not call those writers from here.
 
 Geometry:
-- Solid: one C3D8 through the housing wall. Inner face (NSET `interface`)
-  sits at x = housing_id_mm/2. Outer face sits at x = housing_od_mm/2.
-  CalculiX coordinates stay in the CAD millimetre frame (consistent with MPa).
+- Solid: one C3D8 through the housing wall on the chamber_wall side (−X).
+  Inner face (NSET `interface`) sits at x = -housing_id_mm/2. Outer face
+  sits at x = -housing_od_mm/2. CalculiX coordinates stay in the CAD
+  millimetre frame (consistent with MPa). Element connectivity is swapped
+  versus node-id order so x still increases along the first edge (positive
+  Jacobian): global nodes 1,4,8,5 remain the interface.
 - Fluid: one hex blockMesh from -housing_id/2 to +housing_id/2 (x and y),
   z spans the chamber length, all converted to metres in blockMeshDict.
-  The moving wall is the +X patch, the same plane as the solid inner face,
-  and that patch is named `interface`. A `lid` patch is included on +Z.
+  The moving wall is the −X patch, the same plane as chamber_wall and the
+  solid inner face, and that patch is named `interface`. A `lid` patch is
+  included on +Z. The +X housing-ID plane is only a fixed wall.
 - Probe map: `canonical_xyz_m` does not read mesh nodes. Wall IDs copy
   `chamber_wall` (the −X bore sample) and the key ID copies `keyway_root`,
   both via `probes_from_params` then `mm_to_m`.
@@ -34,14 +38,24 @@ _WALL_PROBE_IDS: tuple[str, ...] = (
 
 
 def interface_node_ids() -> tuple[int, int, int, int]:
-    """Node ids on the solid housing-ID face (the shared FSI wall).
+    """Node ids on the solid chamber_wall face (the shared FSI wall).
 
     Single-element numbering, fixed for every params pin:
-    1 (y−, z−), 4 (y+, z−), 8 (y+, z+), 5 (y−, z+) at x = housing_id_mm/2.
-    Housing-OD nodes 2, 3, 7, 6 are not on the interface.
+    1 (y−, z−), 4 (y+, z−), 8 (y+, z+), 5 (y−, z+) at x = -housing_id_mm/2.
+    Housing-OD nodes 2, 3, 7, 6 sit further −X and are not on the interface.
     This is not B's `_nid` sandwich numbering.
     """
     return (1, 4, 8, 5)
+
+
+def interface_patch_center_m(params: dict[str, Any]) -> list[float]:
+    """Centre of the −X `interface` patch, metres, equal to chamber_wall.
+
+    Agents: do not use the hex cell centre (the origin). That point is a
+    bore radius away from the named wall and fails geometric_tolerance_m.
+    """
+    half_id_m = float(params["housing_id_mm"]) / 2000.0
+    return [-half_id_m, 0.0, 0.0]
 
 
 def canonical_xyz_m(params: dict[str, Any]) -> dict[str, list[float]]:
@@ -68,12 +82,15 @@ def _mm(params: dict[str, Any], key: str) -> float:
     return value
 
 
-def write_c_solid_inp(params: dict[str, Any], path: Path) -> None:
-    """Write one C3D8 whose inner face is the housing-ID interface.
+def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: float | None = None) -> None:
+    """Write one C3D8 whose inner face is the chamber_wall (−X) interface.
 
     y spans ±key_width/2 and z spans ±key_length/2 so the hex has volume.
-    OD nodes are held (1–3). Interface nodes are free; traction is not
-    invented here. Units in the deck are millimetres and MPa.
+    OD nodes are held (1–3). Interface nodes are free. Units in the deck
+    are millimetres and MPa. When wall_pressure_pa is set, *DLOAD applies
+    that B wall pressure (Pa converted to MPa) on the interface face so a
+    static step has a nonzero u. Do not invent a displacement in the adapter
+    if this load still falls under the motion floor; that is calibration.
     """
     x_id = _mm(params, "housing_id_mm") / 2.0
     x_od = _mm(params, "housing_od_mm") / 2.0
@@ -83,32 +100,40 @@ def write_c_solid_inp(params: dict[str, Any], path: Path) -> None:
     hz = _mm(params, "key_length_mm") / 2.0
     youngs = float(params["youngs_mpa"])
     poisson = float(params["poisson"])
-    # Corner order matches CalculiX C3D8: 1-2-3-4 at z−, 5-6-7-8 at z+.
-    # x increases from the interface (ID) to the held OD face.
+    # Node ids 1,4,8,5 stay on the interface. Their x is −ID; OD nodes are
+    # more negative. Element order below swaps those pairs so the local
+    # first edge still points toward +X.
     corners = (
-        (x_id, -hy, -hz),
-        (x_od, -hy, -hz),
-        (x_od, hy, -hz),
-        (x_id, hy, -hz),
-        (x_id, -hy, hz),
-        (x_od, -hy, hz),
-        (x_od, hy, hz),
-        (x_id, hy, hz),
+        (-x_id, -hy, -hz),
+        (-x_od, -hy, -hz),
+        (-x_od, hy, -hz),
+        (-x_id, hy, -hz),
+        (-x_id, -hy, hz),
+        (-x_od, -hy, hz),
+        (-x_od, hy, hz),
+        (-x_id, hy, hz),
     )
     node_lines = [f"{nid}, {x:.6f}, {y:.6f}, {z:.6f}" for nid, (x, y, z) in enumerate(corners, start=1)]
     iface = ", ".join(str(nid) for nid in interface_node_ids())
     # OD face nodes are the complement of the interface set.
     od_nodes = (2, 3, 6, 7)
     bounds = "\n".join(f"{nid}, 1, 3" for nid in od_nodes)
-    text = f"""** C-FSI solid: one C3D8 through the housing wall.
+    # Connectivity 2,1,4,3,6,5,8,7 puts global interface nodes on local face 4
+    # (P4). Positive pressure is compressive on that face.
+    dload = ""
+    if wall_pressure_pa is not None and wall_pressure_pa == wall_pressure_pa:
+        pressure_mpa = float(wall_pressure_pa) / 1.0e6
+        dload = f"*DLOAD\n1, P4, {pressure_mpa}\n"
+    text = f"""** C-FSI solid: one C3D8 through the housing wall on −X.
 ** Independent of the A cavity and the B sandwich.
-** interface nodes are the housing-ID face at x = housing_id_mm/2.
+** interface nodes are the chamber_wall face at x = -housing_id_mm/2.
+** *DLOAD P4 is B wall pressure in MPa so interface u is not prescribed.
 *HEADING
 c-fsi solid
 *NODE
 {chr(10).join(node_lines)}
 *ELEMENT, TYPE=C3D8, ELSET=EALL
-1, 1, 2, 3, 4, 5, 6, 7, 8
+1, 2, 1, 4, 3, 6, 5, 8, 7
 *NSET, NSET=interface
 {iface}
 *MATERIAL, NAME=Steel
@@ -119,8 +144,8 @@ c-fsi solid
 {bounds}
 *STEP
 *STATIC
-*NODE FILE
-U
+{dload}*NODE FILE
+U, RF
 *EL FILE
 S
 *END STEP
@@ -134,10 +159,12 @@ def write_c_fluid_case(params: dict[str, Any], case: Path) -> None:
 
     The dict is staged at constant/polyMesh/blockMeshDict (C's path).
     It is not A's system/blockMeshDict and it does not copy hello_cavity.
+    The OpenFOAM adapter copies it to system/blockMeshDict before blockMesh,
+    because blockMesh reads the system dict and then rewrites polyMesh.
     x and y run from -housing_id/2 to +housing_id/2; z runs the chamber
     length, centered. Coordinates in the file are metres.
-    The +X faces are the moving wall (`interface`), coplanar with the
-    solid ID face. `lid` is the +Z wall.
+    The −X faces are the moving wall (`interface`), coplanar with
+    chamber_wall. The +X face is a fixed wall. `lid` is the +Z wall.
     """
     half_id_m = _mm(params, "housing_id_mm") / 2000.0
     half_len_m = _mm(params, "chamber_length_mm") / 2000.0
@@ -145,7 +172,8 @@ def write_c_fluid_case(params: dict[str, Any], case: Path) -> None:
     y0, y1 = -half_id_m, half_id_m
     z0, z1 = -half_len_m, half_len_m
     # Vertex order matches the usual blockMesh hex (0 at xmin,ymin,zmin).
-    text = f"""/* C-FSI fluid blockMesh. Independent of write_chamber_case (A cavity). */
+    text = f"""/* C-FSI fluid blockMesh. Independent of write_chamber_case (A cavity).
+   Moving wall is the −X chamber_wall plane, not the +X housing-ID plane. */
 FoamFile
 {{
     version     2.0;
@@ -183,7 +211,7 @@ boundary
         type wall;
         faces
         (
-            (2 6 5 1)
+            (0 4 7 3)
         );
     }}
     walls
@@ -191,7 +219,7 @@ boundary
         type wall;
         faces
         (
-            (0 4 7 3)
+            (2 6 5 1)
             (1 5 4 0)
             (3 7 6 2)
             (0 3 2 1)

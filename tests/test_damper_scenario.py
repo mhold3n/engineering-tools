@@ -455,6 +455,18 @@ def test_run_damper_keyway_fails_when_both_key_stresses_zero(tmp_path, monkeypat
     assert "zero" in result["message"]
 
 
+def test_coupling_c_not_evaluated_when_freecad_missing(tmp_path, monkeypatch) -> None:
+    """A/B prerequisite failure must not start C or write c-session.json."""
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    project = init_project(tmp_path / "part", name="Damper")
+    result = run_damper_keyway(project, coupling="c")
+    assert result["ok"] is False
+    assert result["c"]["evaluated"] is False
+    assert result["c"]["reason"] == "prerequisite_not_ok"
+    session = project / "artifacts" / "scenario-damper-keyway" / "c-fsi" / "c-session.json"
+    assert not session.exists()
+
+
 def test_run_damper_keyway_fails_when_key_stress_exceeds_a_band(tmp_path, monkeypatch) -> None:
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()

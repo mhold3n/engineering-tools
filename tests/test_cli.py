@@ -91,3 +91,13 @@ exit 0
     ]
     assert jobs[-1]["command"] == "scenario"
     assert jobs[-1]["tool"] == "damper-keyway"
+
+
+def test_unknown_coupling_exits_before_scenario(tmp_path: Path, capsys) -> None:
+    """Unknown --coupling is broken before CAD or solvers run."""
+    project = tmp_path / "part"
+    project.mkdir()
+    code = main(["scenario", "damper-keyway", "--coupling", "nope", "--project", str(project)])
+    assert code == 1
+    assert "unknown coupling" in capsys.readouterr().err
+    assert not (project / "artifacts" / "scenario-damper-keyway").exists()
