@@ -64,11 +64,17 @@ def test_packaged_params_define_required_probes() -> None:
 def test_relations_pass_when_frame_and_scalars_align() -> None:
     params = load_params()
     probes = probes_from_params(params)
+    rho = float(params["fluid_density_kg_m3"])
     state = {
         name: {
             "xyz_mm": list(xyz),
-            "fea": {"von_mises": 12.0} if name in {"key_fillet", "keyway_root", "belt_land"} else None,
-            "cfd": {"p": 1000.0} if name in {"chamber_center", "chamber_wall"} else None,
+            "fea": {"von_mises": 12.0} if name in SOLID_PROBES else None,
+            "fea_mapped": {"von_mises": 12.1} if name in SOLID_PROBES else None,
+            "cfd": (
+                {"p": 1000.0, "p_kinematic": 1000.0 / rho}
+                if name in FLUID_PROBES
+                else None
+            ),
         }
         for name, xyz in probes.items()
     }
@@ -76,22 +82,81 @@ def test_relations_pass_when_frame_and_scalars_align() -> None:
         probes=probes,
         state_probes=state,
         belt_land_traction_mpa=params["belt_land_traction_mpa"],
+        mapped_deck_has_wall_cload=True,
+        mapped_frd_exists=True,
     )
     assert {row["id"]: row["ok"] for row in rows} == {
         "shared-frame": True,
         "named-coverage": True,
         "order-of-magnitude-traction": True,
+        "weak-map": True,
     }
+
+
+def test_relations_fail_when_cfd_p_is_kinematic_scale() -> None:
+    params = load_params()
+    probes = probes_from_params(params)
+    state = {
+        name: {
+            "xyz_mm": list(xyz),
+            "fea": {"von_mises": 12.0} if name in SOLID_PROBES else None,
+            "fea_mapped": {"von_mises": 12.0} if name in SOLID_PROBES else None,
+            "cfd": {"p": 0.067, "p_kinematic": 0.067} if name in FLUID_PROBES else None,
+        }
+        for name, xyz in probes.items()
+    }
+    rows = evaluate_relations(
+        probes=probes,
+        state_probes=state,
+        belt_land_traction_mpa=2.0,
+        mapped_deck_has_wall_cload=True,
+        mapped_frd_exists=True,
+    )
+    assert next(r for r in rows if r["id"] == "order-of-magnitude-traction")["ok"] is False
+
+
+def test_weak_map_fails_without_mapped_frd() -> None:
+    params = load_params()
+    probes = probes_from_params(params)
+    state = {
+        name: {
+            "xyz_mm": list(xyz),
+            "fea": {"von_mises": 12.0} if name in SOLID_PROBES else None,
+            "fea_mapped": {"von_mises": 12.0} if name in SOLID_PROBES else None,
+            "cfd": {"p": 1000.0, "p_kinematic": 1.0} if name in FLUID_PROBES else None,
+        }
+        for name, xyz in probes.items()
+    }
+    rows = evaluate_relations(
+        probes=probes,
+        state_probes=state,
+        belt_land_traction_mpa=2.0,
+        mapped_deck_has_wall_cload=True,
+        mapped_frd_exists=False,
+    )
+    assert next(r for r in rows if r["id"] == "weak-map")["ok"] is False
 
 
 def test_relations_fail_on_xyz_mismatch() -> None:
     params = load_params()
     probes = probes_from_params(params)
+    rho = float(params["fluid_density_kg_m3"])
     state = {
-        name: {"xyz_mm": [0.0, 0.0, 0.0], "fea": {"von_mises": 1.0}, "cfd": {"p": 1.0}}
+        name: {
+            "xyz_mm": [0.0, 0.0, 0.0],
+            "fea": {"von_mises": 1.0},
+            "fea_mapped": {"von_mises": 1.0},
+            "cfd": {"p": 1000.0, "p_kinematic": 1000.0 / rho},
+        }
         for name in probes
     }
-    rows = evaluate_relations(probes=probes, state_probes=state, belt_land_traction_mpa=2.0)
+    rows = evaluate_relations(
+        probes=probes,
+        state_probes=state,
+        belt_land_traction_mpa=2.0,
+        mapped_deck_has_wall_cload=True,
+        mapped_frd_exists=True,
+    )
     assert next(row for row in rows if row["id"] == "shared-frame")["ok"] is False
 
 
