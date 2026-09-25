@@ -3,7 +3,11 @@ from pathlib import Path
 import pytest
 
 from engineering_tools.c_cli import parse_coupling_flags
-from engineering_tools.c_backend_precice import default_policy, generate_precice_config
+from engineering_tools.c_backend_precice import (
+    default_policy,
+    find_precice,
+    generate_precice_config,
+)
 from engineering_tools.c_contract import mm_to_m, new_session, request_capability
 from engineering_tools.c_parity import in_band, load_c_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
@@ -98,12 +102,15 @@ def test_precice_participant_read_write_matches_c_policy() -> None:
     xml = generate_precice_config(policy)
     solid = _participant_block(xml, "Solid")
     fluid = _participant_block(xml, "Fluid")
-    assert 'write-data name="Displacement"' in solid
-    assert 'read-data name="Traction"' in solid
+    # mesh= is required: preCICE binds each read/write to a mesh, not a bare name.
+    assert 'write-data name="Displacement" mesh="' in solid
+    assert 'read-data name="Traction" mesh="' in solid
     assert 'write-data name="Traction"' not in solid
     assert 'write-data name="Displacement"' not in fluid
-    assert 'write-data name="Traction"' in fluid
-    assert 'read-data name="Displacement"' in fluid
+    assert 'write-data name="Traction" mesh="' in fluid
+    assert 'read-data name="Displacement" mesh="' in fluid
+    assert 'use-mesh name="interface" provide="yes"' in solid
+    assert 'use-mesh name="interface" from="Solid"' in fluid
 
 
 def test_precice_exchanges_match_c_policy() -> None:
@@ -125,17 +132,79 @@ def _serial_implicit_scheme_block(xml: str) -> str:
 
 
 def test_max_iterations_not_encoded_as_max_time() -> None:
+    """Iteration cap and the time horizon are different preCICE knobs.
+
+    Agents: time_window * max_iterations must not be written as max-time.
+    max-iterations is the implicit loop inside one window. The scheme also
+    needs max-time or max-time-windows as the coupling horizon.
+    """
     policy = default_policy()
+    # Horizon is its own policy field. Missing means the generator has nothing
+    # real to emit, which is the failure this test is here to catch.
+    assert policy.get("max_time_windows") not in (
+        None,
+        policy["time_window"] * policy["max_iterations"],
+    )
     xml = generate_precice_config(policy)
     bogus = float(policy["time_window"]) * int(policy["max_iterations"])
-    assert "<max-time" not in xml
     assert f'<max-time value="{bogus}"' not in xml
+    assert f'<max-time-windows value="{bogus}"' not in xml
     assert "coupling-scheme:parallel-explicit" not in xml
     scheme = _serial_implicit_scheme_block(xml)
     assert 'exchange data="Traction"' in scheme
     assert 'exchange data="Displacement"' in scheme
     assert f'<max-iterations value="{policy["max_iterations"]}"' in scheme
     assert f'<time-window-size value="{policy["time_window"]}"' in scheme
+    assert f'<max-time-windows value="{policy["max_time_windows"]}"' in scheme
+    assert "relative-convergence-measure" in scheme
+
+
+def test_generated_xml_is_precice2_config_not_invented_solver_tags() -> None:
+    """Policy becomes a config participants can load, not a fake driver script.
+
+    Agents: `<solver:calculix/>` is not a preCICE element. CalculiX and
+    OpenFOAM are the participants; they read this XML. data:vector names the
+    interface fields. m2n is how those participants connect. mapping places
+    values between the provided mesh and the received mesh.
+    """
+    xml = generate_precice_config(default_policy())
+    assert '<data:vector name="Displacement"' in xml
+    assert '<data:vector name="Traction"' in xml
+    assert "m2n:sockets" in xml
+    assert "mapping:nearest-neighbor" in xml
+    assert "<solver:" not in xml
+    assert "provide-mesh" in xml or 'provide="yes"' in xml
+    assert "receive-mesh" in xml or 'from="' in xml
+
+
+def test_find_precice_checks_tools_then_binprecice_then_ci_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Coupler lookup is a binary on PATH, in official-name order.
+
+    Agents: `precice` is the CI stand-in, last so a fake still resolves when
+    the real names are absent. `precice-tools` and `binprecice` are the names
+    installs actually ship. This function does not start an FSI solve.
+    """
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    monkeypatch.setenv("PATH", str(bindir))
+    assert find_precice() is None
+
+    alias = bindir / "precice"
+    alias.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    alias.chmod(0o755)
+    assert find_precice() == alias
+
+    driver = bindir / "binprecice"
+    driver.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    driver.chmod(0o755)
+    assert find_precice() == driver
+
+    tools = bindir / "precice-tools"
+    tools.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    tools.chmod(0o755)
+    assert find_precice() == tools
 
 
 def test_generate_precice_config_is_independent_of_on_disk_xml(tmp_path: Path) -> None:
