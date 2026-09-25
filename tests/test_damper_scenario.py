@@ -13,13 +13,32 @@ from engineering_tools.damper_params import (
     FLUID_PROBES,
     REQUIRED_PROBES,
     SOLID_PROBES,
+    kinematic_to_pa,
     load_params,
     params_digest,
     probes_from_params,
+    require_density,
 )
 from engineering_tools.damper_relations import evaluate_relations
 from engineering_tools.damper_scenario import run_damper_keyway
 from engineering_tools.project import init_project
+
+
+def test_packaged_params_include_fluid_density() -> None:
+    assert load_params()["fluid_density_kg_m3"] == 850.0
+
+
+def test_kinematic_to_pa_multiplies_density() -> None:
+    assert kinematic_to_pa(0.067, 850.0) == 0.067 * 850.0
+
+
+def test_require_density_rejects_missing() -> None:
+    try:
+        require_density({"housing_id_mm": 50.0})
+    except ValueError as exc:
+        assert "fluid_density_kg_m3" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
 
 
 def test_packaged_params_define_required_probes() -> None:

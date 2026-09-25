@@ -23,6 +23,19 @@ SOLID_PROBES: tuple[str, ...] = ("key_fillet", "keyway_root", "belt_land")
 FLUID_PROBES: tuple[str, ...] = ("chamber_center", "chamber_wall")
 
 
+def require_density(params: dict[str, Any]) -> float:
+    """Return pinned kg/m^3; missing or non-positive is a broken scenario pin."""
+    raw = params.get("fluid_density_kg_m3")
+    if not isinstance(raw, (int, float)) or not float(raw) > 0 or raw != raw:
+        raise ValueError("fluid_density_kg_m3 must be a finite number > 0")
+    return float(raw)
+
+
+def kinematic_to_pa(p_kinematic: float, density_kg_m3: float) -> float:
+    """icoFoam p is m^2/s^2; product-state cfd.p is Pa."""
+    return float(p_kinematic) * float(density_kg_m3)
+
+
 def load_params() -> dict[str, Any]:
     """Load the packaged damper-params.json pin."""
     root = resources.files("engineering_tools")

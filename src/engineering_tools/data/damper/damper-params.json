@@ -11,5 +11,6 @@
   "chamber_length_mm": 40.0,
   "belt_land_traction_mpa": 2.0,
   "youngs_mpa": 210000.0,
-  "poisson": 0.3
+  "poisson": 0.3,
+  "fluid_density_kg_m3": 850.0
 }
