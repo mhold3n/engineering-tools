@@ -93,6 +93,33 @@ S
     return destination
 
 
+def mapped_deck_has_wall_cload(text: str) -> bool:
+    """True when the pass-2 marker comment is present (agents: do not rely on force magnitude)."""
+    return "** mapped chamber_wall Pa" in text
+
+
+def write_solid_map_inp(params: dict[str, Any], destination: Path, wall_p_pa: float) -> Path:
+    """Pass-1 deck plus inward CLOAD on housing-ID nodes from wall_p_pa."""
+    write_solid_inp(params, destination)
+    text = destination.read_text(encoding="utf-8")
+    xs, _ys, _zs = _radial_stations(params)
+    id_r = float(params["housing_id_mm"]) / 2.0
+    ix = xs.index(id_r)
+    area = float(params["key_width_mm"]) * float(params["key_length_mm"])
+    force = -(float(wall_p_pa) / 1e6) * area / 4.0
+    extra = ["** mapped chamber_wall Pa"] + [
+        f"{_nid(ix, iy, iz)}, 1, {force}" for iy in range(2) for iz in range(2)
+    ]
+    needle = "*CLOAD\n"
+    at = text.index(needle) + len(needle)
+    node_file = text.index("*NODE FILE", at)
+    destination.write_text(
+        text[:node_file] + "\n".join(extra) + "\n" + text[node_file:],
+        encoding="utf-8",
+    )
+    return destination
+
+
 def _mises_from_tensor(sxx: float, syy: float, szz: float, sxy: float, syz: float, szx: float) -> float:
     """Von Mises from a 3D Cauchy tensor (CalculiX SXX..SZX order)."""
     return (

@@ -8,7 +8,13 @@ from importlib import resources
 from pathlib import Path
 
 from engineering_tools.damper_cfd import parse_internal_field_p, write_chamber_case
-from engineering_tools.damper_fea import parse_von_mises, sample_frd_von_mises, write_solid_inp
+from engineering_tools.damper_fea import (
+    mapped_deck_has_wall_cload,
+    parse_von_mises,
+    sample_frd_von_mises,
+    write_solid_inp,
+    write_solid_map_inp,
+)
 from engineering_tools.damper_params import (
     FLUID_PROBES,
     REQUIRED_PROBES,
@@ -174,6 +180,19 @@ def test_write_solid_inp_contains_c3d8_and_cload(tmp_path: Path) -> None:
     assert text.count("*ELEMENT, TYPE=C3D8") == 1
     assert text.count("\n1, ") >= 1
     assert len(re.findall(r"^\d+,\s+\d+,\s+\d+,\s+\d+,\s+\d+,\s+\d+,\s+\d+,\s+\d+,\s+\d+", text, re.M)) >= 4
+
+
+def test_write_solid_map_inp_adds_inward_wall_cload(tmp_path: Path) -> None:
+    params = load_params()
+    path = write_solid_map_inp(params, tmp_path / "solid-map.inp", wall_p_pa=56.0)
+    text = path.read_text(encoding="utf-8")
+    belt = write_solid_inp(params, tmp_path / "solid.inp").read_text(encoding="utf-8")
+    assert "*CLOAD" in text
+    assert ", 2, " in text
+    assert "** mapped chamber_wall Pa" in text
+    assert mapped_deck_has_wall_cload(text) is True
+    assert mapped_deck_has_wall_cload(belt) is False
+    assert text.count("*NODE") == belt.count("*NODE")
 
 
 def test_parse_von_mises_reads_dat_sample() -> None:
