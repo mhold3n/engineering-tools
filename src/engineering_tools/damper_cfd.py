@@ -18,8 +18,22 @@ def write_chamber_case(params: dict[str, Any], work: Path) -> None:
 
 
 def parse_internal_field_p(text: str) -> float:
-    """Parse `internalField uniform <scalar>;` from an OpenFOAM p file."""
+    """Parse OpenFOAM p: uniform scalar, else max |cell| of a nonuniform list.
+
+    icoFoam writes `internalField nonuniform List<scalar>` at later times; a uniform
+    regex alone treats a successful cavity as broken.
+    """
     match = re.search(r"internalField\s+uniform\s+([-+0-9.eE]+)\s*;", text)
+    if match:
+        return float(match.group(1))
+    match = re.search(
+        r"internalField\s+nonuniform\s+List<scalar>\s*\d*\s*\((.*?)\)\s*;",
+        text,
+        re.S,
+    )
     if not match:
         raise ValueError("internalField uniform scalar not found")
-    return float(match.group(1))
+    numbers = [float(n) for n in re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", match.group(1))]
+    if not numbers:
+        raise ValueError("nonuniform p list was empty")
+    return max(abs(n) for n in numbers)

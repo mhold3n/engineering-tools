@@ -103,6 +103,11 @@ def test_parse_internal_field_p_uniform() -> None:
     assert parse_internal_field_p("internalField uniform 101325;\n") == 101325.0
 
 
+def test_parse_internal_field_p_nonuniform_max_abs() -> None:
+    text = "internalField   nonuniform List<scalar> \n3\n(\n-0.01\n0.5\n-2.0\n)\n;\n"
+    assert parse_internal_field_p(text) == 2.0
+
+
 def test_build_damper_script_is_packaged() -> None:
     text = (resources.files("engineering_tools") / "data" / "damper" / "build_damper.py").read_text(encoding="utf-8")
     assert "import Part" in text
