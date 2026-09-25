@@ -46,11 +46,21 @@ damper-keyway solid
 U
 *EL FILE
 S
+*EL PRINT, ELSET=EALL
+S
 *END STEP
 """
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(text, encoding="utf-8")
     return destination
+
+
+def _mises_from_tensor(sxx: float, syy: float, szz: float, sxy: float, syz: float, szx: float) -> float:
+    """Von Mises from a 3D Cauchy tensor (CalculiX SXX..SZX order)."""
+    return (
+        0.5 * ((sxx - syy) ** 2 + (syy - szz) ** 2 + (szz - sxx) ** 2)
+        + 3.0 * (sxy**2 + syz**2 + szx**2)
+    ) ** 0.5
 
 
 def parse_von_mises(dat_text: str) -> float:
@@ -71,3 +81,42 @@ def parse_von_mises(dat_text: str) -> float:
     if not values:
         raise ValueError("no stress numbers in dat text")
     return max(abs(v) for v in values)
+
+
+def parse_frd_von_mises(frd_text: str) -> float:
+    """Max nodal von Mises from a CalculiX .frd STRESS block (*EL FILE, S)."""
+    in_stress = False
+    peak = 0.0
+    found = False
+    for line in frd_text.splitlines():
+        if line.startswith(" -4") and "STRESS" in line:
+            in_stress = True
+            continue
+        if in_stress and line.startswith(" -3"):
+            in_stress = False
+            continue
+        if not in_stress or not line.startswith(" -1"):
+            continue
+        numbers = re.findall(r"[-+]?\d+\.\d+(?:[eE][-+]?\d+)?", line)
+        if len(numbers) < 6:
+            continue
+        sxx, syy, szz, sxy, syz, szx = (float(n) for n in numbers[:6])
+        peak = max(peak, _mises_from_tensor(sxx, syy, szz, sxy, syz, szx))
+        found = True
+    if not found:
+        raise ValueError("no STRESS tensor in frd text")
+    return peak
+
+
+def parse_solid_von_mises(dat_path: Path, frd_path: Path) -> float:
+    """Prefer .dat Mises; *EL FILE alone leaves .dat empty so fall back to .frd."""
+    if dat_path.is_file():
+        text = dat_path.read_text(encoding="utf-8", errors="replace")
+        if text.strip():
+            try:
+                return parse_von_mises(text)
+            except ValueError:
+                pass
+    if frd_path.is_file():
+        return parse_frd_von_mises(frd_path.read_text(encoding="utf-8", errors="replace"))
+    raise ValueError("no stress numbers in dat or frd")

@@ -72,11 +72,24 @@ def test_write_solid_inp_contains_c3d8_and_cload(tmp_path: Path) -> None:
     text = path.read_text(encoding="utf-8")
     assert "*ELEMENT, TYPE=C3D8" in text
     assert "*CLOAD" in text
+    assert "*EL PRINT" in text
 
 
 def test_parse_von_mises_reads_dat_sample() -> None:
     sample = " forces\n SXX,SYY,SZZ\n  12.0  0.1  0.1\n Mises  15.5\n"
     assert parse_von_mises(sample) == 15.5
+
+
+def test_parse_frd_von_mises_reads_stress_block() -> None:
+    frd = """
+ -4  STRESS      6    1
+ -5  SXX         1    4    1    1
+ -1         1 2.00000E+02 0.00000E+00 0.00000E+00 0.00000E+00 0.00000E+00 0.00000E+00
+ -3
+"""
+    from engineering_tools.damper_fea import parse_frd_von_mises
+
+    assert parse_frd_von_mises(frd) == 200.0
 
 
 def test_write_chamber_case_has_control_dict(tmp_path: Path) -> None:

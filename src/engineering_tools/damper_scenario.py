@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .damper_cfd import parse_internal_field_p, write_chamber_case
-from .damper_fea import parse_von_mises, write_solid_inp
+from .damper_fea import parse_solid_von_mises, write_solid_inp
 from .damper_params import (
     FLUID_PROBES,
     SOLID_PROBES,
@@ -113,7 +113,7 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     if fea_proc.returncode:
         return _report(ok=False, status="broken", message=f"ccx exit {fea_proc.returncode}", workdir=out, outputs=outputs)
     try:
-        von = parse_von_mises(dat.read_text(encoding="utf-8", errors="replace") if dat.is_file() else "")
+        von = parse_solid_von_mises(dat, frd)
     except ValueError as exc:
         return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
     if not math.isfinite(von) or von <= 0:
