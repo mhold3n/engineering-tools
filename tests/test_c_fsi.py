@@ -39,6 +39,37 @@ def test_c_solid_and_fluid_share_interface_name(tmp_path: Path) -> None:
     assert "(0 4 7 3)" in iface
 
 
+def test_sample_c_probes_reads_interface_face_centre(tmp_path: Path) -> None:
+    """Non-zero p on a write_c_fluid_case mesh lands on chamber_wall.
+
+    Agents: parenthesized blockMesh vertices must not collapse to vertex 0.
+    Face (0 4 7 3) is the −X interface; its centre is
+    canonical_xyz_m(...)["housing.wall.pressure"]. Do not substitute that
+    canonical point for key.root, and do not launch precice here.
+    """
+    from engineering_tools.c_adapter_openfoam import sample_c_probes
+    from engineering_tools.damper_params import kinematic_to_pa, require_density
+
+    params = load_params()
+    case = tmp_path / "c-foam"
+    write_c_fluid_case(params, case)
+    kinematic = 2.0
+    time_dir = case / "0.1"
+    time_dir.mkdir()
+    (time_dir / "p").write_text(
+        "FoamFile\n{\n    object      p;\n}\ninternalField uniform 2.0;\n",
+        encoding="utf-8",
+    )
+    probes = sample_c_probes(case)
+    wall = canonical_xyz_m(params)["housing.wall.pressure"]
+    expected_pa = kinematic_to_pa(kinematic, require_density(params))
+    assert probes["housing.wall.pressure"]["xyz_m"] == pytest.approx(wall)
+    assert probes["housing.wall.traction"]["xyz_m"] == pytest.approx(wall)
+    assert probes["housing.wall.pressure"]["value"] == pytest.approx(expected_pa)
+    assert probes["housing.wall.traction"]["value"] == pytest.approx(abs(expected_pa))
+    assert "key.root.von_mises" not in probes
+
+
 def _executable(path: Path, body: str) -> None:
     path.write_text("#!/bin/sh\n" + body, encoding="utf-8")
     path.chmod(0o755)

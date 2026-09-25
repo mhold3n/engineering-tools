@@ -191,8 +191,38 @@ def _pressure_file(workdir: Path) -> Path | None:
     return sorted(found)[-1]
 
 
+def _paren_block_after(text: str, marker: str) -> str | None:
+    """Interior of the first parenthesis group that follows marker.
+
+    Agents: blockMesh lists vertices as `(x y z)` inside a vertices `(...)`
+    group. Splitting that group on the first `)` keeps only vertex 0, so
+    face `(0 4 7 3)` is out of range and the wall centre is None. Depth
+    walking keeps every vertex line in the block.
+    """
+    parts = text.split(marker, 1)
+    if len(parts) < 2:
+        return None
+    rest = parts[1]
+    start = rest.find("(")
+    if start < 0:
+        return None
+    depth = 0
+    for index, char in enumerate(rest[start:], start=start):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return rest[start + 1 : index]
+    return None
+
+
 def _interface_center_m(workdir: Path) -> list[float] | None:
-    """Average the vertices of the first `interface` face. Metres."""
+    """Average the vertices of the first `interface` face. Metres.
+
+    Face `(0 4 7 3)` is the −X patch. Its centre is chamber_wall, not the
+    hex cell centre at the origin.
+    """
     candidates = (
         workdir / "system" / "blockMeshDict",
         workdir / "constant" / "polyMesh" / "blockMeshDict",
@@ -200,7 +230,9 @@ def _interface_center_m(workdir: Path) -> list[float] | None:
     text = next((path.read_text(encoding="utf-8") for path in candidates if path.is_file()), None)
     if text is None or "vertices" not in text or "interface" not in text:
         return None
-    vert_body = text.split("vertices", 1)[1].split("(", 1)[1].split(")", 1)[0]
+    vert_body = _paren_block_after(text, "vertices")
+    if vert_body is None:
+        return None
     verts: list[list[float]] = []
     for line in vert_body.splitlines():
         nums = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", line)
