@@ -195,6 +195,44 @@ def _cmd_bom(args: argparse.Namespace) -> int:
     return cmd_bom_dispatch(rest, outer_json=bool(getattr(args, "json", False)))
 
 
+def _cmd_scenario(args: argparse.Namespace) -> int:
+    """Dispatch etools scenario damper-keyway; requires a project like etools run."""
+    from .damper_scenario import run_damper_keyway
+    from .project import is_project
+
+    if args.name != "damper-keyway":
+        print(f"unknown scenario: {args.name}", file=sys.stderr)
+        return 2
+    if args.project:
+        root = Path(args.project).expanduser().resolve()
+    else:
+        cwd = Path.cwd().resolve()
+        if is_project(cwd):
+            root = cwd
+        else:
+            print(
+                "No project path given and cwd is not an engineering-tools project. "
+                "Pass: etools scenario damper-keyway --project ./my-part",
+                file=sys.stderr,
+            )
+            return 2
+    result = run_damper_keyway(root)
+    append_job(
+        root,
+        tool="damper-keyway",
+        command="scenario",
+        status=result["status"],
+        workdir=result.get("workdir"),
+        outputs=list(result.get("outputs") or []),
+        message=str(result.get("message") or ""),
+    )
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(result["message"])
+    return 0 if result.get("ok") else 1
+
+
 def _cmd_run_entry(args: argparse.Namespace) -> int:
     tool = args.tool_flag or args.tool_pos
     input_file = args.input_flag or args.input_pos
@@ -341,6 +379,15 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--workdir", default=None, help="Optional working directory for outputs")
     run.add_argument("--json", action="store_true", help="Also print JSON result")
     run.set_defaults(func=_cmd_run_entry)
+
+    scenario = sub.add_parser(
+        "scenario",
+        help="Run a headless product scenario (damper-keyway)",
+    )
+    scenario.add_argument("name", help="Scenario id (damper-keyway)")
+    scenario.add_argument("--project", default=None, help="Project path (default: cwd if it is a project)")
+    scenario.add_argument("--json", action="store_true", help="Print JSON result")
+    scenario.set_defaults(func=_cmd_scenario)
 
     return parser
 

@@ -35,6 +35,7 @@ etools run --tool calculix --input deck.inp --project ./my-part
 etools run calculix deck.inp --project ./my-part          # shorthand
 etools run --tool freecad --input script.py --project ./my-part
 etools run openfoam ./case --project ./my-part
+etools scenario damper-keyway --project ./my-part
 ```
 
 `etools profile` is an alias for `doctor`.
@@ -71,6 +72,7 @@ Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-compon
 - **CalculiX** (`ccx`): MIT deck `examples/calculix/hello_beam.inp` → `artifacts/calculix-hello/`
 - **FreeCAD** (`FreeCADCmd`): MIT script `examples/freecad/hello_box.py` → `artifacts/freecad-hello/hello_box.FCStd`
 - **OpenFOAM** (`blockMesh` or `foamExec blockMesh`): MIT cavity case → `artifacts/openfoam-hello/constant/polyMesh/`
+- **Scenario** (`etools scenario damper-keyway`): parametric damper CAD + CalculiX + OpenFOAM + named probe relations → `artifacts/scenario-damper-keyway/`
 
 Upstream solvers stay GPL/LGPL; we only call them.
 
