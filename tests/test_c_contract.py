@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from engineering_tools.c_cli import parse_coupling_flags
+from engineering_tools.c_backend_precice import default_policy, generate_precice_config
 from engineering_tools.c_contract import mm_to_m, new_session, request_capability
 from engineering_tools.c_parity import in_band, load_c_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
@@ -69,6 +70,29 @@ def test_packaged_c_fsi_bands_have_required_keys() -> None:
     assert "housing.wall.pressure" in bands["parity"]
     assert bands["parity"]["housing.wall.pressure"]["abs"] >= 0
     assert "housing.wall.displacement" not in bands["parity"]
+
+
+def test_generated_xml_uses_policy_names_not_a_checked_in_file() -> None:
+    policy = default_policy()
+    xml = generate_precice_config(policy)
+    assert "<participant name=\"Solid\">" in xml or 'name="Solid"' in xml
+    assert "Displacement" in xml
+    assert "Traction" in xml
+    policy["participants"][0]["name"] = "Steel"
+    xml2 = generate_precice_config(policy)
+    assert "Steel" in xml2
+    assert "Steel" not in xml
+
+
+def test_generate_precice_config_is_independent_of_on_disk_xml(tmp_path: Path) -> None:
+    policy = default_policy()
+    stale = tmp_path / "precice-config.xml"
+    stale.write_text("<stale-participant name=\"CheckedIn\"/>", encoding="utf-8")
+    xml_before = generate_precice_config(policy)
+    assert "CheckedIn" not in xml_before
+    stale.unlink()
+    xml_after = generate_precice_config(policy)
+    assert xml_after == xml_before
 
 
 def test_freeze_ab_snapshot_copies_and_digests(tmp_path: Path) -> None:
