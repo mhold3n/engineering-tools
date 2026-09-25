@@ -1,7 +1,7 @@
 """B-baseline point-value relations for the damper scenario.
 
-Not FSI: shared frame, named coverage, Pa traction ratio, and optional weak-map
-(pass 2) when the orchestrator sets mapped_deck_has_wall_cload / mapped_frd_exists.
+Not FSI: shared frame, named coverage (pass 1 + mapped scalars), Pa traction ratio,
+and weak-map when the orchestrator sets mapped_deck_has_wall_cload / mapped_frd_exists.
 """
 
 from __future__ import annotations
@@ -40,21 +40,19 @@ def evaluate_relations(
             break
     rows.append({"id": "shared-frame", "ok": frame_ok, "detail": frame_detail})
 
-    weak_map_active = mapped_deck_has_wall_cload or mapped_frd_exists
     coverage_ok = True
-    coverage_detail = "solid fea and fluid cfd present"
+    coverage_detail = "solid fea/fea_mapped and fluid cfd present"
     for name in SOLID_PROBES:
         von = ((state_probes.get(name) or {}).get("fea") or {}).get("von_mises")
         if not _finite(von):
             coverage_ok = False
             coverage_detail = f"missing fea.von_mises at {name}"
             break
-        if weak_map_active:
-            mapped = ((state_probes.get(name) or {}).get("fea_mapped") or {}).get("von_mises")
-            if not _finite(mapped):
-                coverage_ok = False
-                coverage_detail = f"missing fea_mapped.von_mises at {name}"
-                break
+        mapped = ((state_probes.get(name) or {}).get("fea_mapped") or {}).get("von_mises")
+        if not _finite(mapped):
+            coverage_ok = False
+            coverage_detail = f"missing fea_mapped.von_mises at {name}"
+            break
     if coverage_ok:
         for name in FLUID_PROBES:
             cfd = (state_probes.get(name) or {}).get("cfd") or {}
@@ -63,12 +61,11 @@ def evaluate_relations(
                 coverage_ok = False
                 coverage_detail = f"missing cfd.p at {name}"
                 break
-            if weak_map_active:
-                p_kin = cfd.get("p_kinematic")
-                if not _finite(p_kin):
-                    coverage_ok = False
-                    coverage_detail = f"missing cfd.p_kinematic at {name}"
-                    break
+            p_kin = cfd.get("p_kinematic")
+            if not _finite(p_kin):
+                coverage_ok = False
+                coverage_detail = f"missing cfd.p_kinematic at {name}"
+                break
     rows.append({"id": "named-coverage", "ok": coverage_ok, "detail": coverage_detail})
 
     wall = ((state_probes.get("chamber_wall") or {}).get("cfd") or {}).get("p")
@@ -82,10 +79,7 @@ def evaluate_relations(
         traction_detail = f"ratio={ratio}"
     rows.append({"id": "order-of-magnitude-traction", "ok": traction_ok, "detail": traction_detail})
 
-    if not weak_map_active:
-        weak_ok = True
-        weak_detail = "weak-map not requested"
-    elif not mapped_deck_has_wall_cload or not mapped_frd_exists:
+    if not mapped_deck_has_wall_cload or not mapped_frd_exists:
         weak_ok = False
         weak_detail = "missing solid-map deck CLOADs or solid-map.frd"
     else:
