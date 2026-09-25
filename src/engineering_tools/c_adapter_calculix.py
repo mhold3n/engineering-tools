@@ -88,6 +88,19 @@ def prepare_solid_participant(workdir: Path, config_xml: Path) -> Path:
     return destination
 
 
+def solid_participant_argv(workdir: Path) -> list[str] | None:
+    """Argv for the Solid participant. None if the adapter binary or deck is missing.
+
+    Agents: façade Popen's this next to Fluid. Do not insert a `precice` argv.
+    """
+    workdir = Path(workdir)
+    binary = find_calculix_participant()
+    decks = sorted(workdir.glob("*.inp"))
+    if binary is None or not decks or binary.name in {"ccx", "precice"}:
+        return None
+    return [str(binary), "-i", decks[0].stem, "-precice-participant", _SOLID_PARTICIPANT]
+
+
 def run_step(workdir: Path, step: int) -> bool:
     """Launch the CalculiX-preCICE participant on the deck in `workdir`.
 
@@ -111,7 +124,9 @@ def run_step(workdir: Path, step: int) -> bool:
     sibling_xml = workdir.parent / "precice-config.xml"
     if sibling_xml.is_file():
         prepare_solid_participant(workdir, sibling_xml)
-    argv = [str(binary), "-i", decks[0].stem, "-precice-participant", _SOLID_PARTICIPANT]
+    argv = solid_participant_argv(workdir)
+    if argv is None:
+        return False
     try:
         proc = subprocess.run(
             argv,

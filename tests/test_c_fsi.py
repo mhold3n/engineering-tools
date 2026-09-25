@@ -2,8 +2,8 @@
 
 Agents: mesh tests pin metres from damper-params probes and the shared
 interface name. Façade tests monkeypatch adapter sample_c_probes so CI
-does not need OpenFOAM to write JSON. precice is launched only by the
-backend adapter, never by damper_scenario.py.
+does not need OpenFOAM to write JSON. Solid and Fluid are Popen'd together;
+damper_scenario.py never launches a process named precice.
 """
 
 import json
@@ -76,14 +76,19 @@ def _executable(path: Path, body: str) -> None:
 
 
 def _c_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, precice: bool = True) -> None:
-    """PATH extras: ccx, pimpleFoam, blockMesh, and optional precice all exit 0."""
+    """PATH: ccx_preCICE + pimpleFoam print two window completions; optional coupler."""
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()
+    windows = "printf 'Time window completed\\nTime window completed\\n'\\n"
     _executable(binary_dir / "ccx", "exit 0\n")
-    _executable(binary_dir / "pimpleFoam", "exit 0\n")
+    _executable(binary_dir / "ccx_preCICE", windows + "exit 0\n")
+    _executable(
+        binary_dir / "pimpleFoam",
+        windows + "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+    )
     _executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
     if precice:
-        _executable(binary_dir / "precice", "exit 0\n")
+        _executable(binary_dir / "precice-tools", "exit 0\n")
     monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
 
 
@@ -189,7 +194,10 @@ def test_run_c_fsi_broken_when_backend_step_fails(tmp_path: Path, monkeypatch: p
     _c_tools(tmp_path, monkeypatch)
     _ab_snapshot_source(tmp_path / "ab")
     _patch_samples(monkeypatch, _matching_probes())
-    monkeypatch.setattr("engineering_tools.c_backend_precice.run_step", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(
+        "engineering_tools.c_facade.run_coupled_participants",
+        lambda **_kwargs: {"ok": False, "steps": [], "detail": "forced"},
+    )
     session = run_c_fsi(ab_dir=tmp_path / "ab", out=tmp_path / "c-fsi", params=load_params())
     assert session["status"] == "broken"
     assert session["c_ok"] is False

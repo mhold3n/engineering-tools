@@ -293,25 +293,32 @@ def _tool_ok(name: str, workdir: Path) -> bool:
     return proc.returncode == 0
 
 
+def mesh_fluid_participant(workdir: Path) -> bool:
+    """blockMesh only. The façade starts pimpleFoam as the Fluid participant."""
+    _stage_solver_dicts(workdir, 0)
+    return _tool_ok("blockMesh", workdir)
+
+
+def fluid_participant_argv() -> list[str] | None:
+    """pimpleFoam argv. None if the solver is missing. No `precice` process."""
+    located = _openfoam_tool("pimpleFoam")
+    if located is None:
+        return None
+    command, _locator = located
+    return list(command)
+
+
 def run_step(workdir: Path, step: int) -> bool:
     """Mesh the Fluid case. Do not launch precice.
 
-    Agents: when the façade has written `../precice-config.xml`, stage the
-    adapter first so this directory is participant Fluid. `blockMesh` always
-    runs. `pimpleFoam` still runs as the current façade's startability path
-    (the CI fake writes kinematic `p`). Coupling stays outside this module:
-    the façade should call `prepare_fluid_participant` and start `pimpleFoam`
-    itself once it owns the participant launch. True only when blockMesh and
-    pimpleFoam both exit 0.
+    Agents: `pimpleFoam` is no longer started here. The façade starts Solid
+    and Fluid together after `prepare_fluid_participant` and this mesh step.
     """
+    del step
     config_xml = workdir.parent / "precice-config.xml"
     if config_xml.is_file():
         prepare_fluid_participant(workdir, config_xml)
-    # Restage so endTime matches this window. The adapter yml is left in place.
-    _stage_solver_dicts(workdir, step)
-    if not _tool_ok("blockMesh", workdir):
-        return False
-    return _tool_ok("pimpleFoam", workdir)
+    return mesh_fluid_participant(workdir)
 
 
 def _pressure_file(workdir: Path) -> Path | None:

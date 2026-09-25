@@ -31,6 +31,11 @@ _COUPLER_NAMES = ("precice-tools", "binprecice", "precice")
 # max_iterations. preCICE compares this to the relative change of the named data.
 _RELATIVE_CONVERGENCE_LIMIT = "1.0e-4"
 
+# preCICE (and the CI participant fakes) print this once per completed window.
+# Counting it is how C records per-step convergence without a standalone
+# `precice` driver process. Do not treat process exit 0 alone as residual ok.
+WINDOW_COMPLETED_MARK = "Time window completed"
+
 
 def default_policy() -> dict[str, Any]:
     """Return the default C coupling policy for Solid/Fluid FSI.
@@ -160,26 +165,79 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def run_step(config_path: Path, step: int) -> bool:
-    """Launch one standalone `precice` process for coupling index `step`.
+def _count_completed_windows(text: str) -> int:
+    """How many coupling windows the log claims finished."""
+    return text.count(WINDOW_COMPLETED_MARK)
 
-    Agents: keep this until the façade stops calling it. The façade will
-    stop using a standalone precice process; Solid and Fluid consume the
-    XML themselves. The argv name `precice` is the CI alias, not the
-    official driver (`precice-tools` / `binprecice`, see `find_precice`).
-    This function must not grow into the FSI solver. The CI stub ignores
-    `step` and exits 0 when given the config path. A non-zero exit is a
-    failed coupling window (the façade marks the session broken).
+
+def run_coupled_participants(
+    *,
+    solid_argv: list[str],
+    solid_cwd: Path,
+    fluid_argv: list[str],
+    fluid_cwd: Path,
+    n_windows: int,
+) -> dict[str, Any]:
+    """Start Solid and Fluid together. They, not this process, talk to preCICE.
+
+    Agents: both Popen calls happen before either wait. Logs go to files so
+    the pipes cannot fill. Exit 0 on both is not enough: each required
+    window must appear as WINDOW_COMPLETED_MARK in the combined logs.
+    Do not spawn a third `precice` process here.
     """
-    del step  # The driver reads windows from the generated config.
+    solid_cwd = Path(solid_cwd)
+    fluid_cwd = Path(fluid_cwd)
+    solid_log_path = solid_cwd / "participant.log"
+    fluid_log_path = fluid_cwd / "participant.log"
     try:
-        proc = subprocess.run(
-            ["precice", str(config_path)],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=180,
+        solid_log = solid_log_path.open("w", encoding="utf-8")
+        fluid_log = fluid_log_path.open("w", encoding="utf-8")
+    except OSError:
+        return {"ok": False, "steps": [], "detail": "could not open participant logs"}
+    try:
+        solid_proc = subprocess.Popen(
+            solid_argv,
+            cwd=solid_cwd,
+            stdout=solid_log,
+            stderr=subprocess.STDOUT,
         )
-    except (OSError, subprocess.TimeoutExpired):
-        return False
-    return proc.returncode == 0
+        fluid_proc = subprocess.Popen(
+            fluid_argv,
+            cwd=fluid_cwd,
+            stdout=fluid_log,
+            stderr=subprocess.STDOUT,
+        )
+    except OSError as exc:
+        solid_log.close()
+        fluid_log.close()
+        return {"ok": False, "steps": [], "detail": str(exc)}
+    try:
+        solid_code = solid_proc.wait(timeout=180)
+        fluid_code = fluid_proc.wait(timeout=180)
+    except subprocess.TimeoutExpired:
+        solid_proc.kill()
+        fluid_proc.kill()
+        solid_proc.wait(timeout=5)
+        fluid_proc.wait(timeout=5)
+        solid_log.close()
+        fluid_log.close()
+        return {"ok": False, "steps": [], "detail": "participant timeout"}
+    solid_log.close()
+    fluid_log.close()
+    combined = solid_log_path.read_text(encoding="utf-8", errors="replace")
+    combined += fluid_log_path.read_text(encoding="utf-8", errors="replace")
+    completed = _count_completed_windows(combined)
+    steps = [{"index": index, "converged": index < completed} for index in range(n_windows)]
+    ok = solid_code == 0 and fluid_code == 0 and completed >= n_windows
+    return {"ok": ok, "steps": steps, "completed_windows": completed}
+
+
+def run_step(config_path: Path, step: int) -> bool:
+    """Deprecated: a standalone `precice` process is not the FSI solve.
+
+    Agents: the façade must not call this. Kept so old tests that patch
+    `run_step` still import. Always returns False so a mistaken caller
+    cannot green-wash coupling.
+    """
+    del config_path, step
+    return False

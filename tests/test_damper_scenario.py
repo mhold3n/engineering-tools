@@ -525,10 +525,13 @@ def test_coupling_c_ab_success_reports_c_ok_with_fakes(tmp_path, monkeypatch) ->
         f"""case "$1" in
   solid) cp '{pass1}' solid.frd; printf 'Mises  15.5\\n' > solid.dat ;;
   solid-map) cp '{pass2}' solid-map.frd ;;
-  c-solid) cp '{c_frd}' c-solid.frd ;;
 esac
 exit 0
 """,
+    )
+    executable(
+        binary_dir / "ccx_preCICE",
+        f"cp '{c_frd}' c-solid.frd\nprintf 'Time window completed\\nTime window completed\\n'\nexit 0\n",
     )
     executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
     executable(
@@ -537,9 +540,10 @@ exit 0
     )
     executable(
         binary_dir / "pimpleFoam",
+        "printf 'Time window completed\\nTime window completed\\n'\n"
         "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
     )
-    executable(binary_dir / "precice", "exit 0\n")
+    executable(binary_dir / "precice-tools", "exit 0\n")
     monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
     project = init_project(tmp_path / "part", name="Damper")
     result = run_damper_keyway(project, coupling="c")

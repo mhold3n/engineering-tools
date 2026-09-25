@@ -1,29 +1,31 @@
 """C-FSI façade: the only scenario-facing entry for a damper C run.
 
-Agents: `run_c_fsi` owns dependency checks, the A/B snapshot, participant
-registration, preCICE config generation, mesh staging, and launch order.
-Solver binaries are started only inside the adapters and
-`c_backend_precice.run_step`. This module writes `c-session.json` even when
-C is missing or broken, because C was attempted. It does not start when the
-scenario never calls it (A/B prerequisite failure).
+Agents: `run_c_fsi` owns snapshot, XML generation, prepare/mesh, then
+`run_coupled_participants` (Solid and Fluid Popen together). This module
+does not spawn a process named `precice`. `c-session.json` is written even
+when C is missing or broken, because C was attempted.
 """
 
 from __future__ import annotations
 
 import json
 import math
-import shutil
 from pathlib import Path
 from typing import Any
 
-from engineering_tools.c_backend_precice import default_policy, find_precice, generate_precice_config
+from engineering_tools.c_backend_precice import (
+    default_policy,
+    find_precice,
+    generate_precice_config,
+    run_coupled_participants,
+)
 from engineering_tools.c_contract import new_session
 from engineering_tools.c_fsi_meshes import canonical_xyz_m, write_c_fluid_case, write_c_solid_inp
 from engineering_tools.c_parity import in_band, load_c_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
 from engineering_tools.hello_probes import _openfoam_tool
 
-from . import c_adapter_calculix, c_adapter_openfoam, c_backend_precice
+from . import c_adapter_calculix, c_adapter_openfoam
 
 _PROBE_IDS: tuple[str, ...] = (
     "housing.wall.pressure",
@@ -34,8 +36,17 @@ _PROBE_IDS: tuple[str, ...] = (
 
 
 def _dependencies_present() -> bool:
-    """True when precice, pimpleFoam, and ccx can be resolved on PATH."""
-    return find_precice() is not None and _openfoam_tool("pimpleFoam") is not None and shutil.which("ccx") is not None
+    """True when coupler, Fluid solver, and CalculiX-preCICE participant exist.
+
+    Agents: plain `ccx` is A/B, not a C participant. A lib-only preCICE
+    install is `missing` until `precice-tools`, `binprecice`, or the CI
+    alias `precice` is on PATH (see find_precice).
+    """
+    return (
+        find_precice() is not None
+        and _openfoam_tool("pimpleFoam") is not None
+        and c_adapter_calculix.find_calculix_participant() is not None
+    )
 
 
 def _write_session(out: Path, session: dict[str, Any]) -> None:
@@ -137,20 +148,37 @@ def run_c_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, A
 
     bands = load_c_fsi_bands()
     n_steps = int(bands["n_steps"])
-    steps: list[dict[str, Any]] = []
-    for index in range(n_steps):
-        solid_ok = c_adapter_calculix.run_step(solid_dir, index)
-        fluid_ok = c_adapter_openfoam.run_step(fluid_dir, index)
-        # Backend launch stays on the precice adapter. Do not subprocess here.
-        backend_ok = c_backend_precice.run_step(config_path, index)
-        if not (solid_ok and fluid_ok and backend_ok):
-            session["status"] = "broken"
-            session["steps"] = steps
-            session["c_ok"] = False
-            _write_session(out, session)
-            return session
-        steps.append({"index": index, "converged": True})
-    session["steps"] = steps
+    c_adapter_calculix.prepare_solid_participant(solid_dir, config_path)
+    c_adapter_openfoam.prepare_fluid_participant(fluid_dir, config_path)
+    if not c_adapter_openfoam.mesh_fluid_participant(fluid_dir):
+        session["status"] = "broken"
+        session["message"] = "Fluid blockMesh failed"
+        session["c_ok"] = False
+        _write_session(out, session)
+        return session
+    solid_argv = c_adapter_calculix.solid_participant_argv(solid_dir)
+    fluid_argv = c_adapter_openfoam.fluid_participant_argv()
+    if solid_argv is None or fluid_argv is None:
+        session["status"] = "broken"
+        session["message"] = "participant argv missing"
+        session["c_ok"] = False
+        _write_session(out, session)
+        return session
+    # Both participants start before either wait. No standalone precice process.
+    coupled = run_coupled_participants(
+        solid_argv=solid_argv,
+        solid_cwd=solid_dir,
+        fluid_argv=fluid_argv,
+        fluid_cwd=fluid_dir,
+        n_windows=n_steps,
+    )
+    session["steps"] = list(coupled["steps"])
+    if not coupled["ok"]:
+        session["status"] = "broken"
+        session["message"] = str(coupled.get("detail") or "coupling windows did not converge")
+        session["c_ok"] = False
+        _write_session(out, session)
+        return session
 
     # Adapters return SI rows. Tests replace these two callables; production
     # reads FRD and the fluid p field. One merged file is what parity reads.
