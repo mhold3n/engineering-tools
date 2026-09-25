@@ -116,14 +116,24 @@ def test_precice_exchanges_match_c_policy() -> None:
     )
 
 
+def _serial_implicit_scheme_block(xml: str) -> str:
+    start = xml.index("<coupling-scheme:serial-implicit>")
+    end = xml.index("</coupling-scheme:serial-implicit>", start)
+    return xml[start:end]
+
+
 def test_max_iterations_not_encoded_as_max_time() -> None:
     policy = default_policy()
     xml = generate_precice_config(policy)
     bogus = float(policy["time_window"]) * int(policy["max_iterations"])
     assert "<max-time" not in xml
     assert f'<max-time value="{bogus}"' not in xml
-    assert f'<max-iterations value="{policy["max_iterations"]}"' in xml
-    assert "coupling-scheme:serial-implicit" in xml
+    assert "coupling-scheme:parallel-explicit" not in xml
+    scheme = _serial_implicit_scheme_block(xml)
+    assert 'exchange data="Traction"' in scheme
+    assert 'exchange data="Displacement"' in scheme
+    assert f'<max-iterations value="{policy["max_iterations"]}"' in scheme
+    assert f'<time-window-size value="{policy["time_window"]}"' in scheme
 
 
 def test_generate_precice_config_is_independent_of_on_disk_xml(tmp_path: Path) -> None:

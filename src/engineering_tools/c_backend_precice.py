@@ -75,7 +75,7 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
         f'    <read-data name="{displacement}"/>',
         f'    <use-mesh name="{mesh}" from="{solid_name}"/>',
         "  </participant>",
-        "  <coupling-scheme:parallel-explicit>",
+        "  <coupling-scheme:serial-implicit>",
         f'    <time-window-size value="{time_window}"/>',
         f'    <participants first="{solid_name}" second="{fluid_name}"/>',
         (
@@ -86,8 +86,6 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
             f'    <exchange data="{displacement}" mesh="{mesh}" '
             f'from="{solid_name}" to="{fluid_name}"/>'
         ),
-        "  </coupling-scheme:parallel-explicit>",
-        "  <coupling-scheme:serial-implicit>",
         f'    <max-iterations value="{max_iterations}"/>',
         "  </coupling-scheme:serial-implicit>",
         "</precice-configuration>",
