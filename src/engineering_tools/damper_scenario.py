@@ -16,13 +16,21 @@ from .damper_cfd import (
     parse_internal_field_p,
     write_chamber_case,
 )
-from .damper_fea import sample_frd_von_mises, write_solid_inp
+from .damper_fea import (
+    mapped_deck_has_wall_cload,
+    sample_frd_von_mises,
+    write_solid_inp,
+    write_solid_map_inp,
+)
 from .damper_params import (
+    REQUIRED_PROBES,
     SOLID_PROBES,
+    kinematic_to_pa,
     load_a_bands,
     load_params,
     params_digest,
     probes_from_params,
+    require_density,
 )
 from .damper_relations import evaluate_relations
 from .hello_probes import _find_freecad_cmd, _openfoam_tool, _run_openfoam
@@ -56,16 +64,18 @@ def _pressure_field(work: Path) -> Path | None:
 
 
 def run_damper_keyway(project: str | Path) -> dict[str, Any]:
-    """Run CAD + FEA + CFD and evaluate A/B gates. Comments for other agents."""
+    """Run CAD, pass-1 FEA, CFD, pass-2 wall-Pa FEA, and A/B gates.
+
+    probes.json is whatever FreeCAD wrote. It is checked against params and not rewritten.
+    """
     root = Path(project).expanduser().resolve()
     out = root / "artifacts" / "scenario-damper-keyway"
     out.mkdir(parents=True, exist_ok=True)
     params = load_params()
     params_path = out / "damper-params.json"
     params_path.write_text(json.dumps(params, indent=2) + "\n", encoding="utf-8")
-    probes = probes_from_params(params)
-    (out / "probes.json").write_text(json.dumps(probes, indent=2), encoding="utf-8")
-    outputs = [str(params_path), str(out / "probes.json")]
+    # Do not write probes.json before FreeCAD. The CAD script owns that file.
+    outputs = [str(params_path)]
 
     cad = _find_freecad_cmd()
     if not cad:
@@ -100,7 +110,39 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
                 outputs=outputs,
             )
         outputs.append(str(path))
-    (out / "probes.json").write_text(json.dumps(probes, indent=2), encoding="utf-8")
+    # Do not overwrite CAD probes.json when it matches params. Mismatch is broken.
+    probe_path = out / "probes.json"
+    if not probe_path.is_file():
+        return _report(ok=False, status="broken", message="CAD did not write probes.json", workdir=out, outputs=outputs)
+    try:
+        cad_probes = json.loads(probe_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return _report(ok=False, status="broken", message=f"CAD probes.json unreadable: {exc}", workdir=out, outputs=outputs)
+    expected = probes_from_params(params)
+    probes: dict[str, list[float]] = {}
+    if not isinstance(cad_probes, dict):
+        return _report(ok=False, status="broken", message="xyz mismatch in probes.json", workdir=out, outputs=outputs)
+    for name in REQUIRED_PROBES:
+        try:
+            got = list(map(float, cad_probes[name]))
+        except (KeyError, TypeError, ValueError):
+            return _report(
+                ok=False,
+                status="broken",
+                message=f"xyz mismatch at {name}",
+                workdir=out,
+                outputs=outputs,
+            )
+        if got != list(map(float, expected[name])):
+            return _report(
+                ok=False,
+                status="broken",
+                message=f"xyz mismatch at {name}",
+                workdir=out,
+                outputs=outputs,
+            )
+        probes[name] = got
+    outputs.append(str(probe_path))
 
     ccx = shutil.which("ccx")
     if not ccx:
@@ -190,42 +232,88 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     if pressure_path is None:
         return _report(ok=False, status="broken", message="icoFoam did not write p", workdir=out, outputs=outputs)
     try:
-        p_text = pressure_path.read_text(encoding="utf-8", errors="replace")
-        chamber_p = parse_internal_field_p(p_text, cell_index=chamber_center_index(meta["nx"], meta["ny"], meta["nz"]))
-        wall_p = parse_internal_field_p(p_text, cell_index=chamber_wall_index(meta["nx"], meta["ny"], meta["nz"]))
+        rho = require_density(params)
     except ValueError as exc:
         return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
-    if not math.isfinite(chamber_p):
-        return _report(ok=False, status="broken", message=f"chamber p {chamber_p} not finite", workdir=out, outputs=outputs)
+    try:
+        p_text = pressure_path.read_text(encoding="utf-8", errors="replace")
+        # A max_abs applies to kinematic center p only. Pa is not band-checked.
+        p_kin_center = parse_internal_field_p(p_text, cell_index=chamber_center_index(meta["nx"], meta["ny"], meta["nz"]))
+        p_kin_wall = parse_internal_field_p(p_text, cell_index=chamber_wall_index(meta["nx"], meta["ny"], meta["nz"]))
+    except ValueError as exc:
+        return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
+    if not math.isfinite(p_kin_center):
+        return _report(ok=False, status="broken", message=f"chamber p {p_kin_center} not finite", workdir=out, outputs=outputs)
     p_band = load_a_bands()["chamber_center_p"]["max_abs"]
-    if abs(chamber_p) > p_band:
+    if abs(p_kin_center) > p_band:
         return _report(
             ok=False,
             status="broken",
-            message=f"chamber_center p {chamber_p} exceeds A max_abs {p_band}",
+            message=f"chamber_center p {p_kin_center} exceeds A max_abs {p_band}",
             workdir=out,
             outputs=outputs,
         )
+    p_center_pa = kinematic_to_pa(p_kin_center, rho)
+    p_wall_pa = kinematic_to_pa(p_kin_wall, rho)
     outputs.append(str(pressure_path))
+
+    # Pass 2 maps wall Pa. Finite mapped stresses are a weak-map relation, not an A band.
+    map_inp = write_solid_map_inp(params, out / "solid-map.inp", wall_p_pa=p_wall_pa)
+    outputs.append(str(map_inp))
+    try:
+        map_proc = subprocess.run(
+            [ccx, "solid-map"],
+            cwd=out,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return _report(ok=False, status="broken", message=f"CalculiX solid-map failed: {exc}", workdir=out, outputs=outputs)
+    map_frd = out / "solid-map.frd"
+    if not map_frd.is_file():
+        return _report(ok=False, status="broken", message="CalculiX wrote no solid-map.frd", workdir=out, outputs=outputs)
+    if map_proc.returncode:
+        return _report(
+            ok=False,
+            status="broken",
+            message=f"ccx solid-map exit {map_proc.returncode}",
+            workdir=out,
+            outputs=outputs,
+        )
+    try:
+        von_map_2 = sample_frd_von_mises(
+            map_frd.read_text(encoding="utf-8", errors="replace"),
+            {name: probes[name] for name in SOLID_PROBES},
+        )
+    except ValueError as exc:
+        return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
+    outputs.append(str(map_frd))
 
     state_probes: dict[str, Any] = {}
     for name, xyz in probes.items():
-        row: dict[str, Any] = {"xyz_mm": list(xyz), "fea": None, "cfd": None}
+        row: dict[str, Any] = {"xyz_mm": list(xyz), "fea": None, "fea_mapped": None, "cfd": None}
         if name in SOLID_PROBES:
             row["fea"] = {"von_mises": von_map[name]}
+            row["fea_mapped"] = {"von_mises": von_map_2[name]}
         if name == "chamber_center":
-            row["cfd"] = {"p": chamber_p}
+            row["cfd"] = {"p": p_center_pa, "p_kinematic": p_kin_center}
         elif name == "chamber_wall":
-            row["cfd"] = {"p": wall_p}
+            row["cfd"] = {"p": p_wall_pa, "p_kinematic": p_kin_wall}
         state_probes[name] = row
     relations = evaluate_relations(
         probes=probes,
         state_probes=state_probes,
         belt_land_traction_mpa=float(params["belt_land_traction_mpa"]),
+        mapped_deck_has_wall_cload=mapped_deck_has_wall_cload(map_inp.read_text(encoding="utf-8")),
+        mapped_frd_exists=map_frd.is_file(),
     )
     product_state = {
         "schema_version": 1,
         "scenario": "damper-keyway",
+        "coupling": "weak-map",
+        "fluid_density_kg_m3": rho,
         "params_digest": params_digest(params),
         "probes": state_probes,
         "relations": relations,
@@ -233,33 +321,31 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     state_path = out / "product-state.json"
     state_path.write_text(json.dumps(product_state, indent=2) + "\n", encoding="utf-8")
     outputs.append(str(state_path))
-    if not all(row["ok"] for row in relations):
-        failed = [row["id"] for row in relations if not row["ok"]]
-        extra = {
-            "a_ok": True,
-            "ok": False,
-            "status": "capability-failed",
-            "message": f"B relations failed: {failed}",
-            "relations": relations,
-            "von_mises": von,
-            "key_fillet": key_a,
-            "keyway_root": key_b,
-            "chamber_p": chamber_p,
-        }
-        (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
-        return _report(ok=False, status="capability-failed", message=extra["message"], workdir=out, outputs=outputs, extra=extra)
-
+    b_ok = all(row["ok"] for row in relations)
     extra = {
         "a_ok": True,
-        "ok": True,
-        "status": "ok",
-        "message": "damper-keyway A+B passed",
+        "b_ok": b_ok,
         "relations": relations,
         "von_mises": von,
         "key_fillet": key_a,
         "keyway_root": key_b,
-        "chamber_p": chamber_p,
+        "key_fillet_mapped": von_map_2["key_fillet"],
+        "keyway_root_mapped": von_map_2["keyway_root"],
+        "chamber_p": p_center_pa,
+        "wall_p_pa": p_wall_pa,
+        "p_kinematic": p_kin_center,
     }
+    if not b_ok:
+        failed = [row["id"] for row in relations if not row["ok"]]
+        extra["ok"] = False
+        extra["status"] = "capability-failed"
+        extra["message"] = f"B relations failed: {failed}"
+        (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
+        return _report(ok=False, status="capability-failed", message=extra["message"], workdir=out, outputs=outputs, extra=extra)
+
+    extra["ok"] = True
+    extra["status"] = "ok"
+    extra["message"] = "damper-keyway A+B passed"
     (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
     outputs.append(str(out / "scenario-report.json"))
     return _report(ok=True, status="ok", message=extra["message"], workdir=out, outputs=outputs, extra=extra)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from importlib import resources
@@ -305,21 +306,26 @@ def executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
+def _fake_cad_script(probes_path: Path) -> str:
+    """Fake FreeCADCmd copies an agreed probes.json into cwd, then the CAD files."""
+    return f"cp '{probes_path}' probes.json\ntouch damper.FCStd solid.step fluid.step\nexit 0\n"
+
+
+def _write_agreed_probes(path: Path) -> None:
+    path.write_text(json.dumps(probes_from_params(load_params())), encoding="utf-8")
+
+
 def test_run_damper_keyway_ok_with_fakes(tmp_path, monkeypatch) -> None:
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()
-    executable(
-        binary_dir / "FreeCADCmd",
-        """
-touch damper.FCStd solid.step fluid.step
-exit 0
-""",
-    )
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
     seed = tmp_path / "seed.frd"
     _seed_frd(seed, 15.5)
     executable(
         binary_dir / "ccx",
-        f"cp '{seed}' solid.frd\nprintf 'Mises  15.5\\n' > solid.dat\nexit 0\n",
+        f"cp '{seed}' solid.frd\ncp '{seed}' solid-map.frd\nprintf 'Mises  15.5\\n' > solid.dat\nexit 0\n",
     )
     executable(
         binary_dir / "blockMesh",
@@ -333,21 +339,61 @@ exit 0
     project = init_project(tmp_path / "part", name="Damper")
     result = run_damper_keyway(project)
     assert result["ok"] is True
+    assert result["report"]["b_ok"] is True
     assert result["report"]["a_ok"] is True
     assert result["status"] == "ok"
     assert all(row["ok"] for row in result["report"]["relations"])
 
 
+def test_run_damper_keyway_fails_when_cad_probes_mismatch(tmp_path, monkeypatch) -> None:
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    bad = tmp_path / "probes.json"
+    agreed = probes_from_params(load_params())
+    bad.write_text(json.dumps({name: [0.0, 0.0, 0.0] for name in agreed}), encoding="utf-8")
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(bad))
+    seed = tmp_path / "seed.frd"
+    _seed_frd(seed, 15.5)
+    executable(
+        binary_dir / "ccx",
+        f"cp '{seed}' solid.frd\ncp '{seed}' solid-map.frd\nprintf 'Mises  15.5\\n' > solid.dat\nexit 0\n",
+    )
+    executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
+    executable(
+        binary_dir / "icoFoam",
+        "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+    )
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    result = run_damper_keyway(init_project(tmp_path / "part", name="Damper"))
+    assert result["ok"] is False
+    assert "xyz" in result["message"]
+
+
+def test_run_damper_keyway_fails_without_pass2_frd(tmp_path, monkeypatch) -> None:
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
+    seed = tmp_path / "seed.frd"
+    _seed_frd(seed, 15.5)
+    executable(binary_dir / "ccx", f"cp '{seed}' solid.frd\nprintf 'Mises  15.5\\n' > solid.dat\nexit 0\n")
+    executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
+    executable(
+        binary_dir / "icoFoam",
+        "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+    )
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    result = run_damper_keyway(init_project(tmp_path / "part", name="Damper"))
+    assert result["ok"] is False
+
+
 def test_run_damper_keyway_fails_without_pressure_field(tmp_path, monkeypatch) -> None:
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()
-    executable(
-        binary_dir / "FreeCADCmd",
-        """
-touch damper.FCStd solid.step fluid.step
-exit 0
-""",
-    )
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
     seed = tmp_path / "seed.frd"
     _seed_frd(seed, 15.5)
     executable(binary_dir / "ccx", f"cp '{seed}' solid.frd\nprintf 'Mises  15.5\\n' > solid.dat\nexit 0\n")
@@ -363,7 +409,9 @@ exit 0
 def test_run_damper_keyway_fails_when_both_key_stresses_zero(tmp_path, monkeypatch) -> None:
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()
-    executable(binary_dir / "FreeCADCmd", "touch damper.FCStd solid.step fluid.step\nexit 0\n")
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
     seed = tmp_path / "seed.frd"
     _seed_frd(seed, 0.0)
     executable(binary_dir / "ccx", f"cp '{seed}' solid.frd\ntouch solid.dat\nexit 0\n")
@@ -378,7 +426,9 @@ def test_run_damper_keyway_fails_when_both_key_stresses_zero(tmp_path, monkeypat
 def test_run_damper_keyway_fails_when_key_stress_exceeds_a_band(tmp_path, monkeypatch) -> None:
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()
-    executable(binary_dir / "FreeCADCmd", "touch damper.FCStd solid.step fluid.step\nexit 0\n")
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
     seed = tmp_path / "seed.frd"
     _seed_frd(seed, 5000.0)
     executable(binary_dir / "ccx", f"cp '{seed}' solid.frd\ntouch solid.dat\nexit 0\n")
