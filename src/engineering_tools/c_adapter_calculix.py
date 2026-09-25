@@ -1,10 +1,20 @@
 """CalculiX participant adapter for C-FSI.
 
-Agents: the façade calls `run_step` then `sample_c_probes`. This module may
-execute `ccx`. It must not execute `precice` (that stays in
-`c_backend_precice.run_step`). Probe values are SI: stress Pa, displacement
-metres. Do not invent a displacement when DISP is missing or near zero; the
-deck's *DLOAD is what is supposed to move the interface.
+Agents: CalculiX joins preCICE through the calculix-adapter binary
+(`ccx_preCICE`), not a finished standalone `ccx` job. Plain `ccx` remains
+the A/B solver only. This module must not execute a process named `precice`
+(`c_backend_precice.run_step` owns that). The façade calls `run_step` then
+`sample_c_probes`. Probe values are SI: stress Pa, displacement metres.
+Do not invent a displacement when DISP is missing or near zero; the deck's
+*DLOAD is what is supposed to move the interface.
+
+Launch argv (https://precice.org/adapter-calculix-config.html), stem without
+`.inp`, participant name matching the YAML and the preCICE XML:
+
+    ccx_preCICE -i <deck-stem> -precice-participant Solid
+
+The adapter reads `config.yml` from the process working directory. It does
+not take that filename on the command line.
 """
 
 from __future__ import annotations
@@ -22,20 +32,89 @@ from engineering_tools.damper_fea import _floats, _mises_from_tensor
 from engineering_tools.damper_params import load_params, probes_from_params
 
 
-def run_step(workdir: Path, step: int) -> bool:
-    """Run `ccx` on the C deck in workdir. True only when the process exits 0.
+# Search order matches upstream binary names. Do not add plain `ccx`.
+_PARTICIPANT_BINARIES = ("ccx_preCICE", "ccx_precice", "calculix-precice")
+# preCICE participant name in XML, YAML, and `-precice-participant`.
+_SOLID_PARTICIPANT = "Solid"
+# Filename the CalculiX-preCICE adapter opens in cwd. Do not rename.
+_ADAPTER_CONFIG_NAME = "config.yml"
 
-    Each coupling index re-runs the static deck. `step` is recorded by the
-    façade; CalculiX itself has no window counter in this deck.
+
+def find_calculix_participant() -> Path | None:
+    """Return the calculix-adapter binary, or None when it is not on PATH.
+
+    Order: `ccx_preCICE`, then `ccx_precice`, then `calculix-precice`.
+    A hit on plain `ccx` is ignored; that binary is not a preCICE participant.
+    """
+    for name in _PARTICIPANT_BINARIES:
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    return None
+
+
+def prepare_solid_participant(workdir: Path, config_xml: Path) -> Path:
+    """Write `config.yml` for the CalculiX-preCICE adapter and return that path.
+
+    Schema follows https://precice.org/adapter-calculix-config.html: a
+    `participants` map (historical plural) keyed by participant name Solid,
+    one `nodes-mesh` interface, `read-data` Traction, `write-data`
+    Displacement, and `precice-config-file` pointing at the façade XML.
+
+    Agents: the mesh name `interface` is `default_policy()["mesh_name"]`.
+    The adapter prefixes `N` onto a nodes-mesh patch when it looks up the
+    CalculiX *NSET, so a live deck NSET must be `Ninterface` for patch
+    `interface`. Data names are the C policy fields, not the tutorial
+    aliases Forces/DisplacementDeltas; the adapter classifies names by
+    prefix (Force, Displacement, Pressure).
+    """
+    workdir = Path(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    config_xml = Path(config_xml)
+    # Absolute path so the adapter finds the XML regardless of case cwd.
+    precice_config = config_xml.resolve()
+    text = (
+        "participants:\n"
+        f"  {_SOLID_PARTICIPANT}:\n"
+        "    interfaces:\n"
+        "    - nodes-mesh: interface\n"
+        "      patch: interface\n"
+        "      read-data: [Traction]\n"
+        "      write-data: [Displacement]\n"
+        f"precice-config-file: {precice_config}\n"
+    )
+    destination = workdir / _ADAPTER_CONFIG_NAME
+    destination.write_text(text, encoding="utf-8")
+    return destination
+
+
+def run_step(workdir: Path, step: int) -> bool:
+    """Launch the CalculiX-preCICE participant on the deck in `workdir`.
+
+    True only when `ccx_preCICE` (or a documented alias) exits 0. Missing
+    participant binary or missing `*.inp` returns False and does not spawn
+    `ccx` or `precice`. `step` is the façade coupling index; the adapter
+    argv has no window counter (upstream runs the coupled step inside one
+    process). When the façade has already written `precice-config.xml`
+    beside this workdir, this call also refreshes `config.yml` so the
+    participant can open it.
     """
     del step
+    workdir = Path(workdir)
+    binary = find_calculix_participant()
     decks = sorted(workdir.glob("*.inp"))
-    ccx = shutil.which("ccx")
-    if not decks or not ccx:
+    if binary is None or not decks:
         return False
+    # Refuse the two binaries this module must never treat as the participant.
+    if binary.name in {"ccx", "precice"}:
+        return False
+    sibling_xml = workdir.parent / "precice-config.xml"
+    if sibling_xml.is_file():
+        prepare_solid_participant(workdir, sibling_xml)
+    argv = [str(binary), "-i", decks[0].stem, "-precice-participant", _SOLID_PARTICIPANT]
     try:
         proc = subprocess.run(
-            [ccx, decks[0].stem],
+            argv,
             cwd=workdir,
             capture_output=True,
             text=True,
