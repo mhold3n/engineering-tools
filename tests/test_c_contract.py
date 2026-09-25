@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from engineering_tools.c_cli import parse_coupling_flags
 from engineering_tools.c_contract import mm_to_m, new_session, request_capability
+from engineering_tools.c_snapshot import freeze_ab_snapshot
 
 
 def test_default_is_no_coupling() -> None:
@@ -47,3 +50,16 @@ def test_unavailable_capability_is_missing() -> None:
 def test_unknown_capability_is_broken() -> None:
     row = request_capability("not-a-c-op")
     assert row["status"] == "broken"
+
+
+def test_freeze_ab_snapshot_copies_and_digests(tmp_path: Path) -> None:
+    src = tmp_path / "ab"
+    src.mkdir()
+    (src / "product-state.json").write_text('{"coupling":"weak-map"}\n', encoding="utf-8")
+    (src / "scenario-report.json").write_text('{"a_ok":true,"b_ok":true}\n', encoding="utf-8")
+    dest = tmp_path / "snap"
+    digest = freeze_ab_snapshot(src, dest)
+    assert len(digest) == 64
+    assert (dest / "product-state.json").read_text(encoding="utf-8") == (src / "product-state.json").read_text(encoding="utf-8")
+    (dest / "product-state.json").write_text("mutated", encoding="utf-8")
+    assert (src / "product-state.json").read_text(encoding="utf-8") == '{"coupling":"weak-map"}\n'
