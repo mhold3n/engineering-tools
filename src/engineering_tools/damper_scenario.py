@@ -32,7 +32,6 @@ from .damper_params import (
     probes_from_params,
     require_density,
 )
-from .c_facade import run_c_fsi
 from .damper_relations import evaluate_relations
 from .hello_probes import _find_freecad_cmd, _openfoam_tool, _run_openfoam
 
@@ -68,8 +67,14 @@ def _c_not_started(body: dict[str, Any], coupling: str | None) -> dict[str, Any]
     note = {"evaluated": False, "reason": "prerequisite_not_ok"}
     body["c"] = note
     report = body.get("report")
-    if isinstance(report, dict):
-        report["c"] = dict(note)
+    if not isinstance(report, dict):
+        report = {}
+        body["report"] = report
+    # Attach first, then persist, so the file cannot lead the in-memory note.
+    report["c"] = dict(note)
+    workdir = Path(body["workdir"])
+    workdir.mkdir(parents=True, exist_ok=True)
+    (workdir / "scenario-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return body
 
 
@@ -371,6 +376,35 @@ def run_damper_keyway(project: str | Path, coupling: str | None = None) -> dict[
     outputs.append(str(out / "scenario-report.json"))
     if coupling != "c":
         return _report(ok=True, status="ok", message=extra["message"], workdir=out, outputs=outputs, extra=extra)
+
+    # Import only when C runs. A missing first-party adapter is C broken,
+    # not an A/B crash and not prerequisite_not_ok (A/B already passed).
+    try:
+        from .c_facade import run_c_fsi
+    except ImportError as exc:
+        summary = {
+            "evaluated": True,
+            "status": "broken",
+            "c_ok": False,
+            "reason": f"ImportError: {exc}",
+        }
+        extra["c_ok"] = False
+        extra["c"] = summary
+        extra["ok"] = False
+        extra["status"] = "broken"
+        extra["message"] = f"C-FSI broken: import failed: {exc}"
+        (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
+        body = _report(
+            ok=False,
+            status="broken",
+            message=str(extra["message"]),
+            workdir=out,
+            outputs=outputs,
+            extra=extra,
+        )
+        body["c"] = summary
+        body["c_ok"] = False
+        return body
 
     # A/B files are already on disk. The façade freezes them before this report gains C fields.
     session = run_c_fsi(ab_dir=out, out=out / "c-fsi", params=params)

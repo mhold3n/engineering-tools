@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from engineering_tools.c_cli import parse_coupling_flags
 from engineering_tools.c_backend_precice import default_policy, generate_precice_config
 from engineering_tools.c_contract import mm_to_m, new_session, request_capability
@@ -158,3 +160,15 @@ def test_freeze_ab_snapshot_copies_and_digests(tmp_path: Path) -> None:
     assert (dest / "product-state.json").read_text(encoding="utf-8") == (src / "product-state.json").read_text(encoding="utf-8")
     (dest / "product-state.json").write_text("mutated", encoding="utf-8")
     assert (src / "product-state.json").read_text(encoding="utf-8") == '{"coupling":"weak-map"}\n'
+
+
+def test_freeze_ab_snapshot_missing_json_raises(tmp_path: Path) -> None:
+    """A/B freeze fails closed when either JSON pin is absent.
+
+    Agents: FileNotFoundError is the contract the façade maps to C broken.
+    An empty directory is not a snapshot.
+    """
+    src = tmp_path / "ab"
+    src.mkdir()
+    with pytest.raises(FileNotFoundError):
+        freeze_ab_snapshot(src, tmp_path / "snap")

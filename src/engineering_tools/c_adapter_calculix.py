@@ -90,9 +90,10 @@ def sample_c_probes(out: Path) -> dict[str, Any]:
     """Sample the solid workdir FRD into SI probe rows.
 
     `housing.wall.displacement` xyz is the centroid of interface nodes.
-    `key.root.von_mises` uses the nearest node to the keyway_root pin.
-    That pin is not on the one-element −X hex, so the reported xyz will
-    miss geometric_tolerance_m until the mesh includes the key root.
+    `key.root.von_mises` uses the nearest stressed node to the keyway_root
+    pin. That node is element 2's first corner (1 mm +Y of the pin). Report
+    that node's coordinates. Do not substitute canonical_xyz_m; a substituted
+    pin is not a mesh node and fails the live sample test.
     Missing FRD or DISP yields a partial dict; the façade fail-closes.
     """
     frd_path = _latest_frd(out)

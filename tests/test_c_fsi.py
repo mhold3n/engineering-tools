@@ -227,3 +227,122 @@ def test_run_c_fsi_broken_when_pressure_out_of_band(tmp_path: Path, monkeypatch:
 def test_scenario_module_does_not_spawn_precice() -> None:
     text = Path("src/engineering_tools/damper_scenario.py").read_text(encoding="utf-8")
     assert "precice" not in text.lower()
+
+
+def _inp_nodes(text: str) -> dict[int, tuple[float, float, float]]:
+    """Parse *NODE rows from a CalculiX deck. Stops at the next keyword."""
+    nodes: dict[int, tuple[float, float, float]] = {}
+    in_nodes = False
+    for line in text.splitlines():
+        if line.startswith("*NODE"):
+            in_nodes = True
+            continue
+        if in_nodes and line.startswith("*"):
+            break
+        if not in_nodes or not line.strip():
+            continue
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) < 4:
+            continue
+        nodes[int(parts[0])] = (float(parts[1]), float(parts[2]), float(parts[3]))
+    return nodes
+
+
+def _frd_from_mesh_nodes(nodes: dict[int, tuple[float, float, float]], mises: float) -> str:
+    """FRD whose 2C coordinates are the deck nodes, with a STRESS block.
+
+    Agents: this is a live sample input. Do not plant canonical xyz here;
+    the sampler must discover keyway_root from these node coordinates.
+    """
+    lines = ["    2C"]
+    for nid, xyz in nodes.items():
+        lines.append(f" -1         {nid} {xyz[0]:.5e} {xyz[1]:.5e} {xyz[2]:.5e}")
+    lines.append(" -3")
+    lines.append(" -4  STRESS      6    1")
+    for nid in nodes:
+        lines.append(
+            f" -1         {nid} {mises:.5e} 0.00000e+00 0.00000e+00 0.00000e+00 0.00000e+00 0.00000e+00"
+        )
+    lines.append(" -3")
+    return "\n".join(lines) + "\n"
+
+
+def test_live_sample_c_probes_key_root_within_geometric_tolerance(tmp_path: Path) -> None:
+    """key.root.von_mises xyz comes from a mesh node near keyway_root (+X).
+
+    Agents: no monkeypatch of xyz. The FRD is built only from *NODE rows
+    written by write_c_solid_inp. Substituting canonical_xyz_m would still
+    sit on the pin; the returned point must be one of those mesh nodes and
+    lie inside geometric_tolerance_m of the pin.
+    """
+    from engineering_tools.c_adapter_calculix import sample_c_probes
+    from engineering_tools.c_contract import mm_to_m
+    from engineering_tools.damper_params import probes_from_params
+
+    params = load_params()
+    deck = tmp_path / "c-solid.inp"
+    write_c_solid_inp(params, deck)
+    nodes = _inp_nodes(deck.read_text(encoding="utf-8"))
+    work = tmp_path / "c-solid"
+    work.mkdir()
+    (work / "c-solid.frd").write_text(_frd_from_mesh_nodes(nodes, 10.07), encoding="utf-8")
+    probes = sample_c_probes(work)
+    row = probes["key.root.von_mises"]
+    target = mm_to_m(probes_from_params(params)["keyway_root"])
+    tolerance = float(load_c_fsi_bands()["geometric_tolerance_m"])
+    distance = sum((row["xyz_m"][i] - target[i]) ** 2 for i in range(3)) ** 0.5
+    assert distance <= tolerance
+    mesh_m = [mm_to_m(list(xyz)) for xyz in nodes.values()]
+    assert any(row["xyz_m"] == pytest.approx(point) for point in mesh_m)
+
+
+def test_fluid_case_writes_pressure_reference_and_point_motion(tmp_path: Path) -> None:
+    """Moving-mesh dicts name the pressure reference and the displacement fields.
+
+    Agents: this does not launch pimpleFoam. It only checks the files
+    write_c_fluid_case plus _CASE_FILES would hand a real solver.
+    """
+    from engineering_tools.c_adapter_openfoam import _stage_solver_dicts
+
+    case = tmp_path / "c-foam"
+    write_c_fluid_case(load_params(), case)
+    _stage_solver_dicts(case, 0)
+    solution = (case / "system" / "fvSolution").read_text(encoding="utf-8")
+    assert "pRefCell" in solution
+    assert "pRefValue" in solution
+    assert "cellDisplacement" in solution
+    point = (case / "0" / "pointDisplacement").read_text(encoding="utf-8")
+    assert "pointDisplacement" in point
+
+
+def test_solid_inp_dload_when_wall_pressure_set(tmp_path: Path) -> None:
+    """*DLOAD carries B wall pressure when the façade passes wall_pressure_pa."""
+    path = tmp_path / "c-solid.inp"
+    write_c_solid_inp(load_params(), path, wall_pressure_pa=1700.0)
+    text = path.read_text(encoding="utf-8")
+    # Keyword line, not the deck comment that mentions the card name.
+    assert "\n*DLOAD\n" in text
+    bare = tmp_path / "bare.inp"
+    write_c_solid_inp(load_params(), bare)
+    assert "\n*DLOAD\n" not in bare.read_text(encoding="utf-8")
+
+
+def test_run_c_fsi_broken_when_snapshot_json_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Binaries present, A/B JSON absent: freeze failure is C broken.
+
+    Agents: do not label this missing. Dependencies resolved; the snapshot
+    contract failed. c-session.json still records the attempt.
+    """
+    from engineering_tools.c_facade import run_c_fsi
+
+    _c_tools(tmp_path, monkeypatch)
+    ab = tmp_path / "ab"
+    ab.mkdir()
+    (ab / "damper.FCStd").write_text("cad", encoding="utf-8")
+    (ab / "solid.step").write_text("solid", encoding="utf-8")
+    session = run_c_fsi(ab_dir=ab, out=tmp_path / "c-fsi", params=load_params())
+    assert session["status"] == "broken"
+    assert session["c_ok"] is False
+    assert session["evaluated"] is True
+    persisted = json.loads((tmp_path / "c-fsi" / "c-session.json").read_text(encoding="utf-8"))
+    assert persisted["status"] == "broken"

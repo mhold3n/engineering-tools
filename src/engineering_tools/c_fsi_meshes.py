@@ -5,12 +5,16 @@ in `damper_cfd`) and B's four-brick sandwich (`write_solid_inp` in
 `damper_fea`). Do not call those writers from here.
 
 Geometry:
-- Solid: one C3D8 through the housing wall on the chamber_wall side (−X).
-  Inner face (NSET `interface`) sits at x = -housing_id_mm/2. Outer face
-  sits at x = -housing_od_mm/2. CalculiX coordinates stay in the CAD
-  millimetre frame (consistent with MPa). Element connectivity is swapped
-  versus node-id order so x still increases along the first edge (positive
-  Jacobian): global nodes 1,4,8,5 remain the interface.
+- Solid: two C3D8 elements. Element 1 is the housing wall on the
+  chamber_wall side (−X). Inner face (NSET `interface`) sits at
+  x = -housing_id_mm/2. Outer face sits at x = -housing_od_mm/2.
+  Element 2 is a small hex on +X whose first node sits 1 mm +Y from
+  `keyway_root`, inside `geometric_tolerance_m` (0.002 m) and not on the
+  canonical pin. CalculiX coordinates stay in the CAD millimetre frame
+  (consistent with MPa). Element 1 connectivity is swapped versus node-id
+  order so x still increases along the first edge (positive Jacobian):
+  global nodes 1,4,8,5 remain the interface. Element 2 uses standard
+  node order because its first edge already points +X.
 - Fluid: one hex blockMesh from -housing_id/2 to +housing_id/2 (x and y),
   z spans the chamber length, all converted to metres in blockMeshDict.
   The moving wall is the −X patch, the same plane as chamber_wall and the
@@ -82,15 +86,29 @@ def _mm(params: dict[str, Any], key: str) -> float:
     return value
 
 
-def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: float | None = None) -> None:
-    """Write one C3D8 whose inner face is the chamber_wall (−X) interface.
+def _keyway_sample_node_mm(params: dict[str, Any]) -> tuple[float, float, float]:
+    """Return the solid node that sample_c_probes must pick for the key root.
 
-    y spans ±key_width/2 and z spans ±key_length/2 so the hex has volume.
-    OD nodes are held (1–3). Interface nodes are free. Units in the deck
-    are millimetres and MPa. When wall_pressure_pa is set, *DLOAD applies
-    that B wall pressure (Pa converted to MPa) on the interface face so a
-    static step has a nonzero u. Do not invent a displacement in the adapter
-    if this load still falls under the motion floor; that is calibration.
+    Agents: this is keyway_root shifted 1 mm in +Y. That offset is inside
+    geometric_tolerance_m and is not the canonical pin, so a sampler that
+    copies canonical_xyz_m fails a mesh-node comparison. Other corners of
+    the key hex are 4 mm away and fall outside the 2 mm tolerance.
+    """
+    root = probes_from_params(params)["keyway_root"]
+    return (float(root[0]), float(root[1]) + 1.0, float(root[2]))
+
+
+def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: float | None = None) -> None:
+    """Write the −X interface hex plus a +X keyway hex.
+
+    Element 1: y spans ±key_width/2 and z spans ±key_length/2 so the wall
+    hex has volume. OD nodes are held. Interface nodes are free.
+    Element 2: one corner is `_keyway_sample_node_mm` so live FRD sampling
+    can resolve key.root.von_mises. Units in the deck are millimetres and
+    MPa. When wall_pressure_pa is set, *DLOAD applies that B wall pressure
+    (Pa converted to MPa) on the interface face so a static step has a
+    nonzero u. Do not invent a displacement in the adapter if this load
+    still falls under the motion floor; that is calibration.
     """
     x_id = _mm(params, "housing_id_mm") / 2.0
     x_od = _mm(params, "housing_od_mm") / 2.0
@@ -113,7 +131,23 @@ def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: f
         (-x_od, hy, hz),
         (-x_id, hy, hz),
     )
-    node_lines = [f"{nid}, {x:.6f}, {y:.6f}, {z:.6f}" for nid, (x, y, z) in enumerate(corners, start=1)]
+    # Key hex is separate from the interface. Node 9 is the only node inside
+    # geometric_tolerance_m of keyway_root. span_mm keeps the other seven
+    # corners outside that ball.
+    span_mm = 4.0
+    kx, ky, kz = _keyway_sample_node_mm(params)
+    key_corners = (
+        (kx, ky, kz),
+        (kx + span_mm, ky, kz),
+        (kx + span_mm, ky + span_mm, kz),
+        (kx, ky + span_mm, kz),
+        (kx, ky, kz + span_mm),
+        (kx + span_mm, ky, kz + span_mm),
+        (kx + span_mm, ky + span_mm, kz + span_mm),
+        (kx, ky + span_mm, kz + span_mm),
+    )
+    all_corners = corners + key_corners
+    node_lines = [f"{nid}, {x:.6f}, {y:.6f}, {z:.6f}" for nid, (x, y, z) in enumerate(all_corners, start=1)]
     iface = ", ".join(str(nid) for nid in interface_node_ids())
     # OD face nodes are the complement of the interface set.
     od_nodes = (2, 3, 6, 7)
@@ -124,16 +158,18 @@ def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: f
     if wall_pressure_pa is not None and wall_pressure_pa == wall_pressure_pa:
         pressure_mpa = float(wall_pressure_pa) / 1.0e6
         dload = f"*DLOAD\n1, P4, {pressure_mpa}\n"
-    text = f"""** C-FSI solid: one C3D8 through the housing wall on −X.
+    text = f"""** C-FSI solid: wall hex on −X plus a keyway hex on +X.
 ** Independent of the A cavity and the B sandwich.
 ** interface nodes are the chamber_wall face at x = -housing_id_mm/2.
-** *DLOAD P4 is B wall pressure in MPa so interface u is not prescribed.
+** Element 2 node 9 is the keyway_root sample (1 mm +Y), not the canonical pin.
+** DLOAD P4 is B wall pressure in MPa so interface u is not prescribed.
 *HEADING
 c-fsi solid
 *NODE
 {chr(10).join(node_lines)}
 *ELEMENT, TYPE=C3D8, ELSET=EALL
 1, 2, 1, 4, 3, 6, 5, 8, 7
+2, 9, 10, 11, 12, 13, 14, 15, 16
 *NSET, NSET=interface
 {iface}
 *MATERIAL, NAME=Steel

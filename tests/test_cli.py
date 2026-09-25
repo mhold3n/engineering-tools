@@ -93,6 +93,31 @@ exit 0
     assert jobs[-1]["tool"] == "damper-keyway"
 
 
+def test_fsi_and_coupling_c_call_scenario_with_coupling_c(tmp_path: Path, monkeypatch) -> None:
+    """--fsi and --coupling c both reach run_damper_keyway with coupling='c'.
+
+    Agents: this monkeypatches the scenario entry. It does not run solvers.
+    The CLI must pass the token through; parsing alone is not the lock.
+    """
+    seen: list[str | None] = []
+
+    def _fake(project, coupling=None):
+        seen.append(coupling)
+        return {
+            "ok": True,
+            "status": "ok",
+            "message": "damper-keyway A+B+C passed",
+            "workdir": str(project),
+            "outputs": [],
+        }
+
+    monkeypatch.setattr("engineering_tools.damper_scenario.run_damper_keyway", _fake)
+    project = init_project(tmp_path / "part", name="Damper")
+    assert main(["scenario", "damper-keyway", "--fsi", "--project", str(project)]) == 0
+    assert main(["scenario", "damper-keyway", "--coupling", "c", "--project", str(project)]) == 0
+    assert seen == ["c", "c"]
+
+
 def test_unknown_coupling_exits_before_scenario(tmp_path: Path, capsys) -> None:
     """Unknown --coupling is broken before CAD or solvers run."""
     project = tmp_path / "part"

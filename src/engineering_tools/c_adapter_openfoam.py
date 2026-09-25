@@ -82,8 +82,22 @@ solvers
     p { solver PCG; preconditioner DIC; tolerance 1e-6; relTol 0.05; }
     pFinal { $p; relTol 0; }
     U { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-5; relTol 0; }
+    cellDisplacement
+    {
+        solver smoothSolver;
+        smoother symGaussSeidel;
+        tolerance 1e-5;
+        relTol 0;
+    }
 }
-PIMPLE { nOuterCorrectors 1; nCorrectors 2; nNonOrthogonalCorrectors 0; }
+PIMPLE
+{
+    nOuterCorrectors 1;
+    nCorrectors 2;
+    nNonOrthogonalCorrectors 0;
+    pRefCell 0;
+    pRefValue 0;
+}
 """,
     "constant/transportProperties": """FoamFile
 {
@@ -134,6 +148,25 @@ boundaryField
     interface { type movingWallVelocity; value uniform (0 0 0); }
     walls { type noSlip; }
     lid { type noSlip; }
+}
+""",
+    # pointDisplacement is the motion-solver field. cellDisplacement is solved
+    # from fvSolution; this file gives every patch a value so pimpleFoam can
+    # start. A preCICE adapter may replace the interface BC later.
+    "0/pointDisplacement": """FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       pointVectorField;
+    object      pointDisplacement;
+}
+dimensions      [0 1 0 0 0 0 0];
+internalField   uniform (0 0 0);
+boundaryField
+{
+    interface { type fixedValue; value uniform (0 0 0); }
+    walls { type fixedValue; value uniform (0 0 0); }
+    lid { type fixedValue; value uniform (0 0 0); }
 }
 """,
 }
