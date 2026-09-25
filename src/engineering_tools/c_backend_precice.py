@@ -53,8 +53,9 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
     solid_solver = escape(solid["solver"])
     fluid_solver = escape(fluid["solver"])
     mesh = escape(mesh_name)
-    fluid_data = escape(read_by_fluid)
-    solid_data = escape(read_by_solid)
+    # read_by_* names what each side consumes; the other participant writes that field.
+    displacement = escape(read_by_fluid)
+    traction = escape(read_by_solid)
 
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -64,29 +65,31 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
         "  </mesh>",
         f'  <participant name="{solid_name}">',
         f"    <solver:{solid_solver}/>",
-        f'    <write-data name="{solid_data}"/>',
-        f'    <read-data name="{fluid_data}"/>',
+        f'    <write-data name="{displacement}"/>',
+        f'    <read-data name="{traction}"/>',
         f'    <use-mesh name="{mesh}" provide="yes"/>',
         "  </participant>",
         f'  <participant name="{fluid_name}">',
         f"    <solver:{fluid_solver}/>",
-        f'    <write-data name="{fluid_data}"/>',
-        f'    <read-data name="{solid_data}"/>',
+        f'    <write-data name="{traction}"/>',
+        f'    <read-data name="{displacement}"/>',
         f'    <use-mesh name="{mesh}" from="{solid_name}"/>',
         "  </participant>",
         "  <coupling-scheme:parallel-explicit>",
         f'    <time-window-size value="{time_window}"/>',
-        f'    <max-time value="{time_window * max_iterations}"/>',
         f'    <participants first="{solid_name}" second="{fluid_name}"/>',
         (
-            f'    <exchange data1="{solid_data}" mesh1="{mesh}" '
-            f'from1="{fluid_name}" to1="{solid_name}"/>'
+            f'    <exchange data="{traction}" mesh="{mesh}" '
+            f'from="{fluid_name}" to="{solid_name}"/>'
         ),
         (
-            f'    <exchange data2="{fluid_data}" mesh2="{mesh}" '
-            f'from2="{solid_name}" to2="{fluid_name}"/>'
+            f'    <exchange data="{displacement}" mesh="{mesh}" '
+            f'from="{solid_name}" to="{fluid_name}"/>'
         ),
         "  </coupling-scheme:parallel-explicit>",
+        "  <coupling-scheme:serial-implicit>",
+        f'    <max-iterations value="{max_iterations}"/>',
+        "  </coupling-scheme:serial-implicit>",
         "</precice-configuration>",
         "",
     ]

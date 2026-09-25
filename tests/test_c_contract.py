@@ -84,6 +84,48 @@ def test_generated_xml_uses_policy_names_not_a_checked_in_file() -> None:
     assert "Steel" not in xml
 
 
+def _participant_block(xml: str, name: str) -> str:
+    marker = f'name="{name}"'
+    start = xml.index(f"<participant {marker}")
+    end = xml.index("</participant>", start)
+    return xml[start:end]
+
+
+def test_precice_participant_read_write_matches_c_policy() -> None:
+    policy = default_policy()
+    xml = generate_precice_config(policy)
+    solid = _participant_block(xml, "Solid")
+    fluid = _participant_block(xml, "Fluid")
+    assert 'write-data name="Displacement"' in solid
+    assert 'read-data name="Traction"' in solid
+    assert 'write-data name="Traction"' not in solid
+    assert 'write-data name="Displacement"' not in fluid
+    assert 'write-data name="Traction"' in fluid
+    assert 'read-data name="Displacement"' in fluid
+
+
+def test_precice_exchanges_match_c_policy() -> None:
+    policy = default_policy()
+    xml = generate_precice_config(policy)
+    assert (
+        f'exchange data="Traction" mesh="interface" from="Fluid" to="Solid"' in xml
+    )
+    assert (
+        f'exchange data="Displacement" mesh="interface" from="Solid" to="Fluid"'
+        in xml
+    )
+
+
+def test_max_iterations_not_encoded_as_max_time() -> None:
+    policy = default_policy()
+    xml = generate_precice_config(policy)
+    bogus = float(policy["time_window"]) * int(policy["max_iterations"])
+    assert "<max-time" not in xml
+    assert f'<max-time value="{bogus}"' not in xml
+    assert f'<max-iterations value="{policy["max_iterations"]}"' in xml
+    assert "coupling-scheme:serial-implicit" in xml
+
+
 def test_generate_precice_config_is_independent_of_on_disk_xml(tmp_path: Path) -> None:
     policy = default_policy()
     stale = tmp_path / "precice-config.xml"
