@@ -172,9 +172,39 @@ def test_generated_xml_is_precice2_config_not_invented_solver_tags() -> None:
     assert '<data:vector name="Traction"' in xml
     assert "m2n:sockets" in xml
     assert "mapping:nearest-neighbor" in xml
-    assert "<solver:" not in xml
+    # `<solver-interface>` is the preCICE 2 wrapper. `<solver:calculix/>` is not.
+    without_v2_wrapper = xml.replace("solver-interface", "precice-root")
+    assert "<solver:" not in without_v2_wrapper
     assert "provide-mesh" in xml or 'provide="yes"' in xml
     assert "receive-mesh" in xml or 'from="' in xml
+
+
+def test_precice_v2_solver_interface_dimensions_m2n_and_mapping() -> None:
+    """XML matches the v2 tutorial shape CalculiX and OpenFOAM adapters load.
+
+    Agents: preCICE 2 (tutorials tag v202211.0, perpendicular-flap and
+    elastic-tube-3d) wraps data, meshes, participants, m2n, and the scheme
+    in `<solver-interface dimensions="N">`. That attribute is the mesh
+    dimension; a `dimensions` attribute on `<mesh>` is unknown and the v2
+    parser aborts. m2n uses `from`/`to` (v3 renamed those to acceptor/
+    connector). Mapping uses `direction` and `constraint` the same way the
+    tutorials do. Do not emit `<solver:…/>`.
+    """
+    xml = generate_precice_config(default_policy())
+    assert '<solver-interface dimensions="3">' in xml
+    assert xml.index("<solver-interface") < xml.index("<data:vector")
+    assert xml.index("</solver-interface>") > xml.index("</coupling-scheme:serial-implicit>")
+    assert '<mesh name="interface">' in xml
+    assert '<mesh name="interface-fluid">' in xml
+    assert 'dimensions="' not in xml.split("<solver-interface", 1)[1].split(">", 1)[1]
+    assert 'm2n:sockets from="Fluid" to="Solid"' in xml
+    assert "acceptor=" not in xml
+    assert "connector=" not in xml
+    fluid = _participant_block(xml, "Fluid")
+    assert 'mapping:nearest-neighbor direction="write"' in fluid
+    assert 'constraint="conservative"' in fluid
+    assert 'mapping:nearest-neighbor direction="read"' in fluid
+    assert 'constraint="consistent"' in fluid
 
 
 def test_find_precice_checks_tools_then_binprecice_then_ci_alias(
