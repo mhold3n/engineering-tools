@@ -133,6 +133,6 @@ Missing FreeCADCmd / ccx / blockMesh|icoFoam: scenario status `missing` (exit 1)
 ## Later (not this spec)
 
 - MCP wrapping `etools scenario`
-- Approach B weak coupling: map CFD `p` at `chamber_wall` into the next CalculiX pressure load
+- Approach B weak coupling: specified in `docs/superpowers/specs/2026-09-24-damper-keyway-b-weak-map-design.md`
 - Approach C: FSI
 - Richer annular damper physics
