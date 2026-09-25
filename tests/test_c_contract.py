@@ -2,6 +2,7 @@ from pathlib import Path
 
 from engineering_tools.c_cli import parse_coupling_flags
 from engineering_tools.c_contract import mm_to_m, new_session, request_capability
+from engineering_tools.c_parity import in_band, load_c_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
 
 
@@ -50,6 +51,24 @@ def test_unavailable_capability_is_missing() -> None:
 def test_unknown_capability_is_broken() -> None:
     row = request_capability("not-a-c-op")
     assert row["status"] == "broken"
+
+
+def test_in_band_abs_rel() -> None:
+    assert in_band(10.0, 10.0, 0.0, 0.0) is True
+    assert in_band(12.0, 10.0, 1.0, 0.0) is False
+    assert in_band(12.0, 10.0, 1.0, 0.2) is True
+
+
+def test_mpa_to_pa() -> None:
+    assert mpa_to_pa(2.0) == 2.0e6
+
+
+def test_packaged_c_fsi_bands_have_required_keys() -> None:
+    bands = load_c_fsi_bands()
+    assert bands["motion_floor_m"] > 0
+    assert "housing.wall.pressure" in bands["parity"]
+    assert bands["parity"]["housing.wall.pressure"]["abs"] >= 0
+    assert "housing.wall.displacement" not in bands["parity"]
 
 
 def test_freeze_ab_snapshot_copies_and_digests(tmp_path: Path) -> None:

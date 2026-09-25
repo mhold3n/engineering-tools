@@ -1,0 +1,11 @@
+{
+  "calibration": "CI placeholder. Not Ubuntu acceptance. Freeze after a calibration run, then require a second clean Ubuntu --coupling c.",
+  "motion_floor_m": 1e-12,
+  "geometric_tolerance_m": 0.002,
+  "n_steps": 2,
+  "parity": {
+    "housing.wall.pressure": {"abs": 1e9, "rel": 1e6},
+    "key.root.von_mises": {"abs": 1e9, "rel": 1e6},
+    "housing.wall.traction": {"abs": 1e9, "rel": 1e6}
+  }
+}
