@@ -1,14 +1,19 @@
 """OpenFOAM participant adapter for C-FSI.
 
-Agents: the façade calls `run_step` then `sample_c_probes`. This module may
-execute `blockMesh` and `pimpleFoam`. It must not execute `precice`.
-`sample_c_probes` returns SI pascals. Incompressible `p` is kinematic
-(m^2/s^2), same conversion as A (`kinematic_to_pa`). Wall xyz is the
-−X `interface` patch centre parsed from blockMeshDict, not the cell centre.
+Agents: Fluid is a preCICE participant. `prepare_fluid_participant` writes
+`precice-adapter-config.yml` and the OpenFOAM-preCICE function object.
+This module may execute `blockMesh` and `pimpleFoam`. It must not execute
+`precice`. The façade later starts `pimpleFoam` in the prepared case so
+`libpreciceAdapterFunctionObject.so` attaches participant Fluid to
+`precice-config.xml`. `sample_c_probes` returns SI pascals. Incompressible
+`p` is kinematic (m^2/s^2), same conversion as A (`kinematic_to_pa`).
+Wall xyz is the −X `interface` patch centre parsed from blockMeshDict,
+not the cell centre.
 """
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -172,6 +177,85 @@ boundaryField
 }
 
 
+# OpenFOAM-preCICE function object. Name matches the adapter tutorial type.
+# pRef, pointDisplacement, and cellDisplacement stay in their own files.
+_ADAPTER_FUNCTION = """
+functions
+{
+    preciceAdapter
+    {
+        type            preciceAdapterFunctionObject;
+        libs            ("libpreciceAdapterFunctionObject.so");
+    }
+}
+"""
+
+
+def _with_adapter_function(control: str) -> str:
+    """Append the preCICE function object when controlDict does not have it.
+
+    Agents: a second `functions` dictionary is a Foam error, so this returns
+    the text unchanged once both the type and the library name are present.
+    """
+    if "preciceAdapterFunctionObject" in control and "libpreciceAdapterFunctionObject.so" in control:
+        return control
+    return control.rstrip() + "\n" + _ADAPTER_FUNCTION
+
+
+def _config_reference(config_xml: Path, workdir: Path) -> str:
+    """Adapter path to precice-config.xml, relative to the case when possible.
+
+    Agents: the OpenFOAM adapter opens `precice-config-file` from the case
+    directory. `relpath` fails across filesystems; the absolute path is the
+    fallback.
+    """
+    try:
+        return Path(os.path.relpath(config_xml.resolve(), workdir.resolve())).as_posix()
+    except (OSError, ValueError):
+        return config_xml.as_posix()
+
+
+def _write_precice_adapter_config(workdir: Path, config_xml: Path) -> None:
+    """Write official-style precice-adapter-config.yml for participant Fluid.
+
+    Agents: mesh `interface` is the C policy mesh and the OpenFOAM patch.
+    Fluid reads Displacement and writes Traction (the precice-config.xml
+    data name; Stress is the adapter's other traction-like write).
+    """
+    config_ref = _config_reference(config_xml, workdir)
+    text = f"""participant: Fluid
+
+precice-config-file: "{config_ref}"
+
+interfaces:
+  - mesh: interface
+    locations: faceCenters
+    patches:
+      - interface
+    read-data:
+      - Displacement
+    write-data:
+      - Traction
+"""
+    dest = workdir / "precice-adapter-config.yml"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(text, encoding="utf-8")
+
+
+def prepare_fluid_participant(workdir: Path, config_xml: Path) -> None:
+    """Stage adapter files so OpenFOAM can join as participant Fluid.
+
+    Agents: writes the moving-mesh dicts (including pRef, pointDisplacement,
+    and cellDisplacement), `precice-adapter-config.yml`, and the
+    preciceAdapter function object. Does not execute precice, blockMesh,
+    or pimpleFoam. The façade should start pimpleFoam in `workdir` after
+    this returns; the function object loads the adapter and attaches to
+    `config_xml`.
+    """
+    _stage_solver_dicts(workdir, 0)
+    _write_precice_adapter_config(workdir, config_xml)
+
+
 def _stage_solver_dicts(workdir: Path, step: int) -> None:
     """Write the minimal moving-mesh case around the C blockMeshDict.
 
@@ -190,7 +274,10 @@ def _stage_solver_dicts(workdir: Path, step: int) -> None:
         text = body
         if relative == "system/controlDict":
             # One window per façade index. Fake pimpleFoam ignores the file.
-            text = body.replace("endTime         0.01;", f"endTime         {0.01 * (step + 1)};")
+            # The function object makes this case a Fluid participant.
+            text = _with_adapter_function(
+                body.replace("endTime         0.01;", f"endTime         {0.01 * (step + 1)};")
+            )
         dest.write_text(text, encoding="utf-8")
 
 
@@ -207,7 +294,20 @@ def _tool_ok(name: str, workdir: Path) -> bool:
 
 
 def run_step(workdir: Path, step: int) -> bool:
-    """Mesh the C case and run pimpleFoam. True only when both exit 0."""
+    """Mesh the Fluid case. Do not launch precice.
+
+    Agents: when the façade has written `../precice-config.xml`, stage the
+    adapter first so this directory is participant Fluid. `blockMesh` always
+    runs. `pimpleFoam` still runs as the current façade's startability path
+    (the CI fake writes kinematic `p`). Coupling stays outside this module:
+    the façade should call `prepare_fluid_participant` and start `pimpleFoam`
+    itself once it owns the participant launch. True only when blockMesh and
+    pimpleFoam both exit 0.
+    """
+    config_xml = workdir.parent / "precice-config.xml"
+    if config_xml.is_file():
+        prepare_fluid_participant(workdir, config_xml)
+    # Restage so endTime matches this window. The adapter yml is left in place.
     _stage_solver_dicts(workdir, step)
     if not _tool_ok("blockMesh", workdir):
         return False
