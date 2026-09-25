@@ -40,14 +40,23 @@ def params_digest(params: dict[str, Any]) -> str:
 
 
 def probes_from_params(params: dict[str, Any]) -> dict[str, list[float]]:
-    """Named probe XYZ in mm; housing axis +Z, origin at chamber center."""
+    """Named probe XYZ in mm. Origin at chamber center, housing axis +Z.
+
+    key_fillet: shaft OD at the key (+X, +Y edge).
+    keyway_root: bottom of the housing slot (+X).
+    belt_land: housing OD at z=0.
+    chamber_center: origin.
+    chamber_wall: inner housing wall opposite the key (−X) so it is not the slot.
+    """
     shaft_r = float(params["shaft_od_mm"]) / 2.0
     housing_id_r = float(params["housing_id_mm"]) / 2.0
     housing_od_r = float(params["housing_od_mm"]) / 2.0
+    hy = float(params["key_width_mm"]) / 2.0
+    depth = float(params["keyway_depth_mm"])
     return {
-        "key_fillet": [shaft_r, 0.0, 0.0],
-        "keyway_root": [housing_id_r, 0.0, 0.0],
+        "key_fillet": [shaft_r, hy, 0.0],
+        "keyway_root": [housing_id_r + depth, 0.0, 0.0],
         "belt_land": [housing_od_r, 0.0, 0.0],
         "chamber_center": [0.0, 0.0, 0.0],
-        "chamber_wall": [housing_id_r, 0.0, 0.0],
+        "chamber_wall": [-housing_id_r, 0.0, 0.0],
     }

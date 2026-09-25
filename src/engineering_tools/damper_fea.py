@@ -1,4 +1,9 @@
-"""CalculiX deck for the damper scenario (one C3D8 brick, belt-land CLOAD)."""
+"""CalculiX deck for the damper scenario.
+
+Coarse radial sandwich of C3D8 bricks from damper-params (not a tet of STEP):
+shaft | key-in-gap | key-in-keyway | housing rim. Shaft-axis nodes held.
+Belt torque is a tangential (+Y) CLOAD on the OD face, traction * belt-land area.
+"""
 
 from __future__ import annotations
 
@@ -7,41 +12,74 @@ from pathlib import Path
 from typing import Any
 
 
+def _floats(payload: str) -> list[float]:
+    """Split FRD numeric fields, including glued scientific notation."""
+    return [float(x) for x in re.findall(r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?", payload)]
+
+
+def _radial_stations(params: dict[str, Any]) -> tuple[list[float], list[float], list[float]]:
+    """x (radial), y, z stations in mm matching probes_from_params."""
+    shaft_r = float(params["shaft_od_mm"]) / 2.0
+    id_r = float(params["housing_id_mm"]) / 2.0
+    od_r = float(params["housing_od_mm"]) / 2.0
+    depth = float(params["keyway_depth_mm"])
+    hy = float(params["key_width_mm"]) / 2.0
+    hz = float(params["key_length_mm"]) / 2.0
+    xs = [0.0, shaft_r, id_r, id_r + depth, od_r]
+    return xs, [-hy, hy], [-hz, hz]
+
+
+def _nid(ix: int, iy: int, iz: int) -> int:
+    """Node number: x-plane, then y, then z. 2 y × 2 z per plane."""
+    return ix * 4 + iy * 2 + iz + 1
+
+
 def write_solid_inp(params: dict[str, Any], destination: Path) -> Path:
-    """Write a hello_beam-style C3D8 deck; load scale follows belt_land_traction_mpa."""
-    load = float(params["belt_land_traction_mpa"]) * 25.0
+    """Write four C3D8 bricks; belt-land CLOAD is direction 2 (tangential)."""
+    xs, ys, zs = _radial_stations(params)
     youngs = float(params["youngs_mpa"])
     poisson = float(params["poisson"])
+    traction = float(params["belt_land_traction_mpa"])
+    area = float(params["key_width_mm"]) * float(params["key_length_mm"])
+    force = traction * area / 4.0
+    node_lines = []
+    for ix, x in enumerate(xs):
+        for iy, y in enumerate(ys):
+            for iz, z in enumerate(zs):
+                node_lines.append(f"{_nid(ix, iy, iz)}, {x:.6f}, {y:.6f}, {z:.6f}")
+    elem_lines = []
+    for ix in range(len(xs) - 1):
+        n000 = _nid(ix, 0, 0)
+        n100 = _nid(ix + 1, 0, 0)
+        n110 = _nid(ix + 1, 1, 0)
+        n010 = _nid(ix, 1, 0)
+        n001 = _nid(ix, 0, 1)
+        n101 = _nid(ix + 1, 0, 1)
+        n111 = _nid(ix + 1, 1, 1)
+        n011 = _nid(ix, 1, 1)
+        elem_lines.append(f"{ix + 1}, {n000}, {n100}, {n110}, {n010}, {n001}, {n101}, {n111}, {n011}")
+    od_ix = len(xs) - 1
+    cload_nodes = [_nid(od_ix, iy, iz) for iy in range(2) for iz in range(2)]
+    axis_nodes = [_nid(0, iy, iz) for iy in range(2) for iz in range(2)]
+    cload = "\n".join(f"{n}, 2, {force}" for n in cload_nodes)
+    bounds = "\n".join(f"{n}, 1, 3" for n in axis_nodes)
     text = f"""** engineering-tools damper-keyway solid (MIT sample deck)
 *HEADING
 damper-keyway solid
 *NODE
-1, 0.000000000000e+00, 0.000000000000e+00, 0.000000000000e+00
-2, 1.000000000000e+01, 0.000000000000e+00, 0.000000000000e+00
-3, 1.000000000000e+01, 1.000000000000e+00, 0.000000000000e+00
-4, 0.000000000000e+00, 1.000000000000e+00, 0.000000000000e+00
-5, 0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00
-6, 1.000000000000e+01, 0.000000000000e+00, 1.000000000000e+00
-7, 1.000000000000e+01, 1.000000000000e+00, 1.000000000000e+00
-8, 0.000000000000e+00, 1.000000000000e+00, 1.000000000000e+00
+{chr(10).join(node_lines)}
 *ELEMENT, TYPE=C3D8, ELSET=EALL
-1, 1, 2, 3, 4, 5, 6, 7, 8
+{chr(10).join(elem_lines)}
 *MATERIAL, NAME=Steel
 *ELASTIC
 {youngs}, {poisson}
 *SOLID SECTION, ELSET=EALL, MATERIAL=Steel
 *BOUNDARY
-1, 1, 3
-4, 1, 3
-5, 1, 3
-8, 1, 3
+{bounds}
 *STEP
 *STATIC
 *CLOAD
-2, 1, {load}
-3, 1, {load}
-6, 1, {load}
-7, 1, {load}
+{cload}
 *NODE FILE
 U
 *EL FILE
@@ -97,15 +135,57 @@ def parse_frd_von_mises(frd_text: str) -> float:
             continue
         if not in_stress or not line.startswith(" -1"):
             continue
-        numbers = re.findall(r"[-+]?\d+\.\d+(?:[eE][-+]?\d+)?", line)
-        if len(numbers) < 6:
+        numbers = _floats(line[3:].strip())
+        if len(numbers) < 7:
             continue
-        sxx, syy, szz, sxy, syz, szx = (float(n) for n in numbers[:6])
-        peak = max(peak, _mises_from_tensor(sxx, syy, szz, sxy, syz, szx))
+        peak = max(peak, _mises_from_tensor(*numbers[1:7]))
         found = True
     if not found:
         raise ValueError("no STRESS tensor in frd text")
     return peak
+
+
+def sample_frd_von_mises(frd_text: str, probes: dict[str, list[float]]) -> dict[str, float]:
+    """Nearest-node von Mises in mm for each named probe (FRD 2C coords + STRESS)."""
+    coords: dict[int, tuple[float, float, float]] = {}
+    stress: dict[int, float] = {}
+    mode: str | None = None
+    for line in frd_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("2C"):
+            mode = "nodes"
+            continue
+        if line.startswith(" -4") and "STRESS" in line:
+            mode = "stress"
+            continue
+        if line.startswith(" -3"):
+            mode = None
+            continue
+        if not line.startswith(" -1"):
+            continue
+        nums = _floats(line[3:].strip())
+        if mode == "nodes" and len(nums) >= 4:
+            coords[int(nums[0])] = (nums[1], nums[2], nums[3])
+        elif mode == "stress" and len(nums) >= 7:
+            nid = int(nums[0])
+            stress[nid] = _mises_from_tensor(*nums[1:7])
+    if not coords or not stress:
+        raise ValueError("frd missing nodes or STRESS")
+    out: dict[str, float] = {}
+    for name, xyz in probes.items():
+        best: float | None = None
+        best_d: float | None = None
+        for nid, xyz_n in coords.items():
+            if nid not in stress:
+                continue
+            dist = (xyz_n[0] - xyz[0]) ** 2 + (xyz_n[1] - xyz[1]) ** 2 + (xyz_n[2] - xyz[2]) ** 2
+            if best_d is None or dist < best_d:
+                best_d = dist
+                best = stress[nid]
+        if best is None:
+            raise ValueError(f"no stressed node for {name}")
+        out[name] = best
+    return out
 
 
 def parse_solid_von_mises(dat_path: Path, frd_path: Path) -> float:

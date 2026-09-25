@@ -10,10 +10,14 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
-from .damper_cfd import parse_internal_field_p, write_chamber_case
-from .damper_fea import parse_solid_von_mises, write_solid_inp
+from .damper_cfd import (
+    chamber_center_index,
+    chamber_wall_index,
+    parse_internal_field_p,
+    write_chamber_case,
+)
+from .damper_fea import sample_frd_von_mises, write_solid_inp
 from .damper_params import (
-    FLUID_PROBES,
     SOLID_PROBES,
     load_params,
     params_digest,
@@ -112,22 +116,39 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
         return _report(ok=False, status="broken", message="CalculiX wrote no .dat/.frd", workdir=out, outputs=outputs)
     if fea_proc.returncode:
         return _report(ok=False, status="broken", message=f"ccx exit {fea_proc.returncode}", workdir=out, outputs=outputs)
+    if not frd.is_file():
+        return _report(ok=False, status="broken", message="CalculiX wrote no .frd", workdir=out, outputs=outputs)
     try:
-        von = parse_solid_von_mises(dat, frd)
+        von_map = sample_frd_von_mises(
+            frd.read_text(encoding="utf-8", errors="replace"),
+            {name: probes[name] for name in SOLID_PROBES},
+        )
     except ValueError as exc:
         return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
-    if not math.isfinite(von) or von <= 0:
-        return _report(ok=False, status="broken", message=f"von Mises {von} not > 0", workdir=out, outputs=outputs)
+    key_a = von_map["key_fillet"]
+    key_b = von_map["keyway_root"]
+    if not math.isfinite(key_a) or not math.isfinite(key_b):
+        return _report(ok=False, status="broken", message="key probe stress not finite", workdir=out, outputs=outputs)
+    if key_a <= 0 and key_b <= 0:
+        return _report(ok=False, status="broken", message="stress at both key probes is exactly zero", workdir=out, outputs=outputs)
+    if key_a <= 0 or key_b <= 0:
+        return _report(
+            ok=False,
+            status="broken",
+            message=f"key probe stress not > 0 (fillet={key_a} root={key_b})",
+            workdir=out,
+            outputs=outputs,
+        )
+    von = max(key_a, key_b)
     if dat.is_file():
         outputs.append(str(dat))
-    if frd.is_file():
-        outputs.append(str(frd))
+    outputs.append(str(frd))
 
     mesh = _openfoam_tool("blockMesh")
     if not mesh:
         return _report(ok=False, status="missing", message="blockMesh or foamExec not found", workdir=out, outputs=outputs)
     foam = out / "foam"
-    write_chamber_case(params, foam)
+    meta = write_chamber_case(params, foam)
     mesh_cmd, _locator = mesh
     try:
         mesh_proc = _run_openfoam(mesh_cmd, foam)
@@ -149,7 +170,9 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     if pressure_path is None:
         return _report(ok=False, status="broken", message="icoFoam did not write p", workdir=out, outputs=outputs)
     try:
-        chamber_p = parse_internal_field_p(pressure_path.read_text(encoding="utf-8", errors="replace"))
+        p_text = pressure_path.read_text(encoding="utf-8", errors="replace")
+        chamber_p = parse_internal_field_p(p_text, cell_index=chamber_center_index(meta["nx"], meta["ny"], meta["nz"]))
+        wall_p = parse_internal_field_p(p_text, cell_index=chamber_wall_index(meta["nx"], meta["ny"], meta["nz"]))
     except ValueError as exc:
         return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
     if not math.isfinite(chamber_p):
@@ -160,9 +183,11 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     for name, xyz in probes.items():
         row: dict[str, Any] = {"xyz_mm": list(xyz), "fea": None, "cfd": None}
         if name in SOLID_PROBES:
-            row["fea"] = {"von_mises": von}
-        if name in FLUID_PROBES:
+            row["fea"] = {"von_mises": von_map[name]}
+        if name == "chamber_center":
             row["cfd"] = {"p": chamber_p}
+        elif name == "chamber_wall":
+            row["cfd"] = {"p": wall_p}
         state_probes[name] = row
     relations = evaluate_relations(
         probes=probes,
@@ -181,7 +206,16 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     outputs.append(str(state_path))
     if not all(row["ok"] for row in relations):
         failed = [row["id"] for row in relations if not row["ok"]]
-        extra = {"ok": False, "status": "capability-failed", "message": f"B relations failed: {failed}", "relations": relations, "von_mises": von, "chamber_p": chamber_p}
+        extra = {
+            "ok": False,
+            "status": "capability-failed",
+            "message": f"B relations failed: {failed}",
+            "relations": relations,
+            "von_mises": von,
+            "key_fillet": key_a,
+            "keyway_root": key_b,
+            "chamber_p": chamber_p,
+        }
         (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
         return _report(ok=False, status="capability-failed", message=extra["message"], workdir=out, outputs=outputs, extra=extra)
 
@@ -191,6 +225,8 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
         "message": "damper-keyway A+B passed",
         "relations": relations,
         "von_mises": von,
+        "key_fillet": key_a,
+        "keyway_root": key_b,
         "chamber_p": chamber_p,
     }
     (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
