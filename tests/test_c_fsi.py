@@ -1,9 +1,11 @@
 """C-FSI mesh and façade session tests.
 
 Agents: mesh tests pin metres from damper-params probes and the shared
-interface name. Façade tests monkeypatch adapter sample_c_probes so CI
-does not need OpenFOAM to write JSON. Solid and Fluid are Popen'd together;
-damper_scenario.py never launches a process named precice.
+interface name. Most façade tests monkeypatch adapter sample_c_probes.
+test_run_c_fsi_persists_session_from_adapter_files does not: the fake
+ccx_preCICE copies an FRD and the fake pimpleFoam writes kinematic p, and
+the real adapters must read those files. Solid and Fluid are Popen'd
+together; damper_scenario.py never launches a process named precice.
 """
 
 import json
@@ -75,13 +77,30 @@ def _executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
-def _c_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, precice: bool = True) -> None:
-    """PATH: ccx_preCICE + pimpleFoam print two window completions; optional coupler."""
+def _c_tools(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    precice: bool = True,
+    solid_frd: Path | None = None,
+) -> None:
+    """PATH: ccx_preCICE + pimpleFoam print two window completions; optional coupler.
+
+    Agents: pimpleFoam always writes kinematic 2.0 into 0.1/p. When solid_frd
+    is set, ccx_preCICE copies that file to c-solid.frd in the solid cwd so
+    sample_c_probes can read DISP and STRESS. Leave solid_frd unset for tests
+    that monkeypatch the samplers.
+    """
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()
-    windows = "printf 'Time window completed\\nTime window completed\\n'\\n"
+    # Real newline after printf. A trailing \n inside the Python string is only
+    # another printf argument, so mkdir never runs and 0.1/p is never written.
+    windows = "printf 'Time window completed\\nTime window completed\\n'\n"
+    copy_frd = ""
+    if solid_frd is not None:
+        copy_frd = f"cp '{solid_frd}' c-solid.frd\n"
     _executable(binary_dir / "ccx", "exit 0\n")
-    _executable(binary_dir / "ccx_preCICE", windows + "exit 0\n")
+    _executable(binary_dir / "ccx_preCICE", copy_frd + windows + "exit 0\n")
     _executable(
         binary_dir / "pimpleFoam",
         windows + "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
@@ -173,6 +192,64 @@ def test_run_c_fsi_persists_session(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert persisted["parity"]
     assert all(row["ok"] is True for row in persisted["parity"])
     assert len(persisted["snapshot_digest"]) == 64
+
+
+def _frd_disp_stress_from_deck_nodes(nodes: dict[int, tuple[float, float, float]]) -> str:
+    """FRD a fake ccx_preCICE copies: deck *NODE rows, interface DISP, nodal STRESS.
+
+    Agents: same 2C / DISP / STRESS layout as
+    test_coupling_c_ab_success_reports_c_ok_with_fakes. Coordinates are the
+    C deck, not canonical_xyz_m. DISP 1e-3 is millimetres (1e-6 m after the
+    adapter). SXX 40 is MPa; the sampler turns von Mises into pascals.
+    """
+    from engineering_tools.c_fsi_meshes import interface_node_ids
+
+    lines = ["    2C"]
+    for nid, xyz in nodes.items():
+        lines.append(f" -1         {nid} {xyz[0]:.5e} {xyz[1]:.5e} {xyz[2]:.5e}")
+    lines.append(" -3")
+    lines.append(" -4  DISP        4    1")
+    for nid in interface_node_ids():
+        lines.append(f" -1         {nid} 1.00000e-03 0.00000e+00 0.00000e+00")
+    lines.append(" -3")
+    lines.append(" -4  STRESS      6    1")
+    for nid in nodes:
+        lines.append(
+            f" -1         {nid} 4.00000e+01 0.00000e+00 0.00000e+00 0.00000e+00 0.00000e+00 0.00000e+00"
+        )
+    lines.append(" -3")
+    return "\n".join(lines) + "\n"
+
+
+def test_run_c_fsi_persists_session_from_adapter_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """c-session.json is c_ok when adapters read the fake FRD and kinematic p.
+
+    Agents: do not monkeypatch sample_c_probes. The façade must pick up
+    housing.wall.pressure from 0.1/p, key.root.von_mises from the STRESS
+    block, and housing.wall.displacement above the motion floor from DISP.
+    """
+    from engineering_tools.c_facade import run_c_fsi
+
+    params = load_params()
+    preview = tmp_path / "c-preview.inp"
+    write_c_solid_inp(params, preview)
+    nodes = _inp_nodes(preview.read_text(encoding="utf-8"))
+    frd = tmp_path / "generated.frd"
+    frd.write_text(_frd_disp_stress_from_deck_nodes(nodes), encoding="utf-8")
+    _c_tools(tmp_path, monkeypatch, solid_frd=frd)
+    ab = tmp_path / "ab"
+    _ab_snapshot_source(ab)
+    out = tmp_path / "c-fsi"
+    run_c_fsi(ab_dir=ab, out=out, params=params)
+    persisted = json.loads((out / "c-session.json").read_text(encoding="utf-8"))
+    assert persisted["c_ok"] is True
+    assert persisted["steps"]
+    assert all(step["converged"] is True for step in persisted["steps"])
+    probes = persisted["probes"]
+    assert "housing.wall.pressure" in probes
+    assert "key.root.von_mises" in probes
+    floor = float(load_c_fsi_bands()["motion_floor_m"])
+    assert abs(float(probes["housing.wall.displacement"]["value"])) > floor
 
 
 def test_run_c_fsi_missing_without_precice(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
