@@ -107,9 +107,7 @@ def test_run_damper_keyway_ok_with_fakes(tmp_path, monkeypatch) -> None:
     executable(
         binary_dir / "FreeCADCmd",
         """
-out="$3"
-mkdir -p "$out"
-touch "$out/damper.FCStd" "$out/solid.step" "$out/fluid.step"
+touch damper.FCStd solid.step fluid.step
 exit 0
 """,
     )
@@ -143,9 +141,7 @@ def test_run_damper_keyway_fails_without_pressure_field(tmp_path, monkeypatch) -
     executable(
         binary_dir / "FreeCADCmd",
         """
-out="$3"
-mkdir -p "$out"
-touch "$out/damper.FCStd" "$out/solid.step" "$out/fluid.step"
+touch damper.FCStd solid.step fluid.step
 exit 0
 """,
     )

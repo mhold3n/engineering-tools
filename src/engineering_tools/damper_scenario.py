@@ -67,8 +67,9 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
         return _report(ok=False, status="missing", message="FreeCADCmd not found", workdir=out, outputs=outputs)
     script = resources.files("engineering_tools") / "data" / "damper" / "build_damper.py"
     try:
+        # FreeCADCmd treats extra argv as documents to open; params live in cwd.
         cad_proc = subprocess.run(
-            [cad, str(script), str(params_path), str(out)],
+            [cad, str(script)],
             cwd=out,
             capture_output=True,
             text=True,
@@ -77,13 +78,19 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return _report(ok=False, status="broken", message=f"FreeCAD failed: {exc}", workdir=out, outputs=outputs)
+    (out / "cad.log").write_text(
+        (cad_proc.stdout or "") + "\n" + (cad_proc.stderr or ""),
+        encoding="utf-8",
+    )
     for name in ("damper.FCStd", "solid.step", "fluid.step"):
         path = out / name
         if not path.is_file():
+            err = (cad_proc.stderr or cad_proc.stdout or "").strip().splitlines()
+            hint = err[-1] if err else "no log"
             return _report(
                 ok=False,
                 status="broken",
-                message=f"CAD did not write {name} (exit {cad_proc.returncode})",
+                message=f"CAD did not write {name} (exit {cad_proc.returncode}): {hint}",
                 workdir=out,
                 outputs=outputs,
             )

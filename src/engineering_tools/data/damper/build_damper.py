@@ -1,16 +1,15 @@
 # engineering-tools MIT sample — headless parametric damper
 # Calls FreeCAD (LGPL); this script itself is MIT (c) 2026 mhold3n
-# Usage: FreeCADCmd build_damper.py params.json outdir
+# Usage: FreeCADCmd build_damper.py   (cwd must contain damper-params.json)
+# Extra CLI args are treated as documents to open; do not pass the JSON path.
 # Probe XYZ must match engineering_tools.damper_params.probes_from_params;
 # the orchestrator overwrites probes.json after this script runs.
 
 import json
-import sys
 from pathlib import Path
 
-PARAMS = Path(sys.argv[1])
-OUT = Path(sys.argv[2])
-cfg = json.loads(PARAMS.read_text(encoding="utf-8"))
+OUT = Path(".").resolve()
+cfg = json.loads((OUT / "damper-params.json").read_text(encoding="utf-8"))
 
 import FreeCAD as App
 import Part
