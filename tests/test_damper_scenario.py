@@ -224,12 +224,13 @@ exit 0
     )
     executable(
         binary_dir / "icoFoam",
-        "mkdir -p 0.1\nprintf 'internalField uniform 101325;\\n' > 0.1/p\nexit 0\n",
+        "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
     )
     monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
     project = init_project(tmp_path / "part", name="Damper")
     result = run_damper_keyway(project)
     assert result["ok"] is True
+    assert result["report"]["a_ok"] is True
     assert result["status"] == "ok"
     assert all(row["ok"] for row in result["report"]["relations"])
 
@@ -269,3 +270,21 @@ def test_run_damper_keyway_fails_when_both_key_stresses_zero(tmp_path, monkeypat
     result = run_damper_keyway(init_project(tmp_path / "part", name="Damper"))
     assert result["ok"] is False
     assert "zero" in result["message"]
+
+
+def test_run_damper_keyway_fails_when_key_stress_exceeds_a_band(tmp_path, monkeypatch) -> None:
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    executable(binary_dir / "FreeCADCmd", "touch damper.FCStd solid.step fluid.step\nexit 0\n")
+    seed = tmp_path / "seed.frd"
+    _seed_frd(seed, 5000.0)
+    executable(binary_dir / "ccx", f"cp '{seed}' solid.frd\ntouch solid.dat\nexit 0\n")
+    executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
+    executable(
+        binary_dir / "icoFoam",
+        "mkdir -p 0.1\nprintf 'internalField uniform 101325;\\n' > 0.1/p\nexit 0\n",
+    )
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    result = run_damper_keyway(init_project(tmp_path / "part", name="Damper"))
+    assert result["ok"] is False
+    assert "A band" in result["message"]

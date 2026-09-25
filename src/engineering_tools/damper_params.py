@@ -33,6 +33,12 @@ def load_params() -> dict[str, Any]:
     return data
 
 
+def load_a_bands() -> dict[str, Any]:
+    """Upper/lower A bands frozen from the Ubuntu reference run (9a6c064 host)."""
+    root = resources.files("engineering_tools")
+    return json.loads((root / "data" / "damper" / "a-bands.json").read_text(encoding="utf-8"))
+
+
 def params_digest(params: dict[str, Any]) -> str:
     """SHA-256 of canonical JSON so product-state can pin the run."""
     payload = json.dumps(params, sort_keys=True, separators=(",", ":"))

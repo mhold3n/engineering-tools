@@ -19,6 +19,7 @@ from .damper_cfd import (
 from .damper_fea import sample_frd_von_mises, write_solid_inp
 from .damper_params import (
     SOLID_PROBES,
+    load_a_bands,
     load_params,
     params_digest,
     probes_from_params,
@@ -139,6 +140,25 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
             workdir=out,
             outputs=outputs,
         )
+    bands = load_a_bands()
+    fillet_band = bands["key_fillet_von_mises"]
+    root_band = bands["keyway_root_von_mises"]
+    if not (fillet_band["min"] <= key_a <= fillet_band["max"]):
+        return _report(
+            ok=False,
+            status="broken",
+            message=f"key_fillet {key_a} outside A band {fillet_band}",
+            workdir=out,
+            outputs=outputs,
+        )
+    if not (root_band["min"] <= key_b <= root_band["max"]):
+        return _report(
+            ok=False,
+            status="broken",
+            message=f"keyway_root {key_b} outside A band {root_band}",
+            workdir=out,
+            outputs=outputs,
+        )
     von = max(key_a, key_b)
     if dat.is_file():
         outputs.append(str(dat))
@@ -177,6 +197,15 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
         return _report(ok=False, status="broken", message=str(exc), workdir=out, outputs=outputs)
     if not math.isfinite(chamber_p):
         return _report(ok=False, status="broken", message=f"chamber p {chamber_p} not finite", workdir=out, outputs=outputs)
+    p_band = load_a_bands()["chamber_center_p"]["max_abs"]
+    if abs(chamber_p) > p_band:
+        return _report(
+            ok=False,
+            status="broken",
+            message=f"chamber_center p {chamber_p} exceeds A max_abs {p_band}",
+            workdir=out,
+            outputs=outputs,
+        )
     outputs.append(str(pressure_path))
 
     state_probes: dict[str, Any] = {}
@@ -207,6 +236,7 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
     if not all(row["ok"] for row in relations):
         failed = [row["id"] for row in relations if not row["ok"]]
         extra = {
+            "a_ok": True,
             "ok": False,
             "status": "capability-failed",
             "message": f"B relations failed: {failed}",
@@ -220,6 +250,7 @@ def run_damper_keyway(project: str | Path) -> dict[str, Any]:
         return _report(ok=False, status="capability-failed", message=extra["message"], workdir=out, outputs=outputs, extra=extra)
 
     extra = {
+        "a_ok": True,
         "ok": True,
         "status": "ok",
         "message": "damper-keyway A+B passed",
