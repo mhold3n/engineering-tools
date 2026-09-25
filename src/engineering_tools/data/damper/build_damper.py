@@ -3,7 +3,8 @@
 # Usage: FreeCADCmd build_damper.py   (cwd must contain damper-params.json)
 # Extra CLI args are treated as documents to open; do not pass the JSON path.
 # Origin is chamber center (z=0 mid-housing). Probe XYZ must match
-# engineering_tools.damper_params.probes_from_params; the orchestrator overwrites probes.json.
+# engineering_tools.damper_params.probes_from_params. The orchestrator does not
+# overwrite probes.json; it fails if CAD XYZ differs from probes_from_params.
 
 import json
 from pathlib import Path

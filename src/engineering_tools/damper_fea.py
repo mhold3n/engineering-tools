@@ -94,8 +94,15 @@ S
 
 
 def mapped_deck_has_wall_cload(text: str) -> bool:
-    """True when the pass-2 marker comment is present (agents: do not rely on force magnitude)."""
-    return "** mapped chamber_wall Pa" in text
+    """True when the pass-2 marker is followed by an inward DOF-1 CLOAD.
+
+    The comment alone is not a wall load. Agents must see `, 1, ` after the marker.
+    """
+    marker = "** mapped chamber_wall Pa"
+    at = text.find(marker)
+    if at < 0:
+        return False
+    return ", 1, " in text[at + len(marker) :]
 
 
 def write_solid_map_inp(params: dict[str, Any], destination: Path, wall_p_pa: float) -> Path:

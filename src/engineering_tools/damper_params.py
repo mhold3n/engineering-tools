@@ -1,8 +1,8 @@
 """Pinned damper scenario parameters and probe coordinates.
 
 Comments are for other agents: this module is the source of truth for XYZ.
-The FreeCAD script must not be allowed to drift the B shared-frame check;
-the orchestrator overwrites probes.json from probes_from_params.
+The FreeCAD script must write the same coordinates. The orchestrator does not
+overwrite probes.json; it fails if CAD XYZ does not match probes_from_params.
 """
 
 from __future__ import annotations

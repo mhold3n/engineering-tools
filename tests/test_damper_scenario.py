@@ -184,15 +184,28 @@ def test_write_solid_inp_contains_c3d8_and_cload(tmp_path: Path) -> None:
 
 
 def test_write_solid_map_inp_adds_inward_wall_cload(tmp_path: Path) -> None:
+    from engineering_tools.damper_fea import _nid, _radial_stations
+
     params = load_params()
-    path = write_solid_map_inp(params, tmp_path / "solid-map.inp", wall_p_pa=56.0)
+    wall_p_pa = 56.0
+    path = write_solid_map_inp(params, tmp_path / "solid-map.inp", wall_p_pa=wall_p_pa)
     text = path.read_text(encoding="utf-8")
     belt = write_solid_inp(params, tmp_path / "solid.inp").read_text(encoding="utf-8")
     assert "*CLOAD" in text
     assert ", 2, " in text
     assert "** mapped chamber_wall Pa" in text
+    # Pa -> MPa, then quartered over four ID nodes: -(p/1e6)*key_width*key_length/4.
+    area = float(params["key_width_mm"]) * float(params["key_length_mm"])
+    force = -(float(wall_p_pa) / 1e6) * area / 4.0
+    xs, _ys, _zs = _radial_stations(params)
+    ix = xs.index(float(params["housing_id_mm"]) / 2.0)
+    wall_lines = [f"{_nid(ix, iy, iz)}, 1, {force}" for iy in range(2) for iz in range(2)]
+    assert len(wall_lines) == 4
+    for line in wall_lines:
+        assert line in text
     assert mapped_deck_has_wall_cload(text) is True
     assert mapped_deck_has_wall_cload(belt) is False
+    assert mapped_deck_has_wall_cload("** mapped chamber_wall Pa\n") is False
     assert text.count("*NODE") == belt.count("*NODE")
 
 
@@ -321,11 +334,19 @@ def test_run_damper_keyway_ok_with_fakes(tmp_path, monkeypatch) -> None:
     probes_path = tmp_path / "probes.json"
     _write_agreed_probes(probes_path)
     executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
-    seed = tmp_path / "seed.frd"
-    _seed_frd(seed, 15.5)
+    pass1 = tmp_path / "pass1.frd"
+    pass2 = tmp_path / "pass2.frd"
+    _seed_frd(pass1, 15.5)
+    _seed_frd(pass2, 40.0)
+    # $1 is the CalculiX job name: solid is pass 1, solid-map is the wall-Pa pass.
     executable(
         binary_dir / "ccx",
-        f"cp '{seed}' solid.frd\ncp '{seed}' solid-map.frd\nprintf 'Mises  15.5\\n' > solid.dat\nexit 0\n",
+        f"""case "$1" in
+  solid) cp '{pass1}' solid.frd; printf 'Mises  15.5\\n' > solid.dat ;;
+  solid-map) cp '{pass2}' solid-map.frd ;;
+esac
+exit 0
+""",
     )
     executable(
         binary_dir / "blockMesh",
@@ -343,6 +364,16 @@ def test_run_damper_keyway_ok_with_fakes(tmp_path, monkeypatch) -> None:
     assert result["report"]["a_ok"] is True
     assert result["status"] == "ok"
     assert all(row["ok"] for row in result["report"]["relations"])
+    state = json.loads((project / "artifacts" / "scenario-damper-keyway" / "product-state.json").read_text(encoding="utf-8"))
+    assert state["coupling"] == "weak-map"
+    assert state["fluid_density_kg_m3"] == 850
+    for name in SOLID_PROBES:
+        row = state["probes"][name]
+        assert row["fea"]["von_mises"] != row["fea_mapped"]["von_mises"]
+    for name in FLUID_PROBES:
+        cfd = state["probes"][name]["cfd"]
+        assert "p" in cfd
+        assert "p_kinematic" in cfd
 
 
 def test_run_damper_keyway_fails_when_cad_probes_mismatch(tmp_path, monkeypatch) -> None:
@@ -386,6 +417,7 @@ def test_run_damper_keyway_fails_without_pass2_frd(tmp_path, monkeypatch) -> Non
     monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
     result = run_damper_keyway(init_project(tmp_path / "part", name="Damper"))
     assert result["ok"] is False
+    assert "solid-map" in result["message"]
 
 
 def test_run_damper_keyway_fails_without_pressure_field(tmp_path, monkeypatch) -> None:
