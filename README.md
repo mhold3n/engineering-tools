@@ -36,6 +36,8 @@ etools run calculix deck.inp --project ./my-part          # shorthand
 etools run --tool freecad --input script.py --project ./my-part
 etools run openfoam ./case --project ./my-part
 etools scenario damper-keyway --project ./my-part
+etools scenario damper-keyway --coupling c --project ./my-part   # A/B then C-FSI
+etools scenario damper-keyway --fsi --project ./my-part          # alias of --coupling c
 ```
 
 `etools profile` is an alias for `doctor`.
@@ -58,8 +60,13 @@ Waves: `1-cad-viz`, `2-cae-core`, `3-electrical`, `4-science`, `5-mbse-plm-light
 `6-mega-ops`, `7-first-party` (53 components). Pointer-repo DoD is met when those
 53 report `status: ok` with verified receipts on Ubuntu 24.04 x86-64. Inventory is
 audited (`docs/superpowers/specs/2026-09-22-inventory-audit-freeze.md`). Product
-capability probes and 3DEXPERIENCE GUI composition are the next phases. Hosted CI
-does not certify VM installs.
+capability probes continue without a 3DEXPERIENCE GUI. Hosted CI does not certify
+VM installs.
+
+`--coupling c` locators: `precice-tools`, `ccx_preCICE`, `pimpleFoam`. Ubuntu live
+stack is ESI **openfoam2512**, **libprecice3**, and Solid under **`mpirun -n 1`**.
+Distro OpenFOAM 1912 and a bare `ccx_preCICE` without mpirun do not complete C.
+C wall pressure and key stress remaining ~0 vs B is a later vertical.
 
 ### Alpha pulse
 
@@ -72,7 +79,7 @@ Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-compon
 - **CalculiX** (`ccx`): MIT deck `examples/calculix/hello_beam.inp` → `artifacts/calculix-hello/`
 - **FreeCAD** (`FreeCADCmd`): MIT script `examples/freecad/hello_box.py` → `artifacts/freecad-hello/hello_box.FCStd`
 - **OpenFOAM** (`blockMesh` or `foamExec blockMesh`): MIT cavity case → `artifacts/openfoam-hello/constant/polyMesh/`
-- **Scenario** (`etools scenario damper-keyway`): parametric damper CAD + CalculiX + OpenFOAM, then a second ccx job that maps chamber-wall Pa, plus named probe relations → `artifacts/scenario-damper-keyway/`
+- **Scenario** (`etools scenario damper-keyway`): parametric damper CAD + CalculiX + OpenFOAM, then a second ccx job that maps chamber-wall Pa, plus named probe relations → `artifacts/scenario-damper-keyway/`. `--coupling c` (alias `--fsi`) runs C-FSI after A/B succeed and writes `c-fsi/c-session.json`. Exit 0 only when A, B, and C pass. If A/B fail, C is not evaluated.
 
 Upstream solvers stay GPL/LGPL; we only call them.
 

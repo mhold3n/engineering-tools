@@ -455,6 +455,176 @@ def test_run_damper_keyway_fails_when_both_key_stresses_zero(tmp_path, monkeypat
     assert "zero" in result["message"]
 
 
+def test_coupling_c_not_evaluated_when_freecad_missing(tmp_path, monkeypatch) -> None:
+    """A/B prerequisite failure must not start C or write c-session.json."""
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    project = init_project(tmp_path / "part", name="Damper")
+    result = run_damper_keyway(project, coupling="c")
+    assert result["ok"] is False
+    assert result["c"]["evaluated"] is False
+    assert result["c"]["reason"] == "prerequisite_not_ok"
+    session = project / "artifacts" / "scenario-damper-keyway" / "c-fsi" / "c-session.json"
+    assert not session.exists()
+    # Disk copy is written after report["c"] is attached, not before.
+    report_path = project / "artifacts" / "scenario-damper-keyway" / "scenario-report.json"
+    persisted = json.loads(report_path.read_text(encoding="utf-8"))
+    assert persisted["c"]["evaluated"] is False
+    assert persisted["c"]["reason"] == "prerequisite_not_ok"
+
+
+def test_coupling_d_not_evaluated_when_freecad_missing(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    project = init_project(tmp_path / "part", name="Damper")
+    result = run_damper_keyway(project, coupling="d")
+    assert result["ok"] is False
+    assert result["d"]["evaluated"] is False
+    assert result["d"]["reason"] == "prerequisite_not_ok"
+    session = project / "artifacts" / "scenario-damper-keyway" / "d-fsi" / "d-session.json"
+    assert not session.exists()
+
+
+def test_coupling_c_ab_success_reports_c_ok_with_fakes(tmp_path, monkeypatch) -> None:
+    """A/B fakes plus precice/pimpleFoam yield A+B+C and c_ok on the report.
+
+    Agents: sample_c_probes is not monkeypatched. The fake ccx writes an FRD
+    whose nodes are the C deck, and the fake pimpleFoam writes kinematic p.
+    """
+    from engineering_tools.c_fsi_meshes import interface_node_ids, write_c_solid_inp
+
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
+    pass1 = tmp_path / "pass1.frd"
+    pass2 = tmp_path / "pass2.frd"
+    _seed_frd(pass1, 15.5)
+    _seed_frd(pass2, 40.0)
+    preview = tmp_path / "c-preview.inp"
+    write_c_solid_inp(load_params(), preview)
+    nodes: dict[int, tuple[float, float, float]] = {}
+    in_nodes = False
+    for line in preview.read_text(encoding="utf-8").splitlines():
+        if line.startswith("*NODE"):
+            in_nodes = True
+            continue
+        if in_nodes and line.startswith("*"):
+            break
+        if not in_nodes or not line.strip():
+            continue
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) >= 4:
+            nodes[int(parts[0])] = (float(parts[1]), float(parts[2]), float(parts[3]))
+    frd_lines = ["    2C"]
+    for nid, xyz in nodes.items():
+        frd_lines.append(f" -1         {nid} {xyz[0]:.5e} {xyz[1]:.5e} {xyz[2]:.5e}")
+    frd_lines.append(" -3")
+    frd_lines.append(" -4  DISP        4    1")
+    for nid in interface_node_ids():
+        frd_lines.append(f" -1         {nid} 1.00000e-03 0.00000e+00 0.00000e+00")
+    frd_lines.append(" -3")
+    frd_lines.append(" -4  STRESS      6    1")
+    for nid in nodes:
+        frd_lines.append(
+            f" -1         {nid} 4.00000e+01 0.00000e+00 0.00000e+00 0.00000e+00 0.00000e+00 0.00000e+00"
+        )
+    frd_lines.append(" -3")
+    c_frd = tmp_path / "c-solid.frd"
+    c_frd.write_text("\n".join(frd_lines) + "\n", encoding="utf-8")
+    executable(
+        binary_dir / "ccx",
+        f"""case "$1" in
+  solid) cp '{pass1}' solid.frd; printf 'Mises  15.5\\n' > solid.dat ;;
+  solid-map) cp '{pass2}' solid-map.frd ;;
+esac
+exit 0
+""",
+    )
+    executable(
+        binary_dir / "ccx_preCICE",
+        f"cp '{c_frd}' c-solid.frd\nprintf 'Time window completed\\nTime window completed\\n'\nexit 0\n",
+    )
+    executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
+    executable(
+        binary_dir / "icoFoam",
+        "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+    )
+    executable(
+        binary_dir / "pimpleFoam",
+        "printf 'Time window completed\\nTime window completed\\n'\n"
+        "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+    )
+    executable(binary_dir / "precice-tools", "exit 0\n")
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    project = init_project(tmp_path / "part", name="Damper")
+    result = run_damper_keyway(project, coupling="c")
+    assert result["ok"] is True
+    assert result["message"] == "damper-keyway A+B+C passed"
+    assert result["report"]["c_ok"] is True
+    assert result["c"]["c_ok"] is True
+    assert result["c"]["status"] == "ok"
+
+
+def test_coupling_c_broken_when_c_adapter_import_fails(tmp_path, monkeypatch) -> None:
+    """A missing first-party C adapter is C broken, after A/B succeeded.
+
+    Agents: run_c_fsi is imported inside the coupling branch. A meta-path
+    finder raises ImportError for the façade and the CalculiX adapter so
+    the branch cannot use a previously imported module.
+    """
+    import sys
+
+    class _BlockCAdapters:
+        """Raise ImportError when the C façade or CalculiX adapter is imported."""
+
+        def find_spec(self, fullname, path, target=None):
+            blocked = {
+                "engineering_tools.c_facade",
+                "engineering_tools.c_adapter_calculix",
+            }
+            if fullname in blocked:
+                raise ImportError(f"blocked {fullname}")
+            return None
+
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    probes_path = tmp_path / "probes.json"
+    _write_agreed_probes(probes_path)
+    executable(binary_dir / "FreeCADCmd", _fake_cad_script(probes_path))
+    seed = tmp_path / "seed.frd"
+    _seed_frd(seed, 15.5)
+    mapped = tmp_path / "mapped.frd"
+    _seed_frd(mapped, 40.0)
+    executable(
+        binary_dir / "ccx",
+        f"""case "$1" in
+  solid) cp '{seed}' solid.frd; printf 'Mises  15.5\\n' > solid.dat ;;
+  solid-map) cp '{mapped}' solid-map.frd ;;
+esac
+exit 0
+""",
+    )
+    executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
+    executable(
+        binary_dir / "icoFoam",
+        "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+    )
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    blocker = _BlockCAdapters()
+    sys.meta_path.insert(0, blocker)
+    sys.modules.pop("engineering_tools.c_facade", None)
+    try:
+        result = run_damper_keyway(init_project(tmp_path / "part", name="Damper"), coupling="c")
+    finally:
+        sys.meta_path.remove(blocker)
+        sys.modules.pop("engineering_tools.c_facade", None)
+    assert result["ok"] is False
+    assert result["status"] == "broken"
+    assert result["c"]["status"] == "broken"
+    assert result["c"]["evaluated"] is True
+    assert "import" in result["message"].lower()
+
+
 def test_run_damper_keyway_fails_when_key_stress_exceeds_a_band(tmp_path, monkeypatch) -> None:
     binary_dir = tmp_path / "bin"
     binary_dir.mkdir()

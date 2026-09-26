@@ -134,5 +134,5 @@ Missing FreeCADCmd / ccx / blockMesh|icoFoam: scenario status `missing` (exit 1)
 
 - MCP wrapping `etools scenario`
 - Approach B weak coupling: specified in `docs/superpowers/specs/2026-09-24-damper-keyway-b-weak-map-design.md`
-- Approach C: FSI
+- Approach C: `docs/superpowers/specs/2026-09-25-c-orchestration-design.md` and C-FSI `docs/superpowers/specs/2026-09-25-c-fsi-damper-design.md`
 - Richer annular damper physics

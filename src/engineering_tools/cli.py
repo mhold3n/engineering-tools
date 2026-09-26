@@ -37,6 +37,14 @@ def _cmd_doctor(_args: argparse.Namespace) -> int:
         print("By layer:")
         for layer, names in sorted(summary["by_layer"].items()):
             print(f"  {layer}: {', '.join(names)}")
+    # C-FSI locators are doctor rows (preCICE, ccx_preCICE, pimpleFoam).
+    # Ubuntu live stack: ESI OpenFOAM v2512, libprecice3, ccx_preCICE via mpirun -n 1.
+    # Distro OpenFOAM v1912 and a bare ccx_preCICE without mpirun do not complete C.
+    print(
+        "C-FSI (--coupling c): precice-tools + ccx_preCICE + pimpleFoam. "
+        "Ubuntu: ESI openfoam2512, libprecice3, mpirun -n 1 for Solid. "
+        "A icoFoam stays the cavity solver; C Fluid is pimpleFoam."
+    )
     return 0 if summary["found_count"] else 1
 
 
@@ -216,7 +224,16 @@ def _cmd_scenario(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             return 2
-    result = run_damper_keyway(root)
+    from .c_cli import parse_coupling_flags
+
+    req = parse_coupling_flags(
+        coupling=getattr(args, "coupling", None),
+        fsi=bool(getattr(args, "fsi", False)),
+    )
+    if req.status == "broken":
+        print(req.detail, file=sys.stderr)
+        return 1
+    result = run_damper_keyway(root, coupling=req.token)
     append_job(
         root,
         tool="damper-keyway",
@@ -386,6 +403,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scenario.add_argument("name", help="Scenario id (damper-keyway)")
     scenario.add_argument("--project", default=None, help="Project path (default: cwd if it is a project)")
+    scenario.add_argument("--coupling", default=None, help="C coupler (c) or D driven FSI (d)")
+    scenario.add_argument("--fsi", action="store_true", help="Alias for --coupling c")
     scenario.add_argument("--json", action="store_true", help="Print JSON result")
     scenario.set_defaults(func=_cmd_scenario)
 

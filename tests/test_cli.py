@@ -15,6 +15,16 @@ def test_doctor_returns_int() -> None:
     assert code in (0, 1)
 
 
+def test_doctor_mentions_c_fsi_ubuntu_stack(capsys) -> None:
+    """doctor names the C locators; it does not start FSI."""
+    main(["doctor"])
+    out = capsys.readouterr().out
+    assert "C-FSI" in out
+    assert "pimpleFoam" in out
+    assert "ccx_preCICE" in out
+    assert "openfoam2512" in out
+
+
 def test_profile_alias() -> None:
     code = main(["profile"])
     assert code in (0, 1)
@@ -91,3 +101,38 @@ exit 0
     ]
     assert jobs[-1]["command"] == "scenario"
     assert jobs[-1]["tool"] == "damper-keyway"
+
+
+def test_fsi_and_coupling_c_call_scenario_with_coupling_c(tmp_path: Path, monkeypatch) -> None:
+    """--fsi and --coupling c both reach run_damper_keyway with coupling='c'.
+
+    Agents: this monkeypatches the scenario entry. It does not run solvers.
+    The CLI must pass the token through; parsing alone is not the lock.
+    """
+    seen: list[str | None] = []
+
+    def _fake(project, coupling=None):
+        seen.append(coupling)
+        return {
+            "ok": True,
+            "status": "ok",
+            "message": "damper-keyway A+B+C passed",
+            "workdir": str(project),
+            "outputs": [],
+        }
+
+    monkeypatch.setattr("engineering_tools.damper_scenario.run_damper_keyway", _fake)
+    project = init_project(tmp_path / "part", name="Damper")
+    assert main(["scenario", "damper-keyway", "--fsi", "--project", str(project)]) == 0
+    assert main(["scenario", "damper-keyway", "--coupling", "c", "--project", str(project)]) == 0
+    assert seen == ["c", "c"]
+
+
+def test_unknown_coupling_exits_before_scenario(tmp_path: Path, capsys) -> None:
+    """Unknown --coupling is broken before CAD or solvers run."""
+    project = tmp_path / "part"
+    project.mkdir()
+    code = main(["scenario", "damper-keyway", "--coupling", "nope", "--project", str(project)])
+    assert code == 1
+    assert "unknown coupling" in capsys.readouterr().err
+    assert not (project / "artifacts" / "scenario-damper-keyway").exists()
