@@ -7,7 +7,13 @@ import pytest
 
 from engineering_tools.c_adapter_openfoam import prepare_fluid_participant
 from engineering_tools.c_fsi_meshes import canonical_xyz_m, write_c_fluid_case
-from engineering_tools.d_fsi_meshes import LID_U_X_M_S, apply_driven_lid_u, write_d_fluid_case
+from engineering_tools.d_fsi_meshes import (
+    D_HEX_CELLS,
+    LID_U_X_M_S,
+    apply_driven_lid_u,
+    write_d_fluid_case,
+    write_d_solid_inp,
+)
 from engineering_tools.damper_params import load_params
 from tests.test_c_fsi import (
     _ab_snapshot_source,
@@ -24,8 +30,19 @@ def test_d_fluid_keeps_interface_and_lid(tmp_path: Path) -> None:
     foam = (case / "constant" / "polyMesh" / "blockMeshDict").read_text(encoding="utf-8")
     assert "interface" in foam
     assert "lid" in foam
+    assert f"hex (0 1 2 3 4 5 6 7) ({D_HEX_CELLS} {D_HEX_CELLS} {D_HEX_CELLS})" in foam
+    assert "hex (0 1 2 3 4 5 6 7) (1 1 1)" not in foam
     wall = canonical_xyz_m(params)["housing.wall.pressure"]
     assert wall[0] == pytest.approx(-float(params["housing_id_mm"]) / 2000.0)
+
+
+def test_d_solid_has_belt_cload_on_key_node(tmp_path: Path) -> None:
+    params = load_params()
+    path = tmp_path / "d-solid.inp"
+    write_d_solid_inp(params, path)
+    text = path.read_text(encoding="utf-8")
+    assert "9, 2," in text
+    assert "10, 1, 3" in text
 
 
 def test_driven_lid_is_nonzero_after_prepare(tmp_path: Path) -> None:
