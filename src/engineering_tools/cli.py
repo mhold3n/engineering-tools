@@ -403,7 +403,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scenario.add_argument("name", help="Scenario id (damper-keyway)")
     scenario.add_argument("--project", default=None, help="Project path (default: cwd if it is a project)")
-    scenario.add_argument("--coupling", default=None, help="C analysis depth (c)")
+    scenario.add_argument("--coupling", default=None, help="C coupler (c) or D driven FSI (d)")
     scenario.add_argument("--fsi", action="store_true", help="Alias for --coupling c")
     scenario.add_argument("--json", action="store_true", help="Print JSON result")
     scenario.set_defaults(func=_cmd_scenario)

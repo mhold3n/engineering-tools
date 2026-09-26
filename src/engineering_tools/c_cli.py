@@ -1,11 +1,15 @@
-"""Normalize scenario --coupling / --fsi. Comments for other agents: unknown tokens are broken, not missing."""
+"""Normalize scenario --coupling / --fsi.
+
+Agents: `c` is coupler-only FSI. `d` is driven damper-proof FSI.
+`--fsi` is only an alias of `c`. Unknown tokens are broken, not missing.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 
-IMPLEMENTED = frozenset({"c"})
+IMPLEMENTED = frozenset({"c", "d"})
 
 
 @dataclass(frozen=True)
@@ -23,4 +27,4 @@ def parse_coupling_flags(*, coupling: str | None, fsi: bool) -> CouplingRequest:
         return CouplingRequest(None, None, "c not requested")
     if token not in IMPLEMENTED:
         return CouplingRequest(None, "broken", f"unknown coupling: {token}")
-    return CouplingRequest("c", "ok", "coupling c")
+    return CouplingRequest(token, "ok", f"coupling {token}")

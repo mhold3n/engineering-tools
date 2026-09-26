@@ -1,9 +1,9 @@
-"""C-FSI façade: the only scenario-facing entry for a damper C run.
+"""C/D FSI façade: the only scenario-facing entry for damper partitioned runs.
 
-Agents: `run_c_fsi` owns snapshot, XML generation, prepare/mesh, then
-`run_coupled_participants` (Solid and Fluid Popen together). This module
-does not spawn a process named `precice`. `c-session.json` is written even
-when C is missing or broken, because C was attempted.
+Agents: `run_c_fsi` is the idle coupler pair. `run_d_fsi` is the driven
+damper proof (lid U, D bands, d-session.json). Both own snapshot, XML,
+prepare/mesh, then concurrent Solid/Fluid. This module does not spawn a
+process named `precice`. Session JSON is written even when missing/broken.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from engineering_tools.c_backend_precice import (
     default_policy,
@@ -21,8 +21,9 @@ from engineering_tools.c_backend_precice import (
 )
 from engineering_tools.c_contract import new_session
 from engineering_tools.c_fsi_meshes import canonical_xyz_m, write_c_fluid_case, write_c_solid_inp
-from engineering_tools.c_parity import in_band, load_c_fsi_bands, mpa_to_pa
+from engineering_tools.c_parity import in_band, load_c_fsi_bands, load_d_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
+from engineering_tools.d_fsi_meshes import apply_driven_lid_u, write_d_fluid_case, write_d_solid_inp
 from engineering_tools.hello_probes import _openfoam_tool
 
 from . import c_adapter_calculix, c_adapter_openfoam
@@ -34,11 +35,13 @@ _PROBE_IDS: tuple[str, ...] = (
     "housing.wall.traction",
 )
 
+Kind = Literal["c", "d"]
+
 
 def _dependencies_present() -> bool:
     """True when coupler, Fluid solver, and CalculiX-preCICE participant exist.
 
-    Agents: plain `ccx` is A/B, not a C participant. A lib-only preCICE
+    Agents: plain `ccx` is A/B, not a C/D participant. A lib-only preCICE
     install is `missing` until `precice-tools`, `binprecice`, or the CI
     alias `precice` is on PATH (see find_precice).
     """
@@ -49,16 +52,23 @@ def _dependencies_present() -> bool:
     )
 
 
-def _write_session(out: Path, session: dict[str, Any]) -> None:
+def _ok_key(kind: Kind) -> str:
+    return "c_ok" if kind == "c" else "d_ok"
+
+
+def _write_session(out: Path, session: dict[str, Any], *, kind: Kind) -> None:
     out.mkdir(parents=True, exist_ok=True)
-    (out / "c-session.json").write_text(json.dumps(session, indent=2) + "\n", encoding="utf-8")
+    name = "c-session.json" if kind == "c" else "d-session.json"
+    (out / name).write_text(json.dumps(session, indent=2) + "\n", encoding="utf-8")
 
 
-def _blank(status: str) -> dict[str, Any]:
+def _blank(status: str, *, kind: Kind) -> dict[str, Any]:
     session = new_session(scenario="damper-keyway", backend="precice")
     session["status"] = status
     session["evaluated"] = True
     session["c_ok"] = False
+    session["d_ok"] = False
+    session[_ok_key(kind)] = False
     return session
 
 
@@ -105,29 +115,30 @@ def _wall_pressure_pa(snapshot: Path) -> float | None:
         return None
 
 
-def run_c_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, Any]:
-    """Run one C-FSI session and persist it at `out/c-session.json`.
-
-    Missing solver binaries return status `missing` without freezing A/B.
-    A failed launch, unresolved probe, motion under the floor, geometric
-    miss, or parity miss returns status `broken`. `c_ok` is true only when
-    every coupling index converged and every check passed.
-    """
+def _run_partitioned_fsi(
+    *,
+    ab_dir: Path,
+    out: Path,
+    params: dict[str, Any],
+    kind: Kind,
+) -> dict[str, Any]:
+    """Idle C or driven D. `kind` selects bands, lid, dirs, and session name."""
     out = Path(out)
+    ok_key = _ok_key(kind)
     if not _dependencies_present():
-        session = _blank("missing")
-        _write_session(out, session)
+        session = _blank("missing", kind=kind)
+        _write_session(out, session, kind=kind)
         return session
 
     try:
         digest = freeze_ab_snapshot(Path(ab_dir), out / "ab-snapshot")
     except (OSError, FileNotFoundError) as exc:
-        session = _blank("broken")
+        session = _blank("broken", kind=kind)
         session["message"] = f"snapshot freeze failed: {exc}"
-        _write_session(out, session)
+        _write_session(out, session, kind=kind)
         return session
 
-    session = _blank("ok")
+    session = _blank("ok", kind=kind)
     session["snapshot_digest"] = digest
     policy = default_policy()
     session["participants"] = list(policy["participants"])
@@ -140,31 +151,38 @@ def run_c_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, A
     config_path = out / "precice-config.xml"
     config_path.write_text(generate_precice_config(policy), encoding="utf-8")
 
-    solid_dir = out / "c-solid"
-    fluid_dir = out / "c-fluid"
+    prefix = "c" if kind == "c" else "d"
+    solid_dir = out / f"{prefix}-solid"
+    fluid_dir = out / f"{prefix}-fluid"
     wall_pa = _wall_pressure_pa(out / "ab-snapshot")
-    write_c_solid_inp(params, solid_dir / "c-solid.inp", wall_pressure_pa=wall_pa)
-    write_c_fluid_case(params, fluid_dir)
-
-    bands = load_c_fsi_bands()
+    if kind == "d":
+        write_d_solid_inp(params, solid_dir / "d-solid.inp", wall_pressure_pa=wall_pa)
+        write_d_fluid_case(params, fluid_dir)
+        bands = load_d_fsi_bands()
+    else:
+        write_c_solid_inp(params, solid_dir / "c-solid.inp", wall_pressure_pa=wall_pa)
+        write_c_fluid_case(params, fluid_dir)
+        bands = load_c_fsi_bands()
     n_steps = int(bands["n_steps"])
     c_adapter_calculix.prepare_solid_participant(solid_dir, config_path)
     c_adapter_openfoam.prepare_fluid_participant(fluid_dir, config_path)
     if not c_adapter_openfoam.mesh_fluid_participant(fluid_dir):
         session["status"] = "broken"
         session["message"] = "Fluid blockMesh failed"
-        session["c_ok"] = False
-        _write_session(out, session)
+        session[ok_key] = False
+        _write_session(out, session, kind=kind)
         return session
+    # blockMesh restages 0/U. D lid U must land after that copy.
+    if kind == "d":
+        apply_driven_lid_u(fluid_dir)
     solid_argv = c_adapter_calculix.solid_participant_argv(solid_dir)
     fluid_argv = c_adapter_openfoam.fluid_participant_argv()
     if solid_argv is None or fluid_argv is None:
         session["status"] = "broken"
         session["message"] = "participant argv missing"
-        session["c_ok"] = False
-        _write_session(out, session)
+        session[ok_key] = False
+        _write_session(out, session, kind=kind)
         return session
-    # Both participants start before either wait. No standalone precice process.
     coupled = run_coupled_participants(
         solid_argv=solid_argv,
         solid_cwd=solid_dir,
@@ -176,16 +194,15 @@ def run_c_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, A
     if not coupled["ok"]:
         session["status"] = "broken"
         session["message"] = str(coupled.get("detail") or "coupling windows did not converge")
-        session["c_ok"] = False
-        _write_session(out, session)
+        session[ok_key] = False
+        _write_session(out, session, kind=kind)
         return session
 
-    # Adapters return SI rows. Tests replace these two callables; production
-    # reads FRD and the fluid p field. One merged file is what parity reads.
     merged: dict[str, Any] = {}
     merged.update(c_adapter_calculix.sample_c_probes(solid_dir))
     merged.update(c_adapter_openfoam.sample_c_probes(fluid_dir))
-    (out / "c-probes.json").write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
+    probe_file = "c-probes.json" if kind == "c" else "d-probes.json"
+    (out / probe_file).write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
     session["probes"] = merged
 
     canonical = canonical_xyz_m(params)
@@ -226,24 +243,33 @@ def run_c_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, A
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         session["status"] = "broken"
         session["message"] = f"snapshot product-state unreadable: {exc}"
-        session["c_ok"] = False
-        _write_session(out, session)
+        session[ok_key] = False
+        _write_session(out, session, kind=kind)
         return session
 
     for name, band in bands["parity"].items():
         row = merged.get(name)
         try:
-            c_value = float(row["value"]) if isinstance(row, dict) else float("nan")
+            d_value = float(row["value"]) if isinstance(row, dict) else float("nan")
         except (TypeError, ValueError, KeyError):
-            c_value = float("nan")
+            d_value = float("nan")
         b_value = float(targets[name])
-        ok = math.isfinite(c_value) and in_band(c_value, b_value, float(band["abs"]), float(band["rel"]))
-        parity.append({"id": name, "ok": ok, "c": c_value, "b": b_value})
+        ok = math.isfinite(d_value) and in_band(d_value, b_value, float(band["abs"]), float(band["rel"]))
+        parity.append({"id": name, "ok": ok, "c": d_value, "b": b_value})
         if not ok:
             broken = True
     session["parity"] = parity
-    # Displacement is a motion-floor check only. It is absent from parity on purpose.
     session["status"] = "broken" if broken else "ok"
-    session["c_ok"] = session["status"] == "ok"
-    _write_session(out, session)
+    session[ok_key] = session["status"] == "ok"
+    _write_session(out, session, kind=kind)
     return session
+
+
+def run_c_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, Any]:
+    """Idle C-FSI session at `out/c-session.json`."""
+    return _run_partitioned_fsi(ab_dir=ab_dir, out=out, params=params, kind="c")
+
+
+def run_d_fsi(*, ab_dir: Path, out: Path, params: dict[str, Any]) -> dict[str, Any]:
+    """Driven D-FSI session at `out/d-session.json`. Zeros vs finite B are broken."""
+    return _run_partitioned_fsi(ab_dir=ab_dir, out=out, params=params, kind="d")

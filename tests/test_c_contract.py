@@ -9,7 +9,7 @@ from engineering_tools.c_backend_precice import (
     generate_precice_config,
 )
 from engineering_tools.c_contract import mm_to_m, new_session, request_capability
-from engineering_tools.c_parity import in_band, load_c_fsi_bands, mpa_to_pa
+from engineering_tools.c_parity import in_band, load_c_fsi_bands, load_d_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
 
 
@@ -37,6 +37,17 @@ def test_conflicting_flags_are_broken() -> None:
     assert req.token == "c"
     bad = parse_coupling_flags(coupling="nope", fsi=True)
     assert bad.status == "broken"
+
+
+def test_coupling_d_parses_and_fsi_stays_c() -> None:
+    """--coupling d is D. --fsi remains C. d plus --fsi is broken."""
+    req = parse_coupling_flags(coupling="d", fsi=False)
+    assert req.token == "d"
+    assert req.status == "ok"
+    assert parse_coupling_flags(coupling=None, fsi=True).token == "c"
+    clash = parse_coupling_flags(coupling="d", fsi=True)
+    assert clash.status == "broken"
+    assert clash.token is None
 
 
 def test_mm_to_m_keeps_three_components() -> None:
@@ -79,6 +90,17 @@ def test_packaged_c_fsi_bands_have_required_keys() -> None:
     assert "CI placeholder" not in str(bands.get("calibration", ""))
     assert "Ubuntu" in str(bands.get("calibration", ""))
     assert "later vertical" in str(bands.get("physics_followup", ""))
+
+
+def test_d_bands_reject_zero_versus_finite_b() -> None:
+    """D is damper proof: zeros must not pass against B-scale wall Pa and key Pa."""
+    bands = load_d_fsi_bands()
+    wall = bands["parity"]["housing.wall.pressure"]
+    key = bands["parity"]["key.root.von_mises"]
+    assert in_band(0.0, 100.0, float(wall["abs"]), float(wall["rel"])) is False
+    assert in_band(0.0, 1.0e7, float(key["abs"]), float(key["rel"])) is False
+    assert "CI placeholder" not in str(bands.get("calibration", ""))
+    assert "housing.wall.displacement" not in bands["parity"]
 
 
 def test_generated_xml_uses_policy_names_not_a_checked_in_file() -> None:

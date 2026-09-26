@@ -56,22 +56,21 @@ def _report(
     return body
 
 
-def _c_not_started(body: dict[str, Any], coupling: str | None) -> dict[str, Any]:
-    """Record that C did not run because A/B was not ok.
+def _fsi_not_started(body: dict[str, Any], coupling: str | None) -> dict[str, Any]:
+    """Record that C or D did not run because A/B was not ok.
 
-    Agents: this path must not create c-session.json and must not name or
-    launch the coupling backend. The façade is only called after A/B succeed.
+    Agents: this path must not create c-session.json or d-session.json and
+    must not launch the coupling backend. The façade is only called after A/B succeed.
     """
-    if coupling != "c":
+    if coupling not in ("c", "d"):
         return body
     note = {"evaluated": False, "reason": "prerequisite_not_ok"}
-    body["c"] = note
+    body[coupling] = note
     report = body.get("report")
     if not isinstance(report, dict):
         report = {}
         body["report"] = report
-    # Attach first, then persist, so the file cannot lead the in-memory note.
-    report["c"] = dict(note)
+    report[coupling] = dict(note)
     workdir = Path(body["workdir"])
     workdir.mkdir(parents=True, exist_ok=True)
     (workdir / "scenario-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -101,7 +100,7 @@ def run_damper_keyway(project: str | Path, coupling: str | None = None) -> dict[
 
     def _abort(**kwargs: Any) -> dict[str, Any]:
         """A/B failed. Do not call the C façade."""
-        return _c_not_started(_report(**kwargs), coupling)
+        return _fsi_not_started(_report(**kwargs), coupling)
 
     cad = _find_freecad_cmd()
     if not cad:
@@ -374,25 +373,27 @@ def run_damper_keyway(project: str | Path, coupling: str | None = None) -> dict[
     extra["message"] = "damper-keyway A+B passed"
     (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
     outputs.append(str(out / "scenario-report.json"))
-    if coupling != "c":
+    if coupling not in ("c", "d"):
         return _report(ok=True, status="ok", message=extra["message"], workdir=out, outputs=outputs, extra=extra)
 
-    # Import only when C runs. A missing first-party adapter is C broken,
+    # Import only when C or D runs. A missing first-party adapter is broken,
     # not an A/B crash and not prerequisite_not_ok (A/B already passed).
     try:
-        from .c_facade import run_c_fsi
+        from .c_facade import run_c_fsi, run_d_fsi
     except ImportError as exc:
+        label = "C-FSI" if coupling == "c" else "D-FSI"
+        ok_name = "c_ok" if coupling == "c" else "d_ok"
         summary = {
             "evaluated": True,
             "status": "broken",
-            "c_ok": False,
+            ok_name: False,
             "reason": f"ImportError: {exc}",
         }
-        extra["c_ok"] = False
-        extra["c"] = summary
+        extra[ok_name] = False
+        extra[coupling] = summary
         extra["ok"] = False
         extra["status"] = "broken"
-        extra["message"] = f"C-FSI broken: import failed: {exc}"
+        extra["message"] = f"{label} broken: import failed: {exc}"
         (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
         body = _report(
             ok=False,
@@ -402,40 +403,49 @@ def run_damper_keyway(project: str | Path, coupling: str | None = None) -> dict[
             outputs=outputs,
             extra=extra,
         )
-        body["c"] = summary
-        body["c_ok"] = False
+        body[coupling] = summary
+        body[ok_name] = False
         return body
 
-    # A/B files are already on disk. The façade freezes them before this report gains C fields.
-    session = run_c_fsi(ab_dir=out, out=out / "c-fsi", params=params)
-    c_ok = bool(session.get("c_ok"))
+    if coupling == "d":
+        session = run_d_fsi(ab_dir=out, out=out / "d-fsi", params=params)
+        ok_name = "d_ok"
+        passed_msg = "damper-keyway A+B+D passed"
+        fail_label = "D-FSI"
+        session_path = out / "d-fsi" / "d-session.json"
+    else:
+        session = run_c_fsi(ab_dir=out, out=out / "c-fsi", params=params)
+        ok_name = "c_ok"
+        passed_msg = "damper-keyway A+B+C passed"
+        fail_label = "C-FSI"
+        session_path = out / "c-fsi" / "c-session.json"
+    fsi_ok = bool(session.get(ok_name))
     summary = {
         "evaluated": bool(session.get("evaluated", True)),
         "status": session.get("status"),
-        "c_ok": c_ok,
+        ok_name: fsi_ok,
         "backend": session.get("backend"),
     }
-    extra["c_ok"] = c_ok
-    extra["c"] = summary
-    extra["ok"] = c_ok
-    if c_ok:
+    extra[ok_name] = fsi_ok
+    extra[coupling] = summary
+    extra["ok"] = fsi_ok
+    if fsi_ok:
         extra["status"] = "ok"
-        extra["message"] = "damper-keyway A+B+C passed"
+        extra["message"] = passed_msg
     else:
         extra["status"] = str(session.get("status") or "broken")
-        extra["message"] = f"C-FSI {extra['status']}"
+        extra["message"] = f"{fail_label} {extra['status']}"
     (out / "scenario-report.json").write_text(json.dumps(extra, indent=2) + "\n", encoding="utf-8")
-    session_path = out / "c-fsi" / "c-session.json"
     if session_path.is_file():
         outputs.append(str(session_path))
     body = _report(
-        ok=c_ok,
+        ok=fsi_ok,
         status=str(extra["status"]),
         message=str(extra["message"]),
         workdir=out,
         outputs=outputs,
         extra=extra,
     )
-    body["c"] = summary
-    body["c_ok"] = c_ok
+    body[coupling] = summary
+    body[ok_name] = fsi_ok
     return body

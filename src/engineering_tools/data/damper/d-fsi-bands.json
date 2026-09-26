@@ -1,0 +1,11 @@
+{
+  "calibration": "Pre-Ubuntu D pin. Live freeze replaces this sentence with Ubuntu date, project path, snapshot_digest, and measured D vs B.",
+  "motion_floor_m": 1e-12,
+  "geometric_tolerance_m": 0.002,
+  "n_steps": 2,
+  "parity": {
+    "housing.wall.pressure": {"abs": 5.0, "rel": 0.25},
+    "key.root.von_mises": {"abs": 1.0e5, "rel": 0.25},
+    "housing.wall.traction": {"abs": 5.0, "rel": 0.25}
+  }
+}

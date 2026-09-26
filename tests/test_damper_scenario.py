@@ -472,6 +472,17 @@ def test_coupling_c_not_evaluated_when_freecad_missing(tmp_path, monkeypatch) ->
     assert persisted["c"]["reason"] == "prerequisite_not_ok"
 
 
+def test_coupling_d_not_evaluated_when_freecad_missing(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    project = init_project(tmp_path / "part", name="Damper")
+    result = run_damper_keyway(project, coupling="d")
+    assert result["ok"] is False
+    assert result["d"]["evaluated"] is False
+    assert result["d"]["reason"] == "prerequisite_not_ok"
+    session = project / "artifacts" / "scenario-damper-keyway" / "d-fsi" / "d-session.json"
+    assert not session.exists()
+
+
 def test_coupling_c_ab_success_reports_c_ok_with_fakes(tmp_path, monkeypatch) -> None:
     """A/B fakes plus precice/pimpleFoam yield A+B+C and c_ok on the report.
 

@@ -31,3 +31,18 @@ def load_c_fsi_bands() -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("c-fsi-bands.json must be an object")
     return data
+
+
+def load_d_fsi_bands() -> dict[str, Any]:
+    """Load D damper-proof bands. Zeros must not pass against finite B.
+
+    Agents: this file is not C's coupler freeze. rel is tight enough that
+    D=0 fails |D-B| <= abs + rel*|B| for B-scale wall Pa (~1e2) and key Pa (~1e7).
+    Ubuntu provenance lands in calibration at D acceptance, not here as CI fiction.
+    """
+    root = resources.files("engineering_tools")
+    text = (root / "data" / "damper" / "d-fsi-bands.json").read_text(encoding="utf-8")
+    data = json.loads(text)
+    if not isinstance(data, dict):
+        raise ValueError("d-fsi-bands.json must be an object")
+    return data
