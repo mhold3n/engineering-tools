@@ -15,6 +15,16 @@ def test_doctor_returns_int() -> None:
     assert code in (0, 1)
 
 
+def test_doctor_mentions_c_fsi_ubuntu_stack(capsys) -> None:
+    """doctor names the C locators; it does not start FSI."""
+    main(["doctor"])
+    out = capsys.readouterr().out
+    assert "C-FSI" in out
+    assert "pimpleFoam" in out
+    assert "ccx_preCICE" in out
+    assert "openfoam2512" in out
+
+
 def test_profile_alias() -> None:
     code = main(["profile"])
     assert code in (0, 1)

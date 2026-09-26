@@ -78,6 +78,7 @@ def test_packaged_c_fsi_bands_have_required_keys() -> None:
     assert "housing.wall.displacement" not in bands["parity"]
     assert "CI placeholder" not in str(bands.get("calibration", ""))
     assert "Ubuntu" in str(bands.get("calibration", ""))
+    assert "later vertical" in str(bands.get("physics_followup", ""))
 
 
 def test_generated_xml_uses_policy_names_not_a_checked_in_file() -> None:

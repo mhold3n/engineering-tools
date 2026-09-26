@@ -37,6 +37,14 @@ def _cmd_doctor(_args: argparse.Namespace) -> int:
         print("By layer:")
         for layer, names in sorted(summary["by_layer"].items()):
             print(f"  {layer}: {', '.join(names)}")
+    # C-FSI locators are doctor rows (preCICE, ccx_preCICE, pimpleFoam).
+    # Ubuntu live stack: ESI OpenFOAM v2512, libprecice3, ccx_preCICE via mpirun -n 1.
+    # Distro OpenFOAM v1912 and a bare ccx_preCICE without mpirun do not complete C.
+    print(
+        "C-FSI (--coupling c): precice-tools + ccx_preCICE + pimpleFoam. "
+        "Ubuntu: ESI openfoam2512, libprecice3, mpirun -n 1 for Solid. "
+        "A icoFoam stays the cavity solver; C Fluid is pimpleFoam."
+    )
     return 0 if summary["found_count"] else 1
 
 
