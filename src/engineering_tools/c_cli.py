@@ -1,6 +1,6 @@
 """Normalize scenario --coupling / --fsi.
 
-Agents: `c` is coupler-only FSI. `d` is driven damper-proof FSI.
+Agents: `c` coupler FSI, `d` damper physics FSI, `e` general CAD-native graph.
 `--fsi` is only an alias of `c`. Unknown tokens are broken, not missing.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-IMPLEMENTED = frozenset({"c", "d"})
+IMPLEMENTED = frozenset({"c", "d", "e"})
 
 
 @dataclass(frozen=True)

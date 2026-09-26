@@ -50,7 +50,12 @@ def test_coupling_d_parses_and_fsi_stays_c() -> None:
     assert clash.token is None
 
 
-def test_mm_to_m_keeps_three_components() -> None:
+def test_coupling_e_parses_and_fsi_stays_c() -> None:
+    req = parse_coupling_flags(coupling="e", fsi=False)
+    assert req.token == "e"
+    assert req.status == "ok"
+    clash = parse_coupling_flags(coupling="e", fsi=True)
+    assert clash.status == "broken"
     assert mm_to_m([25.0, 0.0, 0.0]) == [0.025, 0.0, 0.0]
 
 

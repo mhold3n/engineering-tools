@@ -128,7 +128,20 @@ def test_fsi_and_coupling_c_call_scenario_with_coupling_c(tmp_path: Path, monkey
     assert seen == ["c", "c"]
 
 
-def test_unknown_coupling_exits_before_scenario(tmp_path: Path, capsys) -> None:
+def test_e_reference_scenario_cli(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
+    project = init_project(tmp_path / "e-part", name="E")
+    code = main(["scenario", "e-reference", "--coupling", "e", "--project", str(project)])
+    assert code == 0
+    assert (project / "artifacts" / "scenario-e-reference" / "e-session.json").is_file()
+
+
+def test_damper_rejects_coupling_e(tmp_path: Path, monkeypatch, capsys) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
+    project = init_project(tmp_path / "d-part", name="D")
+    code = main(["scenario", "damper-keyway", "--coupling", "e", "--project", str(project)])
+    assert code == 1
+    assert "e-reference" in capsys.readouterr().err
     """Unknown --coupling is broken before CAD or solvers run."""
     project = tmp_path / "part"
     project.mkdir()

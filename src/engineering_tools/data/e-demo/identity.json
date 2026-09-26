@@ -1,0 +1,60 @@
+{
+  "cad_fingerprint": null,
+  "entity_id": "asm.heated_vessel",
+  "entities": [
+    {
+      "entity_id": "asm.heated_vessel",
+      "kind": "assembly",
+      "name": "heated vessel demo",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "body.shell",
+      "kind": "body",
+      "parent_id": "asm.heated_vessel",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "body.lid",
+      "kind": "body",
+      "parent_id": "asm.heated_vessel",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "body.gas",
+      "kind": "body",
+      "parent_id": "asm.heated_vessel",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "face.inner_wall",
+      "kind": "face",
+      "parent_id": "body.shell",
+      "role": "heated_wall",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "face.outer_wall",
+      "kind": "face",
+      "parent_id": "body.shell",
+      "role": "ambient",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "face.lid_inner",
+      "kind": "face",
+      "parent_id": "body.lid",
+      "topology_version": 1
+    },
+    {
+      "entity_id": "iface.fluid_solid",
+      "kind": "interface",
+      "parent_id": "face.inner_wall",
+      "topology_version": 1
+    }
+  ],
+  "lineage": [],
+  "rebinding": {},
+  "schema_version": 1,
+  "topology_version": 1
+}

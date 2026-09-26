@@ -204,11 +204,12 @@ def _cmd_bom(args: argparse.Namespace) -> int:
 
 
 def _cmd_scenario(args: argparse.Namespace) -> int:
-    """Dispatch etools scenario damper-keyway; requires a project like etools run."""
+    """Dispatch damper-keyway or Phase E reference; requires a project like etools run."""
     from .damper_scenario import run_damper_keyway
+    from .e_scenario import run_e_reference
     from .project import is_project
 
-    if args.name != "damper-keyway":
+    if args.name not in ("damper-keyway", "e-reference"):
         print(f"unknown scenario: {args.name}", file=sys.stderr)
         return 2
     if args.project:
@@ -233,10 +234,21 @@ def _cmd_scenario(args: argparse.Namespace) -> int:
     if req.status == "broken":
         print(req.detail, file=sys.stderr)
         return 1
-    result = run_damper_keyway(root, coupling=req.token)
+    if args.name == "damper-keyway" and req.token == "e":
+        print("Phase E token is e-reference, not damper-keyway", file=sys.stderr)
+        return 1
+    if args.name == "e-reference":
+        if req.token not in (None, "e"):
+            print("e-reference only accepts --coupling e", file=sys.stderr)
+            return 1
+        result = run_e_reference(root)
+        tool = "e-reference"
+    else:
+        result = run_damper_keyway(root, coupling=req.token)
+        tool = "damper-keyway"
     append_job(
         root,
-        tool="damper-keyway",
+        tool=tool,
         command="scenario",
         status=result["status"],
         workdir=result.get("workdir"),
@@ -401,9 +413,9 @@ def build_parser() -> argparse.ArgumentParser:
         "scenario",
         help="Run a headless product scenario (damper-keyway)",
     )
-    scenario.add_argument("name", help="Scenario id (damper-keyway)")
+    scenario.add_argument("name", help="Scenario id (damper-keyway or e-reference)")
     scenario.add_argument("--project", default=None, help="Project path (default: cwd if it is a project)")
-    scenario.add_argument("--coupling", default=None, help="C coupler (c) or D driven FSI (d)")
+    scenario.add_argument("--coupling", default=None, help="C coupler (c), D damper FSI (d), or E CAD graph (e)")
     scenario.add_argument("--fsi", action="store_true", help="Alias for --coupling c")
     scenario.add_argument("--json", action="store_true", help="Print JSON result")
     scenario.set_defaults(func=_cmd_scenario)
