@@ -8,6 +8,7 @@ from pathlib import Path
 
 from engineering_tools.e_cad import (
     DEMO_IDENTITY_PATH,
+    DEMO_STEP_PATH,
     fingerprint_bytes,
     import_identity,
     rebind_entities,
@@ -125,3 +126,45 @@ def test_e_cad_does_not_call_damper_hex_writers() -> None:
     assert "d_fsi_meshes" not in source
     assert "write_d_solid_inp" not in source
     assert "from engineering_tools.d_" not in source
+
+
+def test_packaged_vessel_step_exists() -> None:
+    assert DEMO_STEP_PATH.is_file()
+    text = DEMO_STEP_PATH.read_text(encoding="utf-8", errors="replace")
+    assert "ISO-10303-21" in text
+
+
+def test_step_extract_assigns_canonical_ids(monkeypatch) -> None:
+    """CI has no FreeCAD; the extract hook still must mint vessel IDs from STEP bytes."""
+
+    def _fake(step: Path) -> dict:
+        assert step == DEMO_STEP_PATH
+        return {
+            "status": "ok",
+            "entity_id": "asm.heated_vessel",
+            "topology_version": 1,
+            "lineage": [],
+            "rebinding": {},
+            "entities": [
+                {"entity_id": "asm.heated_vessel", "kind": "assembly", "topology_version": 1},
+                {"entity_id": "body.shell", "kind": "body", "topology_version": 1},
+                {"entity_id": "body.lid", "kind": "body", "topology_version": 1},
+                {"entity_id": "body.gas", "kind": "body", "topology_version": 1},
+                {"entity_id": "face.inner_wall", "kind": "face", "topology_version": 1},
+                {"entity_id": "face.outer_wall", "kind": "face", "topology_version": 1},
+                {"entity_id": "face.lid_inner", "kind": "face", "topology_version": 1},
+                {"entity_id": "iface.fluid_solid", "kind": "interface", "topology_version": 1},
+            ],
+        }
+
+    monkeypatch.setattr("engineering_tools.e_cad.freecad_available", lambda: True)
+    monkeypatch.setattr("engineering_tools.e_cad._extract_step_with_freecad", _fake)
+    first = import_identity(DEMO_STEP_PATH, mesh={"element_size_m": 0.02})
+    second = import_identity(DEMO_STEP_PATH, mesh={"element_size_m": 0.002})
+    assert first["status"] == "ok"
+    assert first["source"] == "step"
+    assert first["cad_fingerprint"] == fingerprint_bytes(DEMO_STEP_PATH.read_bytes())
+    assert first["entity_ids"] == second["entity_ids"]
+    assert "face.inner_wall" in first["entity_ids"]
+    assert "body.gas" in first["entity_ids"]
+    assert "body.lid" in first["entity_ids"]
