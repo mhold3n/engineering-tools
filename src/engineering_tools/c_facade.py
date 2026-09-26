@@ -18,12 +18,18 @@ from engineering_tools.c_backend_precice import (
     find_precice,
     generate_precice_config,
     run_coupled_participants,
+    tight_d_policy,
 )
 from engineering_tools.c_contract import new_session
 from engineering_tools.c_fsi_meshes import canonical_xyz_m, write_c_fluid_case, write_c_solid_inp
 from engineering_tools.c_parity import in_band, load_c_fsi_bands, load_d_fsi_bands, mpa_to_pa
 from engineering_tools.c_snapshot import freeze_ab_snapshot
-from engineering_tools.d_fsi_meshes import apply_driven_lid_u, apply_d_transport_nu, write_d_fluid_case, write_d_solid_inp
+from engineering_tools.d_fsi_meshes import (
+    apply_d_chamber_fields,
+    d_canonical_xyz_m,
+    write_d_fluid_case,
+    write_d_solid_inp,
+)
 from engineering_tools.hello_probes import _openfoam_tool
 
 from . import c_adapter_calculix, c_adapter_openfoam
@@ -140,7 +146,7 @@ def _run_partitioned_fsi(
 
     session = _blank("ok", kind=kind)
     session["snapshot_digest"] = digest
-    policy = default_policy()
+    policy = tight_d_policy() if kind == "d" else default_policy()
     session["participants"] = list(policy["participants"])
     session["interfaces"] = [
         {
@@ -156,7 +162,7 @@ def _run_partitioned_fsi(
     fluid_dir = out / f"{prefix}-fluid"
     wall_pa = _wall_pressure_pa(out / "ab-snapshot")
     if kind == "d":
-        write_d_solid_inp(params, solid_dir / "d-solid.inp", wall_pressure_pa=wall_pa)
+        write_d_solid_inp(params, solid_dir / "d-solid.inp")
         write_d_fluid_case(params, fluid_dir)
         bands = load_d_fsi_bands()
     else:
@@ -172,10 +178,9 @@ def _run_partitioned_fsi(
         session[ok_key] = False
         _write_session(out, session, kind=kind)
         return session
-    # blockMesh restages 0/U. D lid U must land after that copy.
+    # blockMesh restages 0/. D chamber BCs (A lid, empty, 0.1 s) land after that.
     if kind == "d":
-        apply_driven_lid_u(fluid_dir)
-        apply_d_transport_nu(fluid_dir)
+        apply_d_chamber_fields(fluid_dir)
     solid_argv = c_adapter_calculix.solid_participant_argv(solid_dir)
     fluid_argv = c_adapter_openfoam.fluid_participant_argv()
     if solid_argv is None or fluid_argv is None:
@@ -201,12 +206,15 @@ def _run_partitioned_fsi(
 
     merged: dict[str, Any] = {}
     merged.update(c_adapter_calculix.sample_c_probes(solid_dir))
-    merged.update(c_adapter_openfoam.sample_c_probes(fluid_dir))
+    if kind == "d":
+        merged.update(c_adapter_openfoam.sample_d_probes(fluid_dir))
+    else:
+        merged.update(c_adapter_openfoam.sample_c_probes(fluid_dir))
     probe_file = "c-probes.json" if kind == "c" else "d-probes.json"
     (out / probe_file).write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
     session["probes"] = merged
 
-    canonical = canonical_xyz_m(params)
+    canonical = d_canonical_xyz_m(params) if kind == "d" else canonical_xyz_m(params)
     tolerance = float(bands["geometric_tolerance_m"])
     floor = float(bands["motion_floor_m"])
     broken = False
@@ -255,11 +263,7 @@ def _run_partitioned_fsi(
         except (TypeError, ValueError, KeyError):
             d_value = float("nan")
         b_value = float(targets[name])
-        compare_b = b_value
-        if kind == "d" and name == "housing.wall.pressure":
-            # Lid-driven pimpleFoam wall p is positive; B icoFoam chamber_wall is negative.
-            compare_b = -b_value if d_value * b_value < 0 else b_value
-        ok = math.isfinite(d_value) and in_band(d_value, compare_b, float(band["abs"]), float(band["rel"]))
+        ok = math.isfinite(d_value) and in_band(d_value, b_value, float(band["abs"]), float(band["rel"]))
         parity.append({"id": name, "ok": ok, "c": d_value, "b": b_value})
         if not ok:
             broken = True

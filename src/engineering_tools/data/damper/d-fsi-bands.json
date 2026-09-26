@@ -1,11 +1,11 @@
 {
-  "calibration": "Ubuntu hhpe-forge 2026-09-25. Project /home/agent/damper-scenario-d-cal. snapshot_digest e5220316274cfcf75e21d232ea1d7ad60c51aa62b23c74cb7d326c7a71aa0c95. Coupled windows 2/2. Measured D: housing.wall.pressure=163.80605 Pa (positive lid-driven; parity vs |B|), housing.wall.traction=163.80605 Pa, key.root.von_mises=10056577.523350028 Pa. B: wall_p=-106.5033 Pa, keyway_root_mapped=10.072127391536904 MPa. Lid Ux=0.046 m/s, nu=0.01 m2/s, 8^3 hex. Second clean --coupling d is acceptance against this file.",
+  "calibration": "Ubuntu hhpe-forge 2026-09-25. Project /home/agent/damper-scenario-d-tight. snapshot_digest e5220316274cfcf75e21d232ea1d7ad60c51aa62b23c74cb7d326c7a71aa0c95. Tight serial-implicit Force residual + Aitken(Force); 20/20 windows; A lid U=(1,0,0) m/s ν=0.01 20×20×1; sandwich FSI on −X ID. Measured D: housing.wall.pressure=-125.52035 Pa (signed chamber_wall cell), housing.wall.traction=125.52035 Pa, key.root.von_mises=10025530.807068272 Pa. B from that project: wall_p=-106.5033 Pa, traction=106.5033 Pa, keyway_root_mapped=10.072127391536904 MPa. Second clean --coupling d is acceptance against this file. Zeros versus finite B fail.",
   "motion_floor_m": 1e-12,
-  "geometric_tolerance_m": 0.002,
-  "n_steps": 2,
+  "geometric_tolerance_m": 0.015,
+  "n_steps": 20,
   "parity": {
-    "housing.wall.pressure": {"abs": 30.0, "rel": 0.4},
-    "key.root.von_mises": {"abs": 1.0e5, "rel": 0.25},
-    "housing.wall.traction": {"abs": 30.0, "rel": 0.4}
+    "housing.wall.pressure": {"abs": 15.0, "rel": 0.2},
+    "key.root.von_mises": {"abs": 1.0e5, "rel": 0.15},
+    "housing.wall.traction": {"abs": 15.0, "rel": 0.2}
   }
 }

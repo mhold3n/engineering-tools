@@ -430,6 +430,29 @@ def _interface_center_m(workdir: Path) -> list[float] | None:
     return [sum(point[axis] for point in picked) / len(picked) for axis in range(3)]
 
 
+def sample_d_probes(out: Path) -> dict[str, Any]:
+    """Wall Pa from the A chamber_wall cell, signed, not max-|p|.
+
+    Agents: C's sample_c_probes uses max |cell| on a nonuniform list. D is
+    20×20 A-cavity physics; the damper wall is i=0 mid-j, same index as A.
+    """
+    from engineering_tools.damper_cfd import chamber_wall_index
+
+    pressure_path = _pressure_file(out)
+    center = _interface_center_m(out)
+    if pressure_path is None or center is None:
+        return {}
+    kinematic = parse_internal_field_p(
+        pressure_path.read_text(encoding="utf-8", errors="replace"),
+        cell_index=chamber_wall_index(),
+    )
+    pascals = kinematic_to_pa(kinematic, require_density(load_params()))
+    return {
+        "housing.wall.pressure": {"value": pascals, "xyz_m": list(center)},
+        "housing.wall.traction": {"value": abs(pascals), "xyz_m": list(center)},
+    }
+
+
 def sample_c_probes(out: Path) -> dict[str, Any]:
     """Read wall pressure from the C fluid case and return SI probe rows.
 

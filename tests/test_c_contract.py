@@ -100,6 +100,7 @@ def test_d_bands_reject_zero_versus_finite_b() -> None:
     assert in_band(0.0, 100.0, float(wall["abs"]), float(wall["rel"])) is False
     assert in_band(0.0, 1.0e7, float(key["abs"]), float(key["rel"])) is False
     assert "CI placeholder" not in str(bands.get("calibration", ""))
+    assert "Ubuntu" in str(bands.get("calibration", ""))
     assert "housing.wall.displacement" not in bands["parity"]
 
 

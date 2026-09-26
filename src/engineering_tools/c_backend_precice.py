@@ -57,7 +57,22 @@ def default_policy() -> dict[str, Any]:
         "time_window": 0.01,
         "max_iterations": 100,
         "max_time_windows": 2,
+        "tight_coupling": False,
     }
+
+
+def tight_d_policy() -> dict[str, Any]:
+    """D damper-proof policy: same kernels, A-duration windows, dual residual.
+
+    Agents: this is not C. C uses default_policy (Displacement residual only,
+    two 0.01 s windows). D matches A icoFoam horizon (0.1 s at 0.005 s) and
+    requires Force residual plus Aitken so the window is tight implicit FSI.
+    """
+    policy = default_policy()
+    policy["time_window"] = 0.005
+    policy["max_time_windows"] = 20
+    policy["tight_coupling"] = True
+    return policy
 
 
 def find_precice() -> Path | None:
@@ -156,18 +171,38 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
             f'      <relative-convergence-measure data="{displacement}" '
             f'mesh="{mesh}" limit="{_RELATIVE_CONVERGENCE_LIMIT}"/>'
         ),
-        (
-            f'      <exchange data="{traction}" mesh="{mesh}" '
-            f'from="{fluid_name}" to="{solid_name}"/>'
-        ),
-        (
-            f'      <exchange data="{displacement}" mesh="{mesh}" '
-            f'from="{solid_name}" to="{fluid_name}"/>'
-        ),
-        "  </coupling-scheme:serial-implicit>",
-        "</precice-configuration>",
-        "",
     ]
+    if policy.get("tight_coupling"):
+        # D: residual on Force as well as Displacement, Aitken, min two iters.
+        # C stays Displacement-only so the coupler-proof XML does not change.
+        lines.extend(
+            [
+                (
+                    f'      <relative-convergence-measure data="{traction}" '
+                    f'mesh="{mesh}" limit="{_RELATIVE_CONVERGENCE_LIMIT}"/>'
+                ),
+                '      <min-iterations value="2"/>',
+                "      <acceleration:aitken>",
+                f'        <data name="{traction}" mesh="{mesh}"/>',
+                '        <initial-relaxation value="0.5"/>',
+                "      </acceleration:aitken>",
+            ]
+        )
+    lines.extend(
+        [
+            (
+                f'      <exchange data="{traction}" mesh="{mesh}" '
+                f'from="{fluid_name}" to="{solid_name}"/>'
+            ),
+            (
+                f'      <exchange data="{displacement}" mesh="{mesh}" '
+                f'from="{solid_name}" to="{fluid_name}"/>'
+            ),
+            "  </coupling-scheme:serial-implicit>",
+            "</precice-configuration>",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
