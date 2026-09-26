@@ -6,7 +6,7 @@ in `damper_cfd`) and B's four-brick sandwich (`write_solid_inp` in
 
 Geometry:
 - Solid: two C3D8 elements. Element 1 is the housing wall on the
-  chamber_wall side (−X). Inner face (NSET `interface`) sits at
+  chamber_wall side (−X). Inner face (NSET `NinterfaceN`) sits at
   x = -housing_id_mm/2. Outer face sits at x = -housing_od_mm/2.
   Element 2 is a small hex on +X whose first node sits 1 mm +Y from
   `keyway_root`, inside `geometric_tolerance_m` (0.002 m) and not on the
@@ -104,11 +104,13 @@ def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: f
     Element 1: y spans ±key_width/2 and z spans ±key_length/2 so the wall
     hex has volume. OD nodes are held. Interface nodes are free.
     Element 2: one corner is `_keyway_sample_node_mm` so live FRD sampling
-    can resolve key.root.von_mises. Units in the deck are millimetres and
-    MPa. When wall_pressure_pa is set, *DLOAD applies that B wall pressure
-    (Pa converted to MPa) on the interface face so a static step has a
-    nonzero u. Do not invent a displacement in the adapter if this load
-    still falls under the motion floor; that is calibration.
+    can resolve key.root.von_mises. Units in the deck are SI (metres, Pa,
+    kg/m^3) so preCICE vertices match the OpenFOAM metre mesh. A/B CalculiX
+    stays millimetre/MPa. When wall_pressure_pa is set, *DLOAD applies that
+    B wall pressure in Pa on the interface face. *DYNAMIC is required by
+    ccx_preCICE; *STATIC is rejected. Do not invent a displacement in the
+    adapter if this load still falls under the motion floor; that is
+    calibration.
     """
     x_id = _mm(params, "housing_id_mm") / 2.0
     x_od = _mm(params, "housing_od_mm") / 2.0
@@ -116,7 +118,7 @@ def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: f
         raise ValueError("housing_od_mm must be greater than housing_id_mm")
     hy = _mm(params, "key_width_mm") / 2.0
     hz = _mm(params, "key_length_mm") / 2.0
-    youngs = float(params["youngs_mpa"])
+    youngs_pa = float(params["youngs_mpa"]) * 1.0e6
     poisson = float(params["poisson"])
     # Node ids 1,4,8,5 stay on the interface. Their x is −ID; OD nodes are
     # more negative. Element order below swaps those pairs so the local
@@ -147,7 +149,12 @@ def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: f
         (kx, ky + span_mm, kz + span_mm),
     )
     all_corners = corners + key_corners
-    node_lines = [f"{nid}, {x:.6f}, {y:.6f}, {z:.6f}" for nid, (x, y, z) in enumerate(all_corners, start=1)]
+    # preCICE maps Solid vertices onto the OpenFOAM metre mesh. Millimetre
+    # coordinates look ~1000× too far (mapping distance ~27 m on a 27 mm wall).
+    all_corners_m = tuple(
+        (x / 1000.0, y / 1000.0, z / 1000.0) for x, y, z in all_corners
+    )
+    node_lines = [f"{nid}, {x:.8f}, {y:.8f}, {z:.8f}" for nid, (x, y, z) in enumerate(all_corners_m, start=1)]
     iface = ", ".join(str(nid) for nid in interface_node_ids())
     # OD face nodes are the complement of the interface set.
     od_nodes = (2, 3, 6, 7)
@@ -156,13 +163,15 @@ def write_c_solid_inp(params: dict[str, Any], path: Path, *, wall_pressure_pa: f
     # (P4). Positive pressure is compressive on that face.
     dload = ""
     if wall_pressure_pa is not None and wall_pressure_pa == wall_pressure_pa:
-        pressure_mpa = float(wall_pressure_pa) / 1.0e6
-        dload = f"*DLOAD\n1, P4, {pressure_mpa}\n"
+        pressure_pa = float(wall_pressure_pa)
+        dload = f"*DLOAD\n1, P4, {pressure_pa}\n"
     text = f"""** C-FSI solid: wall hex on −X plus a keyway hex on +X.
 ** Independent of the A cavity and the B sandwich.
 ** interface nodes are the chamber_wall face at x = -housing_id_mm/2.
+** NSET NinterfaceN: calculix-adapter toNodeSetName is N + nodes-mesh + N.
+** *CLOAD zeros on that set reserve xforc slots; Force coupling needs them.
 ** Element 2 node 9 is the keyway_root sample (1 mm +Y), not the canonical pin.
-** DLOAD P4 is B wall pressure in MPa so interface u is not prescribed.
+** DLOAD P4 is B wall pressure in Pa. Steel E is Pa, density kg/m3, xyz metres.
 *HEADING
 c-fsi solid
 *NODE
@@ -170,16 +179,23 @@ c-fsi solid
 *ELEMENT, TYPE=C3D8, ELSET=EALL
 1, 2, 1, 4, 3, 6, 5, 8, 7
 2, 9, 10, 11, 12, 13, 14, 15, 16
-*NSET, NSET=interface
+*NSET, NSET=NinterfaceN
 {iface}
 *MATERIAL, NAME=Steel
 *ELASTIC
-{youngs}, {poisson}
+{youngs_pa}, {poisson}
+*DENSITY
+7850
 *SOLID SECTION, ELSET=EALL, MATERIAL=Steel
 *BOUNDARY
 {bounds}
-*STEP
-*STATIC
+*STEP, INC=1000000
+*DYNAMIC, ALPHA=0.0, DIRECT
+0.01, 0.02
+*CLOAD
+NinterfaceN, 1, 0.
+NinterfaceN, 2, 0.
+NinterfaceN, 3, 0.
 {dload}*NODE FILE
 U, RF
 *EL FILE

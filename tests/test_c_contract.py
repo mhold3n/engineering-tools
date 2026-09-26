@@ -76,6 +76,8 @@ def test_packaged_c_fsi_bands_have_required_keys() -> None:
     assert "housing.wall.pressure" in bands["parity"]
     assert bands["parity"]["housing.wall.pressure"]["abs"] >= 0
     assert "housing.wall.displacement" not in bands["parity"]
+    assert "CI placeholder" not in str(bands.get("calibration", ""))
+    assert "Ubuntu" in str(bands.get("calibration", ""))
 
 
 def test_generated_xml_uses_policy_names_not_a_checked_in_file() -> None:
@@ -83,7 +85,7 @@ def test_generated_xml_uses_policy_names_not_a_checked_in_file() -> None:
     xml = generate_precice_config(policy)
     assert "<participant name=\"Solid\">" in xml or 'name="Solid"' in xml
     assert "Displacement" in xml
-    assert "Traction" in xml
+    assert "Force" in xml
     policy["participants"][0]["name"] = "Steel"
     xml2 = generate_precice_config(policy)
     assert "Steel" in xml2
@@ -104,20 +106,20 @@ def test_precice_participant_read_write_matches_c_policy() -> None:
     fluid = _participant_block(xml, "Fluid")
     # mesh= is required: preCICE binds each read/write to a mesh, not a bare name.
     assert 'write-data name="Displacement" mesh="' in solid
-    assert 'read-data name="Traction" mesh="' in solid
-    assert 'write-data name="Traction"' not in solid
+    assert 'read-data name="Force" mesh="' in solid
+    assert 'write-data name="Force"' not in solid
     assert 'write-data name="Displacement"' not in fluid
-    assert 'write-data name="Traction" mesh="' in fluid
+    assert 'write-data name="Force" mesh="' in fluid
     assert 'read-data name="Displacement" mesh="' in fluid
-    assert 'use-mesh name="interface" provide="yes"' in solid
-    assert 'use-mesh name="interface" from="Solid"' in fluid
+    assert 'provide-mesh name="interface"' in solid
+    assert 'receive-mesh name="interface" from="Solid"' in fluid
 
 
 def test_precice_exchanges_match_c_policy() -> None:
     policy = default_policy()
     xml = generate_precice_config(policy)
     assert (
-        f'exchange data="Traction" mesh="interface" from="Fluid" to="Solid"' in xml
+        f'exchange data="Force" mesh="interface" from="Fluid" to="Solid"' in xml
     )
     assert (
         f'exchange data="Displacement" mesh="interface" from="Solid" to="Fluid"'
@@ -151,7 +153,7 @@ def test_max_iterations_not_encoded_as_max_time() -> None:
     assert f'<max-time-windows value="{bogus}"' not in xml
     assert "coupling-scheme:parallel-explicit" not in xml
     scheme = _serial_implicit_scheme_block(xml)
-    assert 'exchange data="Traction"' in scheme
+    assert 'exchange data="Force"' in scheme
     assert 'exchange data="Displacement"' in scheme
     assert f'<max-iterations value="{policy["max_iterations"]}"' in scheme
     assert f'<time-window-size value="{policy["time_window"]}"' in scheme
@@ -159,7 +161,7 @@ def test_max_iterations_not_encoded_as_max_time() -> None:
     assert "relative-convergence-measure" in scheme
 
 
-def test_generated_xml_is_precice2_config_not_invented_solver_tags() -> None:
+def test_generated_xml_is_precice3_config_not_invented_solver_tags() -> None:
     """Policy becomes a config participants can load, not a fake driver script.
 
     Agents: `<solver:calculix/>` is not a preCICE element. CalculiX and
@@ -169,38 +171,32 @@ def test_generated_xml_is_precice2_config_not_invented_solver_tags() -> None:
     """
     xml = generate_precice_config(default_policy())
     assert '<data:vector name="Displacement"' in xml
-    assert '<data:vector name="Traction"' in xml
+    assert '<data:vector name="Force"' in xml
     assert "m2n:sockets" in xml
     assert "mapping:nearest-neighbor" in xml
-    # `<solver-interface>` is the preCICE 2 wrapper. `<solver:calculix/>` is not.
-    without_v2_wrapper = xml.replace("solver-interface", "precice-root")
-    assert "<solver:" not in without_v2_wrapper
-    assert "provide-mesh" in xml or 'provide="yes"' in xml
-    assert "receive-mesh" in xml or 'from="' in xml
+    assert "solver-interface" not in xml
+    assert "<solver:" not in xml
+    assert "provide-mesh" in xml
+    assert "receive-mesh" in xml
 
 
-def test_precice_v2_solver_interface_dimensions_m2n_and_mapping() -> None:
-    """XML matches the v2 tutorial shape CalculiX and OpenFOAM adapters load.
+def test_precice_v3_mesh_dimensions_m2n_and_mapping() -> None:
+    """XML matches the v3 tutorial shape CalculiX and OpenFOAM adapters load.
 
-    Agents: preCICE 2 (tutorials tag v202211.0, perpendicular-flap and
-    elastic-tube-3d) wraps data, meshes, participants, m2n, and the scheme
-    in `<solver-interface dimensions="N">`. That attribute is the mesh
-    dimension; a `dimensions` attribute on `<mesh>` is unknown and the v2
-    parser aborts. m2n uses `from`/`to` (v3 renamed those to acceptor/
-    connector). Mapping uses `direction` and `constraint` the same way the
-    tutorials do. Do not emit `<solver:…/>`.
+    Agents: preCICE 3 (tutorials master, perpendicular-flap) puts `dimensions`
+    on each `<mesh>`, uses `provide-mesh` / `receive-mesh`, and m2n
+    `acceptor`/`connector`. There is no `<solver-interface>` wrapper. Mapping
+    still uses `direction` and `constraint`. Do not emit `<solver:…/>`.
     """
     xml = generate_precice_config(default_policy())
-    assert '<solver-interface dimensions="3">' in xml
-    assert xml.index("<solver-interface") < xml.index("<data:vector")
-    assert xml.index("</solver-interface>") > xml.index("</coupling-scheme:serial-implicit>")
-    assert '<mesh name="interface">' in xml
-    assert '<mesh name="interface-fluid">' in xml
-    assert 'dimensions="' not in xml.split("<solver-interface", 1)[1].split(">", 1)[1]
-    assert 'm2n:sockets from="Fluid" to="Solid"' in xml
-    assert "acceptor=" not in xml
-    assert "connector=" not in xml
+    assert "solver-interface" not in xml
+    assert '<mesh name="interface" dimensions="3">' in xml
+    assert '<mesh name="interface-fluid" dimensions="3">' in xml
+    assert 'm2n:sockets acceptor="Fluid" connector="Solid"' in xml
+    assert "m2n:sockets from=" not in xml
     fluid = _participant_block(xml, "Fluid")
+    assert 'provide-mesh name="interface-fluid"' in fluid
+    assert 'receive-mesh name="interface" from="Solid"' in fluid
     assert 'mapping:nearest-neighbor direction="write"' in fluid
     assert 'constraint="conservative"' in fluid
     assert 'mapping:nearest-neighbor direction="read"' in fluid

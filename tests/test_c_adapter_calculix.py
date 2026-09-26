@@ -84,7 +84,7 @@ def test_prepare_solid_participant_writes_traction_and_displacement(tmp_path: Pa
     text = written.read_text(encoding="utf-8")
     assert "Solid" in text
     assert "Displacement" in text
-    assert "Traction" in text
+    assert "Force" in text
     assert "precice-config" in text
     assert str(config_xml) in text
 
@@ -120,3 +120,44 @@ def test_run_step_launches_ccx_preCICE_not_ccx_or_precice(
     assert run_step(work, 0) is True
     assert launched == [[str(binary), "-i", "c-solid", "-precice-participant", "Solid"]]
     assert Path(launched[0][0]).name not in {"precice", "ccx"}
+
+
+def test_solid_argv_prefixes_mpirun_when_present(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """OpenMPI hosts wrap ccx_preCICE; CI fakes without mpirun do not."""
+    from engineering_tools.c_adapter_calculix import solid_participant_argv
+
+    binary = tmp_path / "bin" / "ccx_preCICE"
+    mpirun = tmp_path / "bin" / "mpirun"
+    binary.parent.mkdir()
+    binary.write_text("", encoding="utf-8")
+    mpirun.write_text("", encoding="utf-8")
+    work = tmp_path / "c-solid"
+    work.mkdir()
+    (work / "c-solid.inp").write_text("*HEADING\n", encoding="utf-8")
+
+    def _which(name: str) -> str | None:
+        if name == "ccx_preCICE":
+            return str(binary)
+        if name == "mpirun":
+            return str(mpirun)
+        return None
+
+    monkeypatch.setattr("engineering_tools.c_adapter_calculix.shutil.which", _which)
+    monkeypatch.delenv("OMPI_COMM_WORLD_SIZE", raising=False)
+    argv = solid_participant_argv(work)
+    assert argv == [
+        str(mpirun),
+        "--oversubscribe",
+        "-n",
+        "1",
+        str(binary),
+        "-i",
+        "c-solid",
+        "-precice-participant",
+        "Solid",
+    ]
+    monkeypatch.setenv("OMPI_COMM_WORLD_SIZE", "1")
+    nested = solid_participant_argv(work)
+    assert nested == [str(binary), "-i", "c-solid", "-precice-participant", "Solid"]

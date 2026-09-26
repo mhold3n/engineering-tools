@@ -20,6 +20,7 @@ not take that filename on the command line.
 from __future__ import annotations
 
 import math
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -27,7 +28,6 @@ from typing import Any
 
 from engineering_tools.c_contract import mm_to_m
 from engineering_tools.c_fsi_meshes import interface_node_ids
-from engineering_tools.c_parity import mpa_to_pa
 from engineering_tools.damper_fea import _floats, _mises_from_tensor
 from engineering_tools.damper_params import load_params, probes_from_params
 
@@ -53,20 +53,35 @@ def find_calculix_participant() -> Path | None:
     return None
 
 
+def _with_serial_mpi(argv: list[str]) -> list[str]:
+    """Run Solid under `mpirun -n 1` when MPI is not already the parent.
+
+    Agents: OpenMPI PMIX aborts in preCICE Participant teardown if
+    `ccx_preCICE` is started as a plain process. `OMPI_COMM_WORLD_SIZE` is
+    set by mpirun; skip a nested launch. `mpirun` absent (CI fakes) keeps
+    argv unchanged.
+    """
+    if os.environ.get("OMPI_COMM_WORLD_SIZE"):
+        return argv
+    mpirun = shutil.which("mpirun")
+    if mpirun is None:
+        return argv
+    return [mpirun, "--oversubscribe", "-n", "1", *argv]
+
+
 def prepare_solid_participant(workdir: Path, config_xml: Path) -> Path:
     """Write `config.yml` for the CalculiX-preCICE adapter and return that path.
 
     Schema follows https://precice.org/adapter-calculix-config.html: a
     `participants` map (historical plural) keyed by participant name Solid,
-    one `nodes-mesh` interface, `read-data` Traction, `write-data`
+    one `nodes-mesh` interface, `read-data` Force, `write-data`
     Displacement, and `precice-config-file` pointing at the façade XML.
 
     Agents: the mesh name `interface` is `default_policy()["mesh_name"]`.
-    The adapter prefixes `N` onto a nodes-mesh patch when it looks up the
-    CalculiX *NSET, so a live deck NSET must be `Ninterface` for patch
-    `interface`. Data names are the C policy fields, not the tutorial
-    aliases Forces/DisplacementDeltas; the adapter classifies names by
-    prefix (Force, Displacement, Pressure).
+    The adapter prefixes `N` and suffixes `N` onto a nodes-mesh name when
+    it looks up the CalculiX *NSET (`toNodeSetName`), so a live deck NSET
+    must be `NinterfaceN` for mesh `interface`. *CLOAD of 0 on that set
+    is required: Force coupling writes into existing xforc slots.
     """
     workdir = Path(workdir)
     workdir.mkdir(parents=True, exist_ok=True)
@@ -79,7 +94,7 @@ def prepare_solid_participant(workdir: Path, config_xml: Path) -> Path:
         "    interfaces:\n"
         "    - nodes-mesh: interface\n"
         "      patch: interface\n"
-        "      read-data: [Traction]\n"
+        "      read-data: [Force]\n"
         "      write-data: [Displacement]\n"
         f"precice-config-file: {precice_config}\n"
     )
@@ -92,13 +107,16 @@ def solid_participant_argv(workdir: Path) -> list[str] | None:
     """Argv for the Solid participant. None if the adapter binary or deck is missing.
 
     Agents: façade Popen's this next to Fluid. Do not insert a `precice` argv.
+    `mpirun -n 1` is required on OpenMPI hosts; see `_with_serial_mpi`.
     """
     workdir = Path(workdir)
     binary = find_calculix_participant()
     decks = sorted(workdir.glob("*.inp"))
     if binary is None or not decks or binary.name in {"ccx", "precice"}:
         return None
-    return [str(binary), "-i", decks[0].stem, "-precice-participant", _SOLID_PARTICIPANT]
+    return _with_serial_mpi(
+        [str(binary), "-i", decks[0].stem, "-precice-participant", _SOLID_PARTICIPANT]
+    )
 
 
 def run_step(workdir: Path, step: int) -> bool:
@@ -142,7 +160,11 @@ def run_step(workdir: Path, step: int) -> bool:
 
 
 def _parse_frd(text: str) -> tuple[dict[int, tuple[float, float, float]], dict[int, tuple[float, float, float]], dict[int, float]]:
-    """Return node coords (mm), DISP vectors (mm), and von Mises (MPa)."""
+    """Return node coords (m), DISP vectors (m), and von Mises (Pa).
+
+    Agents: the C solid deck is SI. Do not mm_to_m these FRD numbers; that
+    was for A/B millimetre CalculiX jobs.
+    """
     coords: dict[int, tuple[float, float, float]] = {}
     disp: dict[int, tuple[float, float, float]] = {}
     stress: dict[int, float] = {}
@@ -206,15 +228,15 @@ def sample_c_probes(out: Path) -> dict[str, Any]:
             if nid not in disp:
                 continue
             ux, uy, uz = disp[nid]
-            mags.append(math.sqrt(ux * ux + uy * uy + uz * uz) / 1000.0)
+            mags.append(math.sqrt(ux * ux + uy * uy + uz * uz))
         centroid = [component / len(iface) for component in centroid]
         if mags:
             probes["housing.wall.displacement"] = {
                 "value": max(mags),
-                "xyz_m": mm_to_m(centroid),
+                "xyz_m": centroid,
             }
     if coords and stress:
-        target = probes_from_params(load_params())["keyway_root"]
+        target = mm_to_m(probes_from_params(load_params())["keyway_root"])
         best_id: int | None = None
         best_d: float | None = None
         for nid, xyz in coords.items():
@@ -227,7 +249,7 @@ def sample_c_probes(out: Path) -> dict[str, Any]:
         if best_id is not None:
             node = coords[best_id]
             probes["key.root.von_mises"] = {
-                "value": mpa_to_pa(stress[best_id]),
-                "xyz_m": mm_to_m([node[0], node[1], node[2]]),
+                "value": float(stress[best_id]),
+                "xyz_m": [node[0], node[1], node[2]],
             }
     return probes

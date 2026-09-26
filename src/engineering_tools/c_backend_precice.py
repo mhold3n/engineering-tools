@@ -1,12 +1,12 @@
 """preCICE coupling backend for C orchestration.
 
-Comments for other agents: this module writes a preCICE 2 configuration and
+Comments for other agents: this module writes a preCICE 3 configuration and
 locates a coupler binary. It is not the FSI solver and it is not the C
 language runtime. CalculiX and OpenFOAM are the participants; they load the
-XML and exchange Displacement and Traction through preCICE. Generation is
+XML and exchange Displacement and Force through preCICE. Generation is
 pure string assembly from the policy dict. It never reads an on-disk
-precice-config.xml as input. The v2 root inside `<precice-configuration>`
-is `<solver-interface dimensions="3">`. Mesh tags do not repeat dimensions.
+precice-config.xml as input. There is no `<solver-interface>` wrapper.
+Each `<mesh>` carries `dimensions="3"`. m2n uses acceptor/connector.
 
 The PATH entry named `precice` is a CI alias, not the official driver.
 Installs ship `precice-tools` (and sometimes `binprecice`). Do not add
@@ -53,7 +53,7 @@ def default_policy() -> dict[str, Any]:
         ],
         "mesh_name": "interface",
         "read_by_fluid": "Displacement",
-        "read_by_solid": "Traction",
+        "read_by_solid": "Force",
         "time_window": 0.01,
         "max_iterations": 100,
         "max_time_windows": 2,
@@ -76,20 +76,21 @@ def find_precice() -> Path | None:
 
 
 def generate_precice_config(policy: dict[str, Any]) -> str:
-    """Build a preCICE 2 configuration from a coupling policy dict.
+    """Build a preCICE 3 configuration from a coupling policy dict.
 
-    Solid provides mesh `mesh_name` and writes Displacement, reads Traction.
-    Fluid provides `{mesh_name}-fluid`, writes Traction, reads Displacement,
+    Solid provides mesh `mesh_name` and writes Displacement, reads Force.
+    Fluid provides `{mesh_name}-fluid`, writes Force, reads Displacement,
     and nearest-neighbor-maps between those meshes. Exchanges both name the
     Solid mesh, which is the mesh the communicated data lives on. Vector
-    Traction matches vector Displacement; a scalar would drop direction.
+    Force matches vector Displacement; a scalar would drop direction.
+    Adapters classify write names by prefix; `Traction` is not a known
+    OpenFOAM-preCICE write type.
 
-    Shape follows tutorials tag v202211.0 (perpendicular-flap, elastic-tube-3d):
-    `<solver-interface dimensions="3">` wraps data, meshes, participants, m2n,
-    and the scheme. That attribute is the dimension of every mesh. preCICE 2
-    rejects `dimensions` on `<mesh>` (`MeshConfiguration` only allows `name`
-    and deprecated `flip-normals`). `m2n:sockets` uses `from`/`to`. Mapping
-    uses `direction` and `constraint`. No `<solver:…/>` tags.
+    Shape follows official v3 tutorials (perpendicular-flap master): no
+    `<solver-interface>` wrapper; `dimensions` on each `<mesh>`;
+    `provide-mesh` / `receive-mesh`; `m2n:sockets acceptor/connector`.
+    Mapping still uses `direction` and `constraint`. No `<solver:…/>` tags.
+    Exchange `from`/`to` stay; those are not the m2n attributes.
     """
     participants: list[dict[str, str]] = policy["participants"]
     mesh_name = str(policy["mesh_name"])
@@ -113,45 +114,41 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         "<precice-configuration>",
-        # v2 requires this wrapper. dimensions here is the mesh dimension.
-        '  <solver-interface dimensions="3">',
-        f'    <data:vector name="{displacement}"/>',
-        f'    <data:vector name="{traction}"/>',
-        f'    <mesh name="{mesh}">',
-        f'      <use-data name="{displacement}"/>',
-        f'      <use-data name="{traction}"/>',
-        "    </mesh>",
-        f'    <mesh name="{fluid_mesh}">',
-        f'      <use-data name="{displacement}"/>',
-        f'      <use-data name="{traction}"/>',
-        "    </mesh>",
-        f'    <participant name="{solid_name}">',
-        f'      <use-mesh name="{mesh}" provide="yes"/>',
-        f'      <use-mesh name="{fluid_mesh}" from="{fluid_name}"/>',
-        f'      <write-data name="{displacement}" mesh="{mesh}"/>',
-        f'      <read-data name="{traction}" mesh="{mesh}"/>',
-        "    </participant>",
-        f'    <participant name="{fluid_name}">',
-        f'      <use-mesh name="{fluid_mesh}" provide="yes"/>',
-        f'      <use-mesh name="{mesh}" from="{solid_name}"/>',
-        f'      <write-data name="{traction}" mesh="{fluid_mesh}"/>',
-        f'      <read-data name="{displacement}" mesh="{fluid_mesh}"/>',
+        f'  <data:vector name="{displacement}"/>',
+        f'  <data:vector name="{traction}"/>',
+        f'  <mesh name="{mesh}" dimensions="3">',
+        f'    <use-data name="{displacement}"/>',
+        f'    <use-data name="{traction}"/>',
+        "  </mesh>",
+        f'  <mesh name="{fluid_mesh}" dimensions="3">',
+        f'    <use-data name="{displacement}"/>',
+        f'    <use-data name="{traction}"/>',
+        "  </mesh>",
+        f'  <participant name="{solid_name}">',
+        f'    <provide-mesh name="{mesh}"/>',
+        f'    <write-data name="{displacement}" mesh="{mesh}"/>',
+        f'    <read-data name="{traction}" mesh="{mesh}"/>',
+        "  </participant>",
+        f'  <participant name="{fluid_name}">',
+        f'    <provide-mesh name="{fluid_mesh}"/>',
+        f'    <receive-mesh name="{mesh}" from="{solid_name}"/>',
+        f'    <write-data name="{traction}" mesh="{fluid_mesh}"/>',
+        f'    <read-data name="{displacement}" mesh="{fluid_mesh}"/>',
         (
-            f'      <mapping:nearest-neighbor direction="write" '
+            f'    <mapping:nearest-neighbor direction="write" '
             f'from="{fluid_mesh}" to="{mesh}" constraint="conservative"/>'
         ),
         (
-            f'      <mapping:nearest-neighbor direction="read" '
+            f'    <mapping:nearest-neighbor direction="read" '
             f'from="{mesh}" to="{fluid_mesh}" constraint="consistent"/>'
         ),
-        "    </participant>",
-        # v2 attribute names. v3 renamed from→acceptor and to→connector.
+        "  </participant>",
         (
-            f'    <m2n:sockets from="{fluid_name}" to="{solid_name}" '
-            f'exchange-directory="."/>'
+            f'  <m2n:sockets acceptor="{fluid_name}" connector="{solid_name}" '
+            f'exchange-directory=".."/>'
         ),
-        "    <coupling-scheme:serial-implicit>",
-        f'      <participants first="{solid_name}" second="{fluid_name}"/>',
+        "  <coupling-scheme:serial-implicit>",
+        f'    <participants first="{solid_name}" second="{fluid_name}"/>',
         f'      <max-time-windows value="{max_time_windows}"/>',
         f'      <time-window-size value="{time_window}"/>',
         f'      <max-iterations value="{max_iterations}"/>',
@@ -167,8 +164,7 @@ def generate_precice_config(policy: dict[str, Any]) -> str:
             f'      <exchange data="{displacement}" mesh="{mesh}" '
             f'from="{solid_name}" to="{fluid_name}"/>'
         ),
-        "    </coupling-scheme:serial-implicit>",
-        "  </solver-interface>",
+        "  </coupling-scheme:serial-implicit>",
         "</precice-configuration>",
         "",
     ]

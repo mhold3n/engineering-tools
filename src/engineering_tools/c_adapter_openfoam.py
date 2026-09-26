@@ -52,7 +52,7 @@ application     pimpleFoam;
 startFrom       startTime;
 startTime       0;
 stopAt          endTime;
-endTime         0.01;
+endTime         0.02;
 deltaT          0.01;
 writeControl    timeStep;
 writeInterval   1;
@@ -70,7 +70,7 @@ runTimeModifiable true;
 }
 ddtSchemes { default Euler; }
 gradSchemes { default Gauss linear; }
-divSchemes { default none; div(phi,U) Gauss linear; }
+divSchemes { default none; div(phi,U) Gauss linear; div((nuEff*dev2(T(grad(U))))) Gauss linear; }
 laplacianSchemes { default Gauss linear orthogonal; }
 interpolationSchemes { default linear; }
 snGradSchemes { default orthogonal; }
@@ -86,20 +86,29 @@ solvers
 {
     p { solver PCG; preconditioner DIC; tolerance 1e-6; relTol 0.05; }
     pFinal { $p; relTol 0; }
-    U { solver smoothSolver; smoother symGaussSeidel; tolerance 1e-5; relTol 0; }
-    cellDisplacement
+    pcorr { $p; }
+    pcorrFinal { $pcorr; relTol 0; }
+    Phi { $p; }
+    "(U|cellDisplacement)"
     {
-        solver smoothSolver;
-        smoother symGaussSeidel;
-        tolerance 1e-5;
-        relTol 0;
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-5;
+        relTol          0;
+        minIter         1;
+    }
+    "(U|cellDisplacement)Final"
+    {
+        $U;
+        relTol          0;
     }
 }
 PIMPLE
 {
     nOuterCorrectors 1;
     nCorrectors 2;
-    nNonOrthogonalCorrectors 0;
+    nNonOrthogonalCorrectors 1;
+    correctPhi      true;
     pRefCell 0;
     pRefValue 0;
 }
@@ -218,9 +227,9 @@ def _config_reference(config_xml: Path, workdir: Path) -> str:
 def _write_precice_adapter_config(workdir: Path, config_xml: Path) -> None:
     """Write official-style precice-adapter-config.yml for participant Fluid.
 
-    Agents: mesh `interface` is the C policy mesh and the OpenFOAM patch.
-    Fluid reads Displacement and writes Traction (the precice-config.xml
-    data name; Stress is the adapter's other traction-like write).
+    Agents: preCICE mesh `interface-fluid` is what Fluid provides in XML.
+    OpenFOAM patch `interface` is the −X wall. Fluid reads Displacement
+    and writes Traction (Stress is the adapter's other traction-like write).
     """
     config_ref = _config_reference(config_xml, workdir)
     text = f"""participant: Fluid
@@ -228,18 +237,52 @@ def _write_precice_adapter_config(workdir: Path, config_xml: Path) -> None:
 precice-config-file: "{config_ref}"
 
 interfaces:
-  - mesh: interface
+  - mesh: interface-fluid
     locations: faceCenters
     patches:
       - interface
     read-data:
       - Displacement
     write-data:
-      - Traction
+      - Force
 """
     dest = workdir / "precice-adapter-config.yml"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(text, encoding="utf-8")
+    # Adapter v1.3.1 reads system/preciceDict. The yml is kept for tests.
+    rho = require_density(load_params())
+    config_posix = Path(config_ref).as_posix()
+    dict_path = workdir / "system" / "preciceDict"
+    dict_path.parent.mkdir(parents=True, exist_ok=True)
+    dict_path.write_text(
+        f"""FoamFile
+{{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      preciceDict;
+}}
+preciceConfig "{config_posix}";
+participant Fluid;
+modules (FSI);
+interfaces
+{{
+    Interface1
+    {{
+        mesh            interface-fluid;
+        patches         (interface);
+        locations       faceCenters;
+        readData        (Displacement);
+        writeData       (Force);
+    }}
+}}
+FSI
+{{
+    rho rho [1 -3 0 0 0 0 0] {rho};
+}}
+""",
+        encoding="utf-8",
+    )
 
 
 def prepare_fluid_participant(workdir: Path, config_xml: Path) -> None:
@@ -273,11 +316,9 @@ def _stage_solver_dicts(workdir: Path, step: int) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         text = body
         if relative == "system/controlDict":
-            # One window per façade index. Fake pimpleFoam ignores the file.
-            # The function object makes this case a Fluid participant.
-            text = _with_adapter_function(
-                body.replace("endTime         0.01;", f"endTime         {0.01 * (step + 1)};")
-            )
+            # Two coupling windows at dt=0.01. Do not shrink endTime to one
+            # window: Fluid would exit before Solid finishes the second.
+            text = _with_adapter_function(body)
         dest.write_text(text, encoding="utf-8")
 
 

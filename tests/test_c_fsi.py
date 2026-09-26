@@ -34,8 +34,8 @@ def test_c_solid_and_fluid_share_interface_name(tmp_path: Path) -> None:
     foam = (tmp_path / "c-foam" / "constant" / "polyMesh" / "blockMeshDict").read_text(encoding="utf-8")
     assert "interface" in inp.lower() or "INTERFACE" in inp
     assert "interface" in foam
-    # Named interface is the chamber_wall −X plane (mm in the deck, m in blockMesh).
-    assert "-25.000000" in inp
+    # Named interface is the chamber_wall −X plane, metres in both decks.
+    assert "-0.02500000" in inp
     start = foam.index("\n    interface\n")
     iface = foam[start:foam.index("\n    walls\n", start)]
     assert "(0 4 7 3)" in iface
@@ -86,7 +86,8 @@ def _c_tools(
 ) -> None:
     """PATH: ccx_preCICE + pimpleFoam print two window completions; optional coupler.
 
-    Agents: pimpleFoam always writes kinematic 2.0 into 0.1/p. When solid_frd
+    Agents: pimpleFoam writes kinematic p that converts to 56.62 Pa at rho
+    850, matching _ab_snapshot_source. When solid_frd is set, ccx_preCICE
     is set, ccx_preCICE copies that file to c-solid.frd in the solid cwd so
     sample_c_probes can read DISP and STRESS. Leave solid_frd unset for tests
     that monkeypatch the samplers.
@@ -101,9 +102,10 @@ def _c_tools(
         copy_frd = f"cp '{solid_frd}' c-solid.frd\n"
     _executable(binary_dir / "ccx", "exit 0\n")
     _executable(binary_dir / "ccx_preCICE", copy_frd + windows + "exit 0\n")
+    # Kinematic p → 56.62 Pa at rho=850, matching _ab_snapshot_source wall p.
     _executable(
         binary_dir / "pimpleFoam",
-        windows + "mkdir -p 0.1\nprintf 'internalField uniform 2.0;\\n' > 0.1/p\nexit 0\n",
+        windows + "mkdir -p 0.1\nprintf 'internalField uniform 0.0666117647;\\n' > 0.1/p\nexit 0\n",
     )
     _executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
     if precice:
@@ -377,7 +379,7 @@ def test_live_sample_c_probes_key_root_within_geometric_tolerance(tmp_path: Path
     tolerance = float(load_c_fsi_bands()["geometric_tolerance_m"])
     distance = sum((row["xyz_m"][i] - target[i]) ** 2 for i in range(3)) ** 0.5
     assert distance <= tolerance
-    mesh_m = [mm_to_m(list(xyz)) for xyz in nodes.values()]
+    mesh_m = [list(xyz) for xyz in nodes.values()]
     assert any(row["xyz_m"] == pytest.approx(point) for point in mesh_m)
 
 
@@ -410,6 +412,23 @@ def test_solid_inp_dload_when_wall_pressure_set(tmp_path: Path) -> None:
     bare = tmp_path / "bare.inp"
     write_c_solid_inp(load_params(), bare)
     assert "\n*DLOAD\n" not in bare.read_text(encoding="utf-8")
+
+
+def test_solid_inp_nset_and_cload_match_calculix_adapter(tmp_path: Path) -> None:
+    """Adapter looks up N{mesh}N and writes Force into existing *CLOAD slots.
+
+    Agents: toNodeSetName concatenates prefix N, the yaml nodes-mesh name,
+    and suffix N. missingForceError fires if xforc has no CLOAD on those
+    nodes. Do not use NSET=interface or NSET=Ninterface.
+    """
+    path = tmp_path / "c-solid.inp"
+    write_c_solid_inp(load_params(), path)
+    text = path.read_text(encoding="utf-8")
+    assert "*NSET, NSET=NinterfaceN" in text
+    assert "*CLOAD\nNinterfaceN, 1, 0." in text
+    step = text.index("\n*STEP")
+    cload = text.index("\n*CLOAD\n")
+    assert step < cload
 
 
 def test_run_c_fsi_broken_when_snapshot_json_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

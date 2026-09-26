@@ -31,8 +31,12 @@ def test_prepare_fluid_participant_writes_adapter_and_function_object(tmp_path: 
     assert "participant: Fluid" in adapter or "participant:Fluid" in adapter
     assert "Fluid" in adapter
     assert "Displacement" in adapter
-    assert "Traction" in adapter or "Stress" in adapter
+    assert "Force" in adapter or "Stress" in adapter or "Traction" in adapter
     assert str(config_xml) in adapter or "precice-config.xml" in adapter
+    precice_dict = (case / "system" / "preciceDict").read_text(encoding="utf-8")
+    assert "participant Fluid" in precice_dict
+    assert "interface-fluid" in precice_dict
+    assert "modules (FSI)" in precice_dict
 
     control = (case / "system" / "controlDict").read_text(encoding="utf-8")
     assert "functions" in control
