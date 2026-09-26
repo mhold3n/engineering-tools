@@ -35,6 +35,9 @@ etools run --tool calculix --input deck.inp --project ./my-part
 etools run calculix deck.inp --project ./my-part          # shorthand
 etools run --tool freecad --input script.py --project ./my-part
 etools run openfoam ./case --project ./my-part
+etools scenario damper-keyway --project ./my-part
+etools scenario damper-keyway --coupling c --project ./my-part   # A/B then C-FSI
+etools scenario damper-keyway --fsi --project ./my-part          # alias of --coupling c
 ```
 
 `etools profile` is an alias for `doctor`.
@@ -57,20 +60,26 @@ Waves: `1-cad-viz`, `2-cae-core`, `3-electrical`, `4-science`, `5-mbse-plm-light
 `6-mega-ops`, `7-first-party` (53 components). Pointer-repo DoD is met when those
 53 report `status: ok` with verified receipts on Ubuntu 24.04 x86-64. Inventory is
 audited (`docs/superpowers/specs/2026-09-22-inventory-audit-freeze.md`). Product
-capability probes and 3DEXPERIENCE GUI composition are the next phases. Hosted CI
-does not certify VM installs.
+capability probes continue without a 3DEXPERIENCE GUI. Hosted CI does not certify
+VM installs.
+
+`--coupling c` locators: `precice-tools`, `ccx_preCICE`, `pimpleFoam`. Ubuntu live
+stack is ESI **openfoam2512**, **libprecice3**, and Solid under **`mpirun -n 1`**.
+Distro OpenFOAM 1912 and a bare `ccx_preCICE` without mpirun do not complete C.
+C wall pressure and key stress remaining ~0 vs B is a later vertical.
 
 ### Alpha pulse
 
 `hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
 
-Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-component product mappings reuse component hello results when those components are `ok`. The OpenFOAM component probe meshes the cavity and runs a short `icoFoam` solve; that result covers SIMULIA Fluid Dynamics Engineer. GEOVIA Surpac, MineSched, and Whittle run in-process numeric checks. Pyomo hello solves a one-variable LP when `glpk`, `cbc`, or HiGHS is installed. The 3DEXPERIENCE platform mapping and the remaining multi-tool workflows stay `probe-unimplemented`.
+Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-component product mappings reuse component hello results when those components are `ok`. The OpenFOAM component probe meshes the cavity and runs a short `icoFoam` solve; that result covers SIMULIA Fluid Dynamics Engineer. GEOVIA Surpac, MineSched, and Whittle run in-process numeric checks. Pyomo hello solves a one-variable LP when `glpk`, `cbc`, or HiGHS is installed. SOLIDWORKS PDM, DELMIA Quintiq, DELMIA Robotics, the two BIOVIA studio mappings, CATIA electrical, Tosca, ENOVIA, Netvibes, and Exalead run joint local checks. Container tools use a tag already on the host and `docker run --pull=never` so hello never starts a session or pulls an image. Abaqus CAE stays red until a local image whose name contains `salome` is present (`ghcr.io/codeaster/salome-meca:latest` is not pulled: it requires GHCR auth). 3DEXPERIENCE is covered by the engineering-tools CLI kernel, not a 3DEXPERIENCE GUI.
 
 ### Hello samples
 
 - **CalculiX** (`ccx`): MIT deck `examples/calculix/hello_beam.inp` → `artifacts/calculix-hello/`
 - **FreeCAD** (`FreeCADCmd`): MIT script `examples/freecad/hello_box.py` → `artifacts/freecad-hello/hello_box.FCStd`
 - **OpenFOAM** (`blockMesh` or `foamExec blockMesh`): MIT cavity case → `artifacts/openfoam-hello/constant/polyMesh/`
+- **Scenario** (`etools scenario damper-keyway`): parametric damper CAD + CalculiX + OpenFOAM, then a second ccx job that maps chamber-wall Pa, plus named probe relations → `artifacts/scenario-damper-keyway/`. `--coupling c` (alias `--fsi`) runs C-FSI after A/B succeed and writes `c-fsi/c-session.json`. Exit 0 only when A, B, and C pass. If A/B fail, C is not evaluated.
 
 Upstream solvers stay GPL/LGPL; we only call them.
 

@@ -9,6 +9,20 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from .workflow_probes import (
+    probe_abaqus_cae,
+    probe_biovia_discovery,
+    probe_biovia_materials,
+    probe_catia_electrical,
+    probe_delmia_quintiq,
+    probe_delmia_robotics,
+    probe_enovia,
+    probe_exalead,
+    probe_netvibes,
+    probe_solidworks_pdm,
+    probe_tosca,
+)
+
 
 def make_reuse_component_product_probe(
     component_id: str,
@@ -45,9 +59,12 @@ def make_reuse_component_product_probe(
 
 
 # Single-component mappings that reuse the component hello row.
-# Deferred: 3DEXPERIENCE platform, microscopic CFD (Fluid Dynamics Engineer),
-# and every multi-component mapping.
+# 3DEXPERIENCE reuses the engineering-tools CLI kernel, not a GUI composition.
 _REUSE_COMPONENT_BY_PROBE: dict[str, tuple[str, str]] = {
+    "3dexperience-capability": (
+        "engineering-tools",
+        "3DEXPERIENCE→engineering-tools CLI kernel (not GUI)",
+    ),
     "catia-capability": ("freecad", "CATIA→FreeCAD"),
     "solidworks-capability": ("freecad", "SolidWorks→FreeCAD"),
     "draftsight-capability": ("librecad", "DraftSight→LibreCAD"),
@@ -144,3 +161,14 @@ PRODUCT_PROBES["geovia-whittle-capability"] = _numeric_product_probe(
 PRODUCT_PROBES["geovia-surpac-capability"] = _numeric_product_probe(
     _surpac_ok, label="GEOVIA Surpac"
 )
+PRODUCT_PROBES["solidworks-pdm-capability"] = probe_solidworks_pdm
+PRODUCT_PROBES["delmia-quintiq-capability"] = probe_delmia_quintiq
+PRODUCT_PROBES["delmia-robotics-capability"] = probe_delmia_robotics
+PRODUCT_PROBES["biovia-materials-studio-capability"] = probe_biovia_materials
+PRODUCT_PROBES["biovia-discovery-studio-capability"] = probe_biovia_discovery
+PRODUCT_PROBES["catia-electrical-ecad-interaction-capability"] = probe_catia_electrical
+PRODUCT_PROBES["tosca-capability"] = probe_tosca
+PRODUCT_PROBES["abaqus-cae-capability"] = probe_abaqus_cae
+PRODUCT_PROBES["enovia-capability"] = probe_enovia
+PRODUCT_PROBES["netvibes-capability"] = probe_netvibes
+PRODUCT_PROBES["exalead-capability"] = probe_exalead

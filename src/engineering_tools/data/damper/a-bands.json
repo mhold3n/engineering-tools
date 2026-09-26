@@ -1,0 +1,5 @@
+{
+  "key_fillet_von_mises": {"min": 1e-6, "max": 200.0},
+  "keyway_root_von_mises": {"min": 1e-6, "max": 200.0},
+  "chamber_center_p": {"max_abs": 50.0}
+}

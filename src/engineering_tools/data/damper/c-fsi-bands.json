@@ -1,0 +1,12 @@
+{
+  "calibration": "Ubuntu hhpe-forge 2026-09-25 17:38:52. Project /home/agent/damper-scenario-c-live. snapshot_digest e5220316274cfcf75e21d232ea1d7ad60c51aa62b23c74cb7d326c7a71aa0c95. Coupled windows 2/2; Displacement residual 2.11e-5. Measured C: housing.wall.pressure=0 Pa, housing.wall.traction=0 Pa, key.root.von_mises=0 Pa, housing.wall.displacement=7.192501686965113e-12 m. B from that freeze: wall_p=-106.5033 Pa, traction=106.5033 Pa, keyway_root_mapped=10.072127391536904 MPa. Rel=1.05 covers |C-B| while C wall/key fields remain ~0. abs is small slack, not the 1e9 CI pin. Second clean --coupling c is acceptance against this file.",
+  "physics_followup": "C housing.wall.pressure and key.root.von_mises remaining ~0 Pa versus B is accepted for this one-cell pair. Driving the fluid and tightening B-relative bands is a later vertical, not this C DoD.",
+  "motion_floor_m": 1e-12,
+  "geometric_tolerance_m": 0.002,
+  "n_steps": 2,
+  "parity": {
+    "housing.wall.pressure": {"abs": 20.0, "rel": 1.05},
+    "key.root.von_mises": {"abs": 1.0e5, "rel": 1.05},
+    "housing.wall.traction": {"abs": 20.0, "rel": 1.05}
+  }
+}

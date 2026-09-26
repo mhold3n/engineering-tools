@@ -61,6 +61,28 @@ BASE_PROFILE: tuple[ToolSpec, ...] = (
         license_hint="GPL-3.0",
         homepage="https://openfoam.org/",
     ),
+    # C-FSI locators. A still uses ccx + icoFoam. These three are --coupling c.
+    ToolSpec(
+        name="preCICE",
+        binaries=("precice-tools", "binprecice", "precice"),
+        layer="fsi",
+        license_hint="LGPL-3.0",
+        homepage="https://precice.org/",
+    ),
+    ToolSpec(
+        name="ccx_preCICE",
+        binaries=("ccx_preCICE", "ccx_precice", "calculix-precice"),
+        layer="fsi",
+        license_hint="GPL-2.0+",
+        homepage="https://precice.org/adapter-calculix-get-adapter.html",
+    ),
+    ToolSpec(
+        name="pimpleFoam",
+        binaries=("pimpleFoam",),
+        layer="fsi",
+        license_hint="GPL-3.0",
+        homepage="https://www.openfoam.com/",
+    ),
     ToolSpec(
         name="Elmer",
         binaries=("ElmerSolver", "ElmerGrid", "elmer"),

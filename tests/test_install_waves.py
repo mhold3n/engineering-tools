@@ -30,7 +30,7 @@ def test_wave_membership_covers_non_3dx_mapping_components_exactly() -> None:
     assert len(waved) == 53
     assert len(waved) == len(set(waved))
     assert set(waved) == expected
-    # engineering-tools platform component is only for deferred 3DEXPERIENCE.
+    # engineering-tools is first-party CLI kernel, installed outside the wave list.
     assert "engineering-tools" not in set(waved)
 
 

@@ -569,14 +569,20 @@
       "id": "engineering-tools",
       "name": "engineering-tools",
       "source": {
-        "state": "source-unresolved",
-        "homepage": null,
-        "repository": null
+        "state": "resolved",
+        "homepage": "https://github.com/mhold3n/engineering-tools",
+        "repository": "https://github.com/mhold3n/engineering-tools",
+        "identity": {
+          "type": "source",
+          "repository": "https://github.com/mhold3n/engineering-tools",
+          "commit": "engineering-tools"
+        }
       },
-      "license": null,
+      "license": "MIT",
       "install_recipe": {
-        "state": "recipe-unimplemented",
-        "id": "engineering-tools"
+        "state": "implemented",
+        "id": "engineering-tools",
+        "kind": "first-party-module"
       },
       "execution": {
         "type": "other",
@@ -585,7 +591,7 @@
         ]
       },
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "engineering-tools-hello"
       },
       "expected_signal": {
@@ -2567,7 +2573,7 @@
         "engineering-tools"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "3dexperience-capability"
       },
       "expected_signal": {
@@ -2712,7 +2718,7 @@
         "code-aster"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "abaqus-cae-capability"
       },
       "expected_signal": {
@@ -2921,7 +2927,7 @@
         "code-aster"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "tosca-capability"
       },
       "expected_signal": {
@@ -2971,7 +2977,7 @@
         "freecad"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "catia-electrical-ecad-interaction-capability"
       },
       "expected_signal": {
@@ -3054,7 +3060,7 @@
         "erpnext"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "enovia-capability"
       },
       "expected_signal": {
@@ -3071,7 +3077,7 @@
         "dvc"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "solidworks-pdm-capability"
       },
       "expected_signal": {
@@ -3120,7 +3126,7 @@
         "pyomo"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "delmia-quintiq-capability"
       },
       "expected_signal": {
@@ -3138,7 +3144,7 @@
         "gazebo"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "delmia-robotics-capability"
       },
       "expected_signal": {
@@ -3206,7 +3212,7 @@
         "apache-superset"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "netvibes-capability"
       },
       "expected_signal": {
@@ -3223,7 +3229,7 @@
         "apache-superset"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "exalead-capability"
       },
       "expected_signal": {
@@ -3257,7 +3263,7 @@
         "quantum-espresso"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "biovia-materials-studio-capability"
       },
       "expected_signal": {
@@ -3275,7 +3281,7 @@
         "autodock-vina"
       ],
       "probe": {
-        "state": "probe-unimplemented",
+        "state": "implemented",
         "id": "biovia-discovery-studio-capability"
       },
       "expected_signal": {

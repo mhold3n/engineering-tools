@@ -37,6 +37,14 @@ def _cmd_doctor(_args: argparse.Namespace) -> int:
         print("By layer:")
         for layer, names in sorted(summary["by_layer"].items()):
             print(f"  {layer}: {', '.join(names)}")
+    # C-FSI locators are doctor rows (preCICE, ccx_preCICE, pimpleFoam).
+    # Ubuntu live stack: ESI OpenFOAM v2512, libprecice3, ccx_preCICE via mpirun -n 1.
+    # Distro OpenFOAM v1912 and a bare ccx_preCICE without mpirun do not complete C.
+    print(
+        "C-FSI (--coupling c): precice-tools + ccx_preCICE + pimpleFoam. "
+        "Ubuntu: ESI openfoam2512, libprecice3, mpirun -n 1 for Solid. "
+        "A icoFoam stays the cavity solver; C Fluid is pimpleFoam."
+    )
     return 0 if summary["found_count"] else 1
 
 
@@ -195,6 +203,53 @@ def _cmd_bom(args: argparse.Namespace) -> int:
     return cmd_bom_dispatch(rest, outer_json=bool(getattr(args, "json", False)))
 
 
+def _cmd_scenario(args: argparse.Namespace) -> int:
+    """Dispatch etools scenario damper-keyway; requires a project like etools run."""
+    from .damper_scenario import run_damper_keyway
+    from .project import is_project
+
+    if args.name != "damper-keyway":
+        print(f"unknown scenario: {args.name}", file=sys.stderr)
+        return 2
+    if args.project:
+        root = Path(args.project).expanduser().resolve()
+    else:
+        cwd = Path.cwd().resolve()
+        if is_project(cwd):
+            root = cwd
+        else:
+            print(
+                "No project path given and cwd is not an engineering-tools project. "
+                "Pass: etools scenario damper-keyway --project ./my-part",
+                file=sys.stderr,
+            )
+            return 2
+    from .c_cli import parse_coupling_flags
+
+    req = parse_coupling_flags(
+        coupling=getattr(args, "coupling", None),
+        fsi=bool(getattr(args, "fsi", False)),
+    )
+    if req.status == "broken":
+        print(req.detail, file=sys.stderr)
+        return 1
+    result = run_damper_keyway(root, coupling=req.token)
+    append_job(
+        root,
+        tool="damper-keyway",
+        command="scenario",
+        status=result["status"],
+        workdir=result.get("workdir"),
+        outputs=list(result.get("outputs") or []),
+        message=str(result.get("message") or ""),
+    )
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(result["message"])
+    return 0 if result.get("ok") else 1
+
+
 def _cmd_run_entry(args: argparse.Namespace) -> int:
     tool = args.tool_flag or args.tool_pos
     input_file = args.input_flag or args.input_pos
@@ -341,6 +396,17 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--workdir", default=None, help="Optional working directory for outputs")
     run.add_argument("--json", action="store_true", help="Also print JSON result")
     run.set_defaults(func=_cmd_run_entry)
+
+    scenario = sub.add_parser(
+        "scenario",
+        help="Run a headless product scenario (damper-keyway)",
+    )
+    scenario.add_argument("name", help="Scenario id (damper-keyway)")
+    scenario.add_argument("--project", default=None, help="Project path (default: cwd if it is a project)")
+    scenario.add_argument("--coupling", default=None, help="C coupler (c) or D driven FSI (d)")
+    scenario.add_argument("--fsi", action="store_true", help="Alias for --coupling c")
+    scenario.add_argument("--json", action="store_true", help="Print JSON result")
+    scenario.set_defaults(func=_cmd_scenario)
 
     return parser
 

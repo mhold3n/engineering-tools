@@ -241,4 +241,19 @@ def test_packaged_product_probes_match_registry() -> None:
             assert probe["state"] == "probe-unimplemented"
     assert "simulia-fluid-dynamics-engineer-capability" in PRODUCT_PROBES
     assert "geovia-minesched-capability" in PRODUCT_PROBES
-    assert "3dexperience-capability" not in PRODUCT_PROBES
+    assert "3dexperience-capability" in PRODUCT_PROBES
+
+
+def test_engineering_tools_probe_reports_cli_kernel(tmp_path, monkeypatch) -> None:
+    from engineering_tools.hello_probes import probe_engineering_tools
+
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    etools = binary_dir / "etools"
+    etools.write_text("#!/bin/sh\necho engineering-tools\n", encoding="utf-8")
+    etools.chmod(0o755)
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    outcome = probe_engineering_tools()
+    assert outcome["status"] == "ok"
+    assert outcome["id"] == "engineering-tools"
+    assert "engineering-tools" in outcome["message"]

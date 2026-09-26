@@ -107,8 +107,16 @@ def _openfoam_command() -> tuple[list[str], str] | None:
 
 
 def _run_openfoam(command: list[str], work: Path) -> subprocess.CompletedProcess[str]:
-    """Run one OpenFOAM tool, sourcing the distro bashrc when it is installed."""
+    """Run one OpenFOAM tool after sourcing a working OpenFOAM bashrc.
+
+    Agents: ESI v2512 is first because Ubuntu's `openfoam` 1912 package leaves
+    `/usr/share/openfoam/etc/bashrc` incomplete (`foamEtcFile` missing) and
+    C's `libpreciceAdapterFunctionObject.so` is built against v2512. Use a
+    non-login bash so `~/.profile` cannot abort the source. Distro 1912 stays
+    last for hosts that never installed ESI.
+    """
     bashrc_candidates = (
+        "/usr/lib/openfoam/openfoam2512/etc/bashrc",
         "/usr/share/openfoam/etc/bashrc",
         "/opt/openfoam/etc/bashrc",
         "/usr/lib/openfoam/openfoam1912/etc/bashrc",
@@ -116,7 +124,13 @@ def _run_openfoam(command: list[str], work: Path) -> subprocess.CompletedProcess
     bashrc = next((path for path in bashrc_candidates if Path(path).is_file()), None)
     if bashrc:
         quoted = " ".join(shlex.quote(part) for part in command)
-        argv = ["bash", "-lc", f"set +u; . {shlex.quote(bashrc)}; {quoted}"]
+        argv = [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            f"set +u; . {shlex.quote(bashrc)}; {quoted}",
+        ]
     else:
         argv = command
     return subprocess.run(argv, cwd=work, capture_output=True, text=True, timeout=180, check=False)
@@ -501,12 +515,49 @@ def make_path_probe(component_id: str, name: str, relative_paths: tuple[str, ...
     return probe
 
 
+def probe_engineering_tools(project: str | Path | None = None) -> dict[str, Any]:
+    """Prove the first-party CLI kernel is importable and on PATH."""
+    credit = "engineering-tools (MIT) - https://github.com/mhold3n/engineering-tools"
+    found = shutil.which("etools")
+    try:
+        import engineering_tools as package
+    except ImportError:
+        return _result(
+            "engineering-tools",
+            "engineering-tools",
+            "missing",
+            "Python package 'engineering_tools' not importable",
+            locator=found,
+            credit=credit,
+        )
+    version = getattr(package, "__version__", "unknown")
+    if not found:
+        return _result(
+            "engineering-tools",
+            "engineering-tools",
+            "broken",
+            f"engineering_tools {version} imported but etools is not on PATH",
+            locator=str(package.__file__),
+            credit=credit,
+        )
+    return _result(
+        "engineering-tools",
+        "engineering-tools",
+        "ok",
+        f"engineering-tools {version} via {found}",
+        locator=found,
+        credit=credit,
+        returncode=0,
+    )
+
+
 COMPONENT_PROBES = {
     "calculix-hello-beam": probe_calculix,
     "freecad-hello-box": probe_freecad,
     "openfoam-block-mesh": probe_openfoam,
     "first-party-mine-scheduling-model-hello": probe_mine_scheduling,
     "first-party-pit-optimization-model-hello": probe_pit_optimization,
+    "engineering-tools-hello": probe_engineering_tools,
     "pyomo-hello": probe_pyomo,
     "openmdao-hello": make_pip_module_probe("openmdao", "OpenMDAO", "openmdao", "OpenMDAO (Apache-2.0) - https://openmdao.org/"),
     "dvc-hello": make_binary_probe("dvc", "DVC", ("dvc",), "DVC (Apache-2.0) - https://dvc.org/"),
