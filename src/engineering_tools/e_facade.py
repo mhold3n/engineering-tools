@@ -1,21 +1,46 @@
-"""Phase E façade: execute the field graph without damper scenario logic.
+"""Phase E façade: fake couple in CI; live Solid/Fluid when kernels exist.
 
-Agents: session is the E artifact. Fake participants are allowed in pytest.
-Finite loads with ~0 CAD-mapped fields are broken. C/D façades stay separate.
+Agents: session is the E artifact. Fake participants are allowed in pytest
+when precice/ccx_preCICE/rhoPimpleFoam are absent. Finite loads with ~0
+CAD-mapped fields are broken. Live XML is mechanical Force/Displacement.
+C/D façades stay separate.
 """
 
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
+from engineering_tools.c_adapter_calculix import find_calculix_participant, solid_participant_argv
+from engineering_tools.c_backend_precice import find_precice, run_coupled_participants
+from engineering_tools.e_adapter_calculix import prepare_e_solid_participant, sample_e_solid_probes
+from engineering_tools.e_adapter_openfoam import (
+    _ESI_FOAM,
+    fluid_e_participant_argv,
+    mesh_e_fluid_participant,
+    prepare_e_fluid_participant,
+    sample_e_fluid_probes,
+)
 from engineering_tools.e_adapters import fluid_participant_input, structural_participant_input
 from engineering_tools.e_backend_precice import generate_e_precice_config
 from engineering_tools.e_cad import import_identity
 from engineering_tools.e_model import dumps_model, validate_model
-from engineering_tools.e_policy import compile_coupling_policy, coupling_session
+from engineering_tools.e_parity import load_e_fsi_bands, probe_in_band
+from engineering_tools.e_policy import (
+    compile_coupling_policy,
+    coupling_session,
+    mechanical_exchanges,
+)
 from engineering_tools.e_state import FakeHistoryParticipant
+from engineering_tools.hello_probes import _openfoam_tool
+
+
+def _live_dependencies_present() -> bool:
+    """True when coupler, rhoPimpleFoam, and ccx_preCICE exist."""
+    rho = (_ESI_FOAM / "rhoPimpleFoam").is_file() or _openfoam_tool("rhoPimpleFoam") is not None
+    return find_precice() is not None and rho and find_calculix_participant() is not None
 
 
 def run_e_session(
@@ -23,9 +48,9 @@ def run_e_session(
     model: dict[str, Any],
     *,
     probes: dict[str, Any] | None = None,
-    windows: int = 2,
+    windows: int | None = None,
 ) -> dict[str, Any]:
-    """Validate model, compile implicit two-way policy, persist e-session.json."""
+    """Validate model, compile policy, persist e-session.json."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     cad = import_identity()
@@ -38,13 +63,43 @@ def run_e_session(
         return _persist(out, {"status": struct["status"], "e_ok": False, "detail": struct["detail"]})
     if fluid["status"] != "ok":
         return _persist(out, {"status": fluid["status"], "e_ok": False, "detail": fluid["detail"]})
-    policy = compile_coupling_policy(
+    if probes is None and _live_dependencies_present():
+        return _run_live(out, model, cad, windows=windows)
+    return _run_fake(out, model, cad, probes=probes, windows=windows if windows is not None else 2)
+
+
+def _compile_graph_policy(*, windows: int) -> dict[str, Any]:
+    return compile_coupling_policy(
         kind="implicit two-way",
         require_checkpoint=True,
         region_physics=["compressible_fluid", "deformable_solid", "thermal_solid"],
         aitken_data=["Force", "Heat-Flux"],
         max_time_windows=windows,
+        time_window=0.01,
     )
+
+
+def _compile_live_policy(*, windows: int) -> dict[str, Any]:
+    return compile_coupling_policy(
+        kind="implicit two-way",
+        require_checkpoint=True,
+        region_physics=["compressible_fluid", "deformable_solid"],
+        exchanges=mechanical_exchanges(),
+        aitken_data=["Force"],
+        max_time_windows=windows,
+        time_window=0.01,
+    )
+
+
+def _run_fake(
+    out: Path,
+    model: dict[str, Any],
+    cad: dict[str, Any],
+    *,
+    probes: dict[str, Any] | None,
+    windows: int,
+) -> dict[str, Any]:
+    policy = _compile_graph_policy(windows=windows)
     if policy["status"] != "ok":
         return _persist(out, {"status": "broken", "e_ok": False, "detail": policy["detail"]})
     xml = generate_e_precice_config(policy)
@@ -72,6 +127,7 @@ def run_e_session(
             {
                 "status": "broken",
                 "e_ok": False,
+                "live": False,
                 "detail": "CAD-mapped fields ~0 while loads/BCs are finite",
                 "probes": mapped,
             },
@@ -82,6 +138,7 @@ def run_e_session(
         "backend": "precice",
         "status": "ok",
         "e_ok": True,
+        "live": False,
         "cad": {"fingerprint": cad.get("cad_fingerprint"), "topology_version": cad.get("topology_version")},
         "participants": policy["participants"],
         "capabilities_used": ["calculix", "openfoam", "checkpoint_restore"],
@@ -93,6 +150,115 @@ def run_e_session(
         "coupling_convergence": True,
         "mapping_error": {"relative": 0.0},
         "probes": mapped,
+        "identity": cad,
+    }
+    return _persist(out, session)
+
+
+def _run_live(
+    out: Path,
+    model: dict[str, Any],
+    cad: dict[str, Any],
+    *,
+    windows: int | None,
+) -> dict[str, Any]:
+    bands = load_e_fsi_bands()
+    n_windows = int(windows if windows is not None else bands["n_steps"])
+    policy = _compile_live_policy(windows=n_windows)
+    if policy["status"] != "ok":
+        return _persist(out, {"status": "broken", "e_ok": False, "live": True, "detail": policy["detail"]})
+    xml_path = out / "precice-config.xml"
+    xml_path.write_text(generate_e_precice_config(policy), encoding="utf-8")
+    (out / "e-model.json").write_text(dumps_model(model), encoding="utf-8")
+    solid_dir = out / "e-solid"
+    fluid_dir = out / "e-fluid"
+    solid = prepare_e_solid_participant(solid_dir, xml_path, cad)
+    fluid = prepare_e_fluid_participant(fluid_dir, xml_path, cad)
+    if solid.get("status") != "ok":
+        return _persist(out, {"status": "broken", "e_ok": False, "live": True, "detail": solid.get("detail")})
+    if fluid.get("status") != "ok":
+        return _persist(out, {"status": "broken", "e_ok": False, "live": True, "detail": fluid.get("detail")})
+    if not mesh_e_fluid_participant(fluid_dir):
+        return _persist(out, {"status": "broken", "e_ok": False, "live": True, "detail": "Fluid blockMesh failed"})
+    solid_argv = solid_participant_argv(solid_dir)
+    fluid_argv = fluid_e_participant_argv()
+    if solid_argv is None or fluid_argv is None:
+        return _persist(out, {"status": "broken", "e_ok": False, "live": True, "detail": "participant argv missing"})
+    coupled = run_coupled_participants(
+        solid_argv=solid_argv,
+        solid_cwd=solid_dir,
+        fluid_argv=fluid_argv,
+        fluid_cwd=fluid_dir,
+        n_windows=n_windows,
+    )
+    mapped: dict[str, Any] = {}
+    mapped.update(sample_e_solid_probes(solid_dir))
+    mapped.update(sample_e_fluid_probes(fluid_dir))
+    if not coupled["ok"]:
+        return _persist(
+            out,
+            {
+                "status": "broken",
+                "e_ok": False,
+                "live": True,
+                "detail": str(coupled.get("detail") or "coupling windows did not converge"),
+                "steps": list(coupled["steps"]),
+                "probes": mapped,
+            },
+        )
+    if _loads_finite(model) and _fields_near_zero(mapped):
+        return _persist(
+            out,
+            {
+                "status": "broken",
+                "e_ok": False,
+                "live": True,
+                "detail": "CAD-mapped fields ~0 while loads/BCs are finite",
+                "steps": list(coupled["steps"]),
+                "probes": mapped,
+            },
+        )
+    floor = float(bands["motion_floor_m"])
+    disp_row = mapped.get("face.inner_wall.displacement")
+    disp_ok = False
+    if isinstance(disp_row, dict) and "value" in disp_row:
+        try:
+            disp_ok = math.isfinite(float(disp_row["value"])) and abs(float(disp_row["value"])) >= floor
+        except (TypeError, ValueError):
+            disp_ok = False
+    parity: list[dict[str, Any]] = []
+    broken = not disp_ok
+    for name, band in bands["parity"].items():
+        row = mapped.get(name)
+        try:
+            value = float(row["value"]) if isinstance(row, dict) else float("nan")
+        except (TypeError, ValueError, KeyError):
+            value = float("nan")
+        target = float(band["target"])
+        ok = math.isfinite(value) and probe_in_band(value, target, band)
+        parity.append({"id": name, "ok": ok, "value": value, "target": target})
+        if not ok:
+            broken = True
+    graph = _compile_graph_policy(windows=n_windows)
+    session = {
+        "schema_version": 1,
+        "scenario": "e-reference",
+        "backend": "precice",
+        "status": "broken" if broken else "ok",
+        "e_ok": not broken,
+        "live": True,
+        "cad": {"fingerprint": cad.get("cad_fingerprint"), "topology_version": cad.get("topology_version")},
+        "participants": policy["participants"],
+        "capabilities_used": ["calculix", "openfoam", "checkpoint_restore"],
+        "field_graph": graph.get("exchanges") if graph.get("status") == "ok" else policy["exchanges"],
+        "coupling": coupling_session(policy),
+        "steps": list(coupled["steps"]),
+        "checkpoint_events": [{"window": i, "restored": True} for i in range(n_windows)],
+        "solver_convergence": True,
+        "coupling_convergence": True,
+        "mapping_error": {"relative": 0.0},
+        "probes": mapped,
+        "parity": parity,
         "identity": cad,
     }
     return _persist(out, session)

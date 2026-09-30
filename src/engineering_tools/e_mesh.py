@@ -12,6 +12,34 @@ from __future__ import annotations
 from typing import Any
 
 
+def make_mesh_record(
+    *,
+    mesh_id: str,
+    participant: str,
+    topology_version: int,
+    entity_id: str,
+    mesh_set: str,
+    node_count: int,
+    quality: dict[str, Any] | None = None,
+    refinement: dict[str, Any] | None = None,
+    extra_bindings: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Build a schema-valid mesh record. Writers use this; tests may too."""
+    bindings = [
+        {"entity_id": entity_id, "mesh_set": mesh_set, "node_count": int(node_count)}
+    ]
+    if extra_bindings:
+        bindings.extend(extra_bindings)
+    return {
+        "mesh_id": mesh_id,
+        "participant": participant,
+        "topology_version": int(topology_version),
+        "bindings": bindings,
+        "quality": dict(quality or {"min_quality": 0.2, "max_skewness": 0.9}),
+        "refinement": dict(refinement or {"boundary_layer": False, "levels": 1}),
+    }
+
+
 def _ok(detail: str) -> dict[str, Any]:
     return {"status": "ok", "detail": detail}
 

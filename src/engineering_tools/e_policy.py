@@ -62,6 +62,21 @@ def default_participants() -> list[dict[str, str]]:
     ]
 
 
+def mechanical_exchanges(
+    first: str = "Solid",
+    second: str = "Fluid",
+) -> list[dict[str, str]]:
+    """Live OpenFOAM FSI + CalculiX: Displacement and Force only.
+
+    Agents: Heat-Flux/Temperature stay on the canonical graph. The live
+    adapters do not write those names; putting them in XML hangs the couple.
+    """
+    return [
+        {"quantity": "displacement", "from": first, "to": second},
+        {"quantity": "traction", "from": second, "to": first},
+    ]
+
+
 def mechanical_thermal_exchanges(
     first: str = "Solid",
     second: str = "Fluid",

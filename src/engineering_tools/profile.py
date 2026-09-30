@@ -84,6 +84,13 @@ BASE_PROFILE: tuple[ToolSpec, ...] = (
         homepage="https://www.openfoam.com/",
     ),
     ToolSpec(
+        name="rhoPimpleFoam",
+        binaries=("rhoPimpleFoam",),
+        layer="cfd",
+        license_hint="GPL-3.0",
+        homepage="https://www.openfoam.com/",
+    ),
+    ToolSpec(
         name="Elmer",
         binaries=("ElmerSolver", "ElmerGrid", "elmer"),
         layer="multiphysics",
