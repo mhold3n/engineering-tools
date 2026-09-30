@@ -1,0 +1,16 @@
+{
+  "units": {"length": "mm", "force": "N", "stress": "MPa", "pressure": "Pa"},
+  "housing_od_mm": 80.0,
+  "housing_id_mm": 50.0,
+  "length_mm": 60.0,
+  "shaft_od_mm": 20.0,
+  "key_width_mm": 6.0,
+  "key_height_mm": 18.0,
+  "keyway_depth_mm": 3.0,
+  "key_length_mm": 20.0,
+  "chamber_length_mm": 40.0,
+  "belt_land_traction_mpa": 2.0,
+  "youngs_mpa": 210000.0,
+  "poisson": 0.3,
+  "fluid_density_kg_m3": 850.0
+}

@@ -34,6 +34,13 @@ def mine_schedule(blocks: list[dict[str, float]], periods: int = 2) -> dict[str,
     }
 
 
+def grade_above_cutoff(samples: list[dict[str, float]], cutoff: float = 1.0) -> dict[str, Any]:
+    """Count samples whose grade meets cutoff. Toy Surpac-style screen, not a block model."""
+    kept = [float(sample.get("grade", 0.0)) for sample in samples if float(sample.get("grade", 0.0)) >= cutoff]
+    mean = float(sum(kept) / len(kept)) if kept else 0.0
+    return {"cutoff": cutoff, "count": len(kept), "mean_grade": mean}
+
+
 def pit_optimize(blocks: list[dict[str, float]], cutoff: float = 0.0) -> dict[str, Any]:
     """
     Select blocks with value above cutoff (toy pit shell stand-in).

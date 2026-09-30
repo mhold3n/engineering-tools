@@ -1,0 +1,10 @@
+{
+  "role": "pytest PATH-fake abs+rel only. Ubuntu live pair proof is documented in docs/plans/2026-09-30-phase-e-independent-mesh-live-proof.md and is not stored as solver output in git.",
+  "motion_floor_m": 1e-18,
+  "n_steps": 2,
+  "parity": {
+    "face.inner_wall.pressure": {"target": 101325.0, "abs": 1.0, "rel": 0.01},
+    "face.inner_wall.temperature": {"target": 350.0, "abs": 1.0, "rel": 0.01},
+    "face.inner_wall.displacement": {"target": 1.0e-8, "abs": 1.0e-9, "rel": 0.2}
+  }
+}

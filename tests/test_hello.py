@@ -227,21 +227,33 @@ def test_reuse_component_product_probe_covers_when_components_ok(tmp_path, monke
     assert report["status"] == "covered"
 
 
-def test_packaged_single_component_reuse_probes_are_registered() -> None:
-    """Single-component mappings reuse component hello except CFD and 3DEXPERIENCE."""
+def test_packaged_product_probes_match_registry() -> None:
+    """Implemented product probes are exactly the registered capability checks."""
     from engineering_tools.manifest import load_manifest
     from engineering_tools.product_probes import PRODUCT_PROBES
 
-    deferred = {
-        "3dexperience-capability",
-        "simulia-fluid-dynamics-engineer-capability",
-    }
     data = load_manifest()
     for mapping in data["mappings"]:
         probe = mapping["probe"]
-        if len(mapping["components"]) != 1 or probe["id"] in deferred:
+        if probe["id"] in PRODUCT_PROBES:
+            assert probe["state"] == "implemented"
+        else:
             assert probe["state"] == "probe-unimplemented"
-            assert probe["id"] not in PRODUCT_PROBES
-            continue
-        assert probe["state"] == "implemented"
-        assert probe["id"] in PRODUCT_PROBES
+    assert "simulia-fluid-dynamics-engineer-capability" in PRODUCT_PROBES
+    assert "geovia-minesched-capability" in PRODUCT_PROBES
+    assert "3dexperience-capability" in PRODUCT_PROBES
+
+
+def test_engineering_tools_probe_reports_cli_kernel(tmp_path, monkeypatch) -> None:
+    from engineering_tools.hello_probes import probe_engineering_tools
+
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    etools = binary_dir / "etools"
+    etools.write_text("#!/bin/sh\necho engineering-tools\n", encoding="utf-8")
+    etools.chmod(0o755)
+    monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
+    outcome = probe_engineering_tools()
+    assert outcome["status"] == "ok"
+    assert outcome["id"] == "engineering-tools"
+    assert "engineering-tools" in outcome["message"]

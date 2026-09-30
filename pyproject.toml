@@ -36,6 +36,7 @@ engineering_tools = [
   "data/stack.json",
   "data/calculix/*.inp",
   "data/freecad/*.py",
+  "data/damper/*",
   "data/openfoam/hello_cavity/README.md",
   "data/openfoam/hello_cavity/0/*",
   "data/openfoam/hello_cavity/constant/*",

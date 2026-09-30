@@ -43,9 +43,9 @@ def test_hello_project_appends_job(tmp_path: Path, monkeypatch) -> None:
     assert sum(record["tool"].startswith("component:") for record in records) == 54
     assert sum(record["tool"].startswith("product:") for record in records) == 51
     statuses = {record["status"] for record in records}
-    # First-party GEOVIA models are resolved+recipe-ready; without receipts they are missing.
-    assert statuses <= {"invalid-pointer", "missing", "unverified", "probe-unimplemented"}
-    assert "invalid-pointer" in statuses
+    # First-party modules are resolved+recipe-ready; without receipts they are missing.
+    assert statuses <= {"missing", "unverified", "probe-unimplemented"}
+    assert "missing" in statuses
     assert all(record["command"] == "hello" for record in records)
 
     jobs = read_jobs(project, limit=5)
