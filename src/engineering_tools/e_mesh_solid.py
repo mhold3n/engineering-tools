@@ -30,9 +30,8 @@ Cylinder(1) = {0, 0, 0, 0, 0, 0.04, 0.025};
 Cylinder(2) = {0, 0, 0, 0, 0, 0.04, 0.02};
 BooleanDifference(3) = { Volume{1}; Delete; }{ Volume{2}; Delete; };
 Cylinder(4) = {0, 0, 0.04, 0, 0, 0.004, 0.025};
-BooleanFragments{ Volume{3, 4}; Delete; }{}
-Physical Volume("body.shell_lid") = {1, 2};
-Physical Surface("face.inner_wall") = {1};
+BooleanUnion(5) = { Volume{3}; Delete; }{ Volume{4}; Delete; };
+Physical Volume("body.shell_lid") = {5};
 Mesh.CharacteristicLengthMax = 0.012;
 """,
         encoding="utf-8",

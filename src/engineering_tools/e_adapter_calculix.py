@@ -1,18 +1,20 @@
-"""Phase E CalculiX deck: SI vessel envelope, FSI NSET on face.inner_wall.
+"""Phase E CalculiX deck from independent Gmsh tets, FSI NSET on inner wall.
 
-Agents: this is not the D sandwich. Inner wall is x=-0.02 m (gas radius),
-matching the fluid hex envelope -X patch `inner_wall`. NSET must be
-NinterfaceN so ccx_preCICE maps preCICE mesh `interface`. Zero *CLOAD
-reserves Force slots. No belt CLOAD. No damper DLOAD.
+Agents: live Solid is C3D4 from solid.msh, not the 8-node hex envelope.
+NinterfaceN is nodes with r≈0.02 m (gas wall). Outer r≈0.025 is *BOUNDARY.
+NSET must stay NinterfaceN for ccx_preCICE mesh `interface`. Zero *CLOAD
+reserves Force slots. No damper sandwich.
 """
 
 from __future__ import annotations
 
 import math
+import re
 from pathlib import Path
 from typing import Any
 
 from engineering_tools.c_adapter_calculix import _latest_frd, _parse_frd, prepare_solid_participant
+from engineering_tools.e_mesh_solid import write_solid_mesh
 
 INNER_WALL = "face.inner_wall"
 _E_PA = 2.0e11
@@ -20,46 +22,101 @@ _NU = 0.3
 _RHO = 7850.0
 _DT = 0.01
 _T_END = 0.02
+# Gas radius 0.02 m, housing OD 0.025 m (build_vessel).
+_INNER_R = (0.018, 0.022)
+_OUTER_R_MIN = 0.0235
+
+# Packaged 6-node wedge for pytest mapping tests when gmsh is absent.
+CI_SOLID_MSH2 = """$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$Nodes
+6
+1 -0.02 -0.005 0
+2 -0.02 0.005 0
+3 -0.02 0 0.04
+4 -0.025 -0.005 0
+5 -0.025 0.005 0
+6 -0.025 0 0.04
+$EndNodes
+$Elements
+3
+1 4 2 1 1 1 2 3 4
+2 4 2 1 1 2 5 3 6
+3 4 2 1 1 2 3 4 6
+$EndElements
+"""
 
 
-def _nid(ix: int, iy: int, iz: int) -> int:
-    return ix * 4 + iy * 2 + iz + 1
+def _radius(xyz: tuple[float, float, float]) -> float:
+    return math.hypot(xyz[0], xyz[1])
 
 
-def write_e_solid_inp(path: Path, identity: dict[str, Any]) -> dict[str, Any]:
-    """One C3D8 through the housing thickness. FSI nodes on the gas wall."""
+def parse_msh2(text: str) -> tuple[dict[int, tuple[float, float, float]], list[tuple[int, int, int, int]]]:
+    """MSH 2 nodes and type-4 tets. Surface triangles are ignored."""
+    nodes: dict[int, tuple[float, float, float]] = {}
+    tets: list[tuple[int, int, int, int]] = []
+    if "$Nodes" not in text or "$Elements" not in text:
+        return nodes, tets
+    node_body = text.split("$Nodes", 1)[1].split("$EndNodes", 1)[0].strip().splitlines()
+    for line in node_body[1:]:
+        parts = line.split()
+        if len(parts) >= 4:
+            nodes[int(parts[0])] = (float(parts[1]), float(parts[2]), float(parts[3]))
+    elem_body = text.split("$Elements", 1)[1].split("$EndElements", 1)[0].strip().splitlines()
+    for line in elem_body[1:]:
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        # MSH2: id type ntags phys ... nodes. Type 4 = tet4.
+        if int(parts[1]) != 4:
+            continue
+        ntags = int(parts[2])
+        nids = [int(p) for p in parts[3 + ntags :]]
+        if len(nids) == 4:
+            tets.append((nids[0], nids[1], nids[2], nids[3]))
+    return nodes, tets
+
+
+def _chunk_csv(ids: list[int], per_line: int = 12) -> str:
+    lines = []
+    for start in range(0, len(ids), per_line):
+        lines.append(", ".join(str(n) for n in ids[start : start + per_line]))
+    return "\n".join(lines)
+
+
+def write_e_solid_inp(path: Path, identity: dict[str, Any], *, msh: Path | None = None) -> dict[str, Any]:
+    """C3D4 deck from a Gmsh msh2. msh is required (no hex fallback)."""
     ids = set(identity.get("entity_ids") or [])
     if INNER_WALL not in ids:
         return {"status": "broken", "detail": f"identity missing {INNER_WALL}"}
-    xs = [-0.025, -0.020]
-    ys = [-0.020, 0.020]
-    zs = [0.0, 0.040]
-    node_lines = []
-    for ix, x in enumerate(xs):
-        for iy, y in enumerate(ys):
-            for iz, z in enumerate(zs):
-                node_lines.append(
-                    f"{_nid(ix, iy, iz)}, {x:.8f}, {y:.8f}, {z:.8f}"
-                )
-    n000, n100 = _nid(0, 0, 0), _nid(1, 0, 0)
-    n110, n010 = _nid(1, 1, 0), _nid(0, 1, 0)
-    n001, n101 = _nid(0, 0, 1), _nid(1, 0, 1)
-    n111, n011 = _nid(1, 1, 1), _nid(0, 1, 1)
-    elem = f"1, {n000}, {n100}, {n110}, {n010}, {n001}, {n101}, {n111}, {n011}"
-    iface = [_nid(1, iy, iz) for iy in range(2) for iz in range(2)]
-    outer = [_nid(0, iy, iz) for iy in range(2) for iz in range(2)]
-    iface_set = ", ".join(str(n) for n in iface)
+    if msh is None:
+        return {"status": "broken", "detail": "independent solid msh required"}
+    msh = Path(msh)
+    if not msh.is_file():
+        return {"status": "broken", "detail": f"missing msh {msh}"}
+    nodes, tets = parse_msh2(msh.read_text(encoding="utf-8", errors="replace"))
+    if len(nodes) < 4 or not tets:
+        return {"status": "broken", "detail": "msh has no C3D4 tets"}
+    iface = sorted(nid for nid, xyz in nodes.items() if _INNER_R[0] <= _radius(xyz) <= _INNER_R[1])
+    outer = sorted(nid for nid, xyz in nodes.items() if _radius(xyz) >= _OUTER_R_MIN)
+    if not iface:
+        return {"status": "broken", "detail": "no inner-wall nodes at r≈0.02 m"}
+    if not outer:
+        return {"status": "broken", "detail": "no outer-wall nodes to constrain"}
+    node_lines = [f"{nid}, {xyz[0]:.8f}, {xyz[1]:.8f}, {xyz[2]:.8f}" for nid, xyz in sorted(nodes.items())]
+    elem_lines = [f"{i}, {a}, {b}, {c}, {d}" for i, (a, b, c, d) in enumerate(tets, start=1)]
     cload_zero = "\n".join(f"{n}, {dof}, 0." for n in iface for dof in (1, 2, 3))
     bounds = "\n".join(f"{n}, 1, 3" for n in outer)
-    text = f"""** E-FSI solid: vessel housing envelope in SI. CAD face {INNER_WALL}.
+    text = f"""** E-FSI solid: Gmsh tet housing. CAD face {INNER_WALL}. Independent of fluid hex.
 *HEADING
-e-vessel solid
+e-vessel solid tets
 *NODE
 {chr(10).join(node_lines)}
-*ELEMENT, TYPE=C3D8, ELSET=EALL
-{elem}
+*ELEMENT, TYPE=C3D4, ELSET=EALL
+{chr(10).join(elem_lines)}
 *NSET, NSET=NinterfaceN
-{iface_set}
+{_chunk_csv(iface)}
 *MATERIAL, NAME=Steel
 *ELASTIC
 {_E_PA}, {_NU}
@@ -89,24 +146,41 @@ S
         "entity_id": INNER_WALL,
         "topology_version": int(identity.get("topology_version") or 1),
         "node_ids": iface,
+        "volume_nodes": len(nodes),
+        "n_tets": len(tets),
         "path": str(path),
+        "msh": str(msh),
     }
 
 
-def prepare_e_solid_participant(workdir: Path, config_xml: Path, identity: dict[str, Any]) -> dict[str, Any]:
-    """Write e-solid.inp + CalculiX adapter config.yml (Force/Displacement)."""
+def prepare_e_solid_participant(
+    workdir: Path,
+    config_xml: Path,
+    identity: dict[str, Any],
+    *,
+    msh: Path | None = None,
+) -> dict[str, Any]:
+    """Gmsh tets → e-solid.inp + CalculiX adapter config.yml."""
     workdir = Path(workdir)
-    deck = write_e_solid_inp(workdir / "e-solid.inp", identity)
+    workdir.mkdir(parents=True, exist_ok=True)
+    msh_path = Path(msh) if msh is not None else None
+    if msh_path is None:
+        generated = write_solid_mesh(workdir / "gmsh", identity)
+        if generated.get("status") != "ok":
+            return generated
+        msh_path = Path(str(generated["artifact"]))
+    deck = write_e_solid_inp(workdir / "e-solid.inp", identity, msh=msh_path)
     if deck.get("status") != "ok":
         return deck
     prepare_solid_participant(workdir, config_xml)
+    gmsh_json = workdir / "gmsh" / "solid-mesh.json"
+    if gmsh_json.is_file():
+        deck["mesh_record"] = str(gmsh_json)
     return deck
 
 
 def _ninterface_ids(workdir: Path) -> list[int]:
     """Parse NinterfaceN from e-solid.inp. Empty if the set is missing."""
-    import re
-
     inp = Path(workdir) / "e-solid.inp"
     if not inp.is_file():
         return []
@@ -147,4 +221,3 @@ def sample_e_solid_probes(out: Path) -> dict[str, Any]:
             "xyz_m": centroid,
         }
     }
-

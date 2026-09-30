@@ -2,19 +2,22 @@
 
 from pathlib import Path
 
+from engineering_tools.e_adapter_calculix import CI_SOLID_MSH2, write_e_solid_inp
 from engineering_tools.e_cad import import_identity
-from engineering_tools.e_adapter_calculix import write_e_solid_inp
 from engineering_tools.e_interface_map import compile_cad_interface_mapping, write_e_coupling_bundle
-
-
 def test_solid_deck_has_ninterfacen_and_zero_cload(tmp_path: Path) -> None:
     ident = import_identity()
-    got = write_e_solid_inp(tmp_path / "e-solid.inp", ident)
+    msh = tmp_path / "solid.msh"
+    msh.write_text(CI_SOLID_MSH2, encoding="utf-8")
+    got = write_e_solid_inp(tmp_path / "e-solid.inp", ident, msh=msh)
     assert got["status"] == "ok"
     text = Path(got["path"]).read_text(encoding="utf-8")
     assert "*NSET, NSET=NinterfaceN" in text
+    assert "*ELEMENT, TYPE=C3D4" in text
+    assert "C3D8" not in text
     assert "*CLOAD" in text
     assert "*DYNAMIC" in text
+    assert len(got["node_ids"]) >= 3
     assert "write_d_solid_inp" not in text
     assert "d-fsi sandwich" not in text
 

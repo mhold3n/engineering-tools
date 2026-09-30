@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from engineering_tools.e_adapter_calculix import prepare_e_solid_participant
+from engineering_tools.e_adapter_calculix import CI_SOLID_MSH2, prepare_e_solid_participant
 from engineering_tools.e_adapter_openfoam import prepare_e_fluid_participant
 from engineering_tools.e_backend_precice import generate_e_precice_config
 from engineering_tools.e_policy import compile_coupling_policy
@@ -86,7 +86,11 @@ def write_e_coupling_bundle(out_dir: Any, identity: dict[str, Any]) -> dict[str,
     if pol.get("status") != "ok":
         return {"status": "broken", "detail": pol.get("detail")}
     xml_path.write_text(generate_e_precice_config(pol), encoding="utf-8")
-    solid = prepare_e_solid_participant(root / "e-solid", xml_path, identity)
+    solid_dir = root / "e-solid"
+    solid_dir.mkdir(parents=True, exist_ok=True)
+    ci_msh = solid_dir / "ci.msh"
+    ci_msh.write_text(CI_SOLID_MSH2, encoding="utf-8")
+    solid = prepare_e_solid_participant(solid_dir, xml_path, identity, msh=ci_msh)
     fluid = prepare_e_fluid_participant(root / "e-fluid", xml_path, identity)
     if solid.get("status") != "ok":
         return solid
@@ -97,7 +101,7 @@ def write_e_coupling_bundle(out_dir: Any, identity: dict[str, Any]) -> dict[str,
         solid_nset=str(solid["nset"]),
         fluid_patch=str(fluid["patch"]),
         solid_nodes=len(solid.get("node_ids") or []),
-        fluid_nodes=4,
+        fluid_nodes=40,
         policy=pol,
     )
     if mapped.get("status") != "ok":

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from engineering_tools.e_adapter_calculix import CI_SOLID_MSH2
 from engineering_tools.e_cad import import_identity
 from engineering_tools.e_scenario import reference_model
 
@@ -26,6 +27,8 @@ def _e_live_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, solid_frd:
     binary_dir.mkdir()
     windows = "printf 'Time window completed\\nTime window completed\\n'\n"
     copy_frd = f"cp '{solid_frd}' e-solid.frd\n"
+    fixture = tmp_path / "ci.msh"
+    fixture.write_text(CI_SOLID_MSH2, encoding="utf-8")
     _executable(binary_dir / "ccx", "exit 0\n")
     _executable(binary_dir / "ccx_preCICE", copy_frd + windows + "exit 0\n")
     _executable(
@@ -36,30 +39,43 @@ def _e_live_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, solid_frd:
         + "printf 'internalField uniform 350;\\n' > 0.01/T\n"
         + "exit 0\n",
     )
-    _executable(binary_dir / "blockMesh", "mkdir -p constant/polyMesh\ntouch constant/polyMesh/points\nexit 0\n")
+    _executable(
+        binary_dir / "blockMesh",
+        "mkdir -p constant/polyMesh\n"
+        "printf 'FoamFile { class vectorField; }\\n9\\n(\\n)\\n' > constant/polyMesh/points\n"
+        "exit 0\n",
+    )
+    _executable(
+        binary_dir / "gmsh",
+        f'out=""\n'
+        f'while [ $# -gt 0 ]; do\n'
+        f'  if [ "$1" = "-o" ]; then shift; out="$1"; fi\n'
+        f'  shift\n'
+        f'done\n'
+        f'cp "{fixture}" "$out"\n'
+        f"exit 0\n",
+    )
     _executable(binary_dir / "precice-tools", "exit 0\n")
     monkeypatch.setenv("PATH", str(binary_dir) + os.pathsep + "/usr/bin:/bin")
 
 
 def _e_frd(path: Path) -> None:
-    # SI deck nodes: NinterfaceN ids 2,4,6,8 at x=-0.02. DISP in metres.
+    # CI wedge msh nodes 1-3 inner wall, 4-6 outer.
     lines = ["    2C"]
     nodes = {
-        1: (-0.025, -0.02, 0.0),
-        2: (-0.02, -0.02, 0.0),
-        3: (-0.025, 0.02, 0.0),
-        4: (-0.02, 0.02, 0.0),
-        5: (-0.025, -0.02, 0.04),
-        6: (-0.02, -0.02, 0.04),
-        7: (-0.025, 0.02, 0.04),
-        8: (-0.02, 0.02, 0.04),
+        1: (-0.02, -0.005, 0.0),
+        2: (-0.02, 0.005, 0.0),
+        3: (-0.02, 0.0, 0.04),
+        4: (-0.025, -0.005, 0.0),
+        5: (-0.025, 0.005, 0.0),
+        6: (-0.025, 0.0, 0.04),
     }
     for nid, xyz in nodes.items():
         lines.append(f" -1         {nid} {xyz[0]:.5e} {xyz[1]:.5e} {xyz[2]:.5e}")
     lines.append(" -3")
     lines.append(" -4  DISP        4    1")
-    for nid in (5, 6, 7, 8):
-        lines.append(f" -1         {nid} 2.30630e-09 0.00000e+00 0.00000e+00")
+    for nid in (1, 2, 3):
+        lines.append(f" -1         {nid} 1.00000e-08 0.00000e+00 0.00000e+00")
     lines.append(" -3")
     lines.append(" -4  STRESS      6    1")
     for nid in nodes:
@@ -88,7 +104,9 @@ def test_sample_e_probes_read_inner_wall_si_fields(tmp_path: Path) -> None:
     ident = import_identity()
     solid = tmp_path / "e-solid"
     solid.mkdir()
-    write_e_solid_inp(solid / "e-solid.inp", ident)
+    msh = solid / "solid.msh"
+    msh.write_text(CI_SOLID_MSH2, encoding="utf-8")
+    write_e_solid_inp(solid / "e-solid.inp", ident, msh=msh)
     _e_frd(solid / "e-solid.frd")
     fluid = tmp_path / "e-fluid"
     write_fluid_block_mesh_dict(fluid / "system" / "blockMeshDict")
@@ -101,7 +119,7 @@ def test_sample_e_probes_read_inner_wall_si_fields(tmp_path: Path) -> None:
     assert fluid_probes["face.inner_wall.pressure"]["value"] == pytest.approx(101325.0)
     assert fluid_probes["face.inner_wall.temperature"]["value"] == pytest.approx(350.0)
     assert "inner_wall" in str(fluid_probes["face.inner_wall.pressure"].get("patch", "inner_wall"))
-    assert solid_probes["face.inner_wall.displacement"]["value"] == pytest.approx(2.3063e-09, rel=1e-3)
+    assert solid_probes["face.inner_wall.displacement"]["value"] == pytest.approx(1.0e-8)
 
 
 def test_run_e_session_live_ok_with_fakes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -113,6 +131,8 @@ def test_run_e_session_live_ok_with_fakes(tmp_path: Path, monkeypatch: pytest.Mo
     session = run_e_session(tmp_path / "e-out", reference_model())
     assert session["e_ok"] is True
     assert session.get("live") is True
+    assert session.get("conformal") is False
+    assert int(session["solid_nodes"]) != int(session["fluid_nodes"])
     xml = (tmp_path / "e-out" / "precice-config.xml").read_text()
     assert "Force" in xml
     assert "Traction" not in xml
@@ -120,7 +140,7 @@ def test_run_e_session_live_ok_with_fakes(tmp_path: Path, monkeypatch: pytest.Mo
     probes = session["probes"]
     assert probes["face.inner_wall.pressure"]["value"] == pytest.approx(101325.0)
     assert probes["face.inner_wall.temperature"]["value"] == pytest.approx(350.0)
-    assert probes["face.inner_wall.displacement"]["value"] == pytest.approx(2.3063e-09, rel=1e-3)
+    assert probes["face.inner_wall.displacement"]["value"] == pytest.approx(1.0e-8)
     assert (tmp_path / "e-out" / "e-fluid" / "participant.log").is_file()
     assert (tmp_path / "e-out" / "e-solid" / "participant.log").is_file()
 

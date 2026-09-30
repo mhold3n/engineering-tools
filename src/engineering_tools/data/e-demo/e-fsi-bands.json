@@ -1,10 +1,10 @@
 {
-  "calibration": "Ubuntu hhpe-forge 2026-09-30. Project /tmp/e-ref-live/proj. First green live --coupling e: serial-implicit Force residual + Aitken(Force); 2/2 windows; rhoPimpleFoam ESI 2512 + ccx_preCICE mpirun -n 1; CAD face.inner_wall. Measured: pressure=101325.0 Pa, temperature=350.0 K, displacement=2.3063049970027815e-09 m (NinterfaceN max |U|). Second clean e-reference is acceptance against this file. Zero pressure versus this target fails.",
+  "role": "pytest PATH-fake abs+rel only. Ubuntu live pair proof is documented in docs/plans/2026-09-30-phase-e-independent-mesh-live-proof.md and is not stored as solver output in git.",
   "motion_floor_m": 1e-18,
   "n_steps": 2,
   "parity": {
     "face.inner_wall.pressure": {"target": 101325.0, "abs": 1.0, "rel": 0.01},
     "face.inner_wall.temperature": {"target": 350.0, "abs": 1.0, "rel": 0.01},
-    "face.inner_wall.displacement": {"target": 2.3063049970027815e-09, "abs": 5e-11, "rel": 0.2}
+    "face.inner_wall.displacement": {"target": 1.0e-8, "abs": 1.0e-9, "rel": 0.2}
   }
 }
