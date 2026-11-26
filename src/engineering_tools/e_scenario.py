@@ -1,7 +1,7 @@
-"""Phase E heated-vessel reference scenario (canonical graph, fake couple).
+"""Phase E heated-vessel reference scenario.
 
-Agents: this is not damper-keyway and not D meshes. Geometry IDs come from
-e_cad fixture. Live Ubuntu kernels are a later gate; pytest uses the façade fakes.
+Agents: geometry IDs from e_cad. Engineering success is live mechanical couple
+only. pytest/PATH mocks and --dry-run must not set e_ok. Not damper-keyway.
 """
 
 from __future__ import annotations
@@ -63,6 +63,16 @@ def reference_model() -> dict[str, Any]:
             "unit": "Pa",
         }
     ]
+    model["bcs"] = [
+        {
+            "bc_id": "shell.outer_fixed",
+            "entity_id": "face.outer_wall",
+            "kind": "fixed_displacement",
+            "value": [0.0, 0.0, 0.0],
+            "unit": "m",
+            "dofs": [1, 2, 3],
+        }
+    ]
     model["relations"] = [
         {
             "relation_id": "wall.fsi",
@@ -121,14 +131,15 @@ def _field(
     }
 
 
-def run_e_reference(project: str | Path) -> dict[str, Any]:
+def run_e_reference(project: str | Path, *, dry_run: bool = False) -> dict[str, Any]:
     """Write artifacts/scenario-e-reference/e-session.json."""
     root = Path(project)
     out = root / "artifacts" / "scenario-e-reference"
-    session = run_e_session(out, reference_model())
+    session = run_e_session(out, reference_model(), dry_run=dry_run)
     ok = bool(session.get("e_ok"))
+    cli_ok = ok or bool(dry_run and session.get("status") == "dry-run")
     return {
-        "ok": ok,
+        "ok": cli_ok,
         "status": "ok" if ok else session.get("status") or "broken",
         "message": "e-reference passed" if ok else str(session.get("detail") or "e-reference failed"),
         "workdir": str(out),

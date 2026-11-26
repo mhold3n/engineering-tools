@@ -1,4 +1,4 @@
-# engineering-tools MIT — headless heated-vessel B-rep for Phase E identity.
+# engineering-tools MIT. Headless heated-vessel B-rep for Phase E identity.
 # Calls FreeCAD (LGPL); this script is MIT. Usage: FreeCADCmd build_vessel.py
 # cwd receives vessel.step. Three labeled solids: gas cylinder, housing tube, lid.
 # Canonical entity_ids are object Labels (body.gas, body.shell, body.lid).

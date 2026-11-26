@@ -1,4 +1,4 @@
-"""CAD-face coupling map for E: entity identity → preCICE meshes and constraints.
+"""CAD-face coupling map for E. Entity identity selects preCICE meshes and constraints.
 
 Agents: interfaces couple by face.inner_wall, not coincident node numbers.
 Fluid writes Force with conservative mapping; Displacement is consistent.
@@ -91,7 +91,7 @@ def write_e_coupling_bundle(out_dir: Any, identity: dict[str, Any]) -> dict[str,
     ci_msh = solid_dir / "ci.msh"
     ci_msh.write_text(CI_SOLID_MSH2, encoding="utf-8")
     solid = prepare_e_solid_participant(solid_dir, xml_path, identity, msh=ci_msh)
-    fluid = prepare_e_fluid_participant(root / "e-fluid", xml_path, identity)
+    fluid = prepare_e_fluid_participant(root / "e-fluid", xml_path, identity, msh=ci_msh)
     if solid.get("status") != "ok":
         return solid
     if fluid.get("status") != "ok":

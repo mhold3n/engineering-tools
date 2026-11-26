@@ -1,0 +1,53 @@
+{
+  "id": "ubuntu-24.04-couple",
+  "os": "ubuntu",
+  "version_id": "24.04",
+  "codename": "noble",
+  "python_package": {
+    "installer": "pip",
+    "argv": ["pip", "install", "-e", ".[dev]"]
+  },
+  "archive": [
+    {
+      "id": "gmsh",
+      "package": "gmsh",
+      "locators": ["gmsh"]
+    },
+    {
+      "id": "mpi",
+      "package": "openmpi-bin",
+      "locators": ["mpirun"]
+    }
+  ],
+  "openfoam": {
+    "id": "openfoam-esi",
+    "package": "openfoam2512-default",
+    "prefix": "/usr/lib/openfoam/openfoam2512",
+    "bin_dir": "/usr/lib/openfoam/openfoam2512/platforms/linux64GccDPInt32Opt/bin",
+    "locators": ["rhoPimpleFoam", "gmshToFoam"],
+    "bootstrap": {
+      "url": "https://dl.openfoam.com/add-debian-repo.sh",
+      "executed_by_installer": false,
+      "pubkey_url": "https://dl.openfoam.com/pubkey.gpg",
+      "pubkey_path": "/etc/apt/trusted.gpg.d/openfoam.gpg",
+      "source_path": "/etc/apt/sources.list.d/openfoam.list",
+      "source_line": "deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main"
+    }
+  },
+  "debs": [
+    {
+      "id": "precice",
+      "package": "libprecice3",
+      "version": "3.5.0",
+      "url": "https://github.com/precice/precice/releases/download/v3.5.0/libprecice3_3.5.0_noble.deb",
+      "locators": ["precice-tools", "binprecice", "precice"]
+    },
+    {
+      "id": "calculix-adapter",
+      "package": "calculix-precice3",
+      "version": "2.20.2",
+      "url": "https://github.com/precice/calculix-adapter/releases/download/v2.20.2/calculix-precice3_2.20.2-1_amd64_noble.deb",
+      "locators": ["ccx_preCICE"]
+    }
+  ]
+}

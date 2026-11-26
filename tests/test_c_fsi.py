@@ -102,7 +102,7 @@ def _c_tools(
         copy_frd = f"cp '{solid_frd}' c-solid.frd\n"
     _executable(binary_dir / "ccx", "exit 0\n")
     _executable(binary_dir / "ccx_preCICE", copy_frd + windows + "exit 0\n")
-    # Kinematic p → 56.62 Pa at rho=850, matching _ab_snapshot_source wall p.
+    # Kinematic p is 56.62 Pa at rho=850, matching _ab_snapshot_source wall p.
     _executable(
         binary_dir / "pimpleFoam",
         windows + "mkdir -p 0.1\nprintf 'internalField uniform 0.0666117647;\\n' > 0.1/p\nexit 0\n",

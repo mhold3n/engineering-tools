@@ -90,7 +90,7 @@ def test_heat_flux_preserves_integrated_heat_flow() -> None:
         coupling_residual={"l2": 1e-4},
     )
     assert got["status"] == "ok"
-    # n = +z on this face → q·n * area = 80 * 1
+    # n = +z on this face, so q·n * area = 80 * 1
     expected_flow = 80.0
     rel = abs(got["mapping_error"]["target_integral"] - expected_flow) / expected_flow
     assert rel < 1e-9

@@ -1,4 +1,4 @@
-"""Phase E solver adapters: canonical model → native solver intent.
+"""Phase E solver adapters. A canonical model becomes native solver intent.
 
 Agents: adapters own CalculiX/OpenFOAM syntax later. This unit publishes
 capability-checked participant inputs as dicts. No run_fsi_special path.

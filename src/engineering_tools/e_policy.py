@@ -1,4 +1,4 @@
-"""Phase E coupling policy: field graph → declared coupling, not preCICE XML.
+"""Phase E coupling policy. The field graph becomes a declared coupling. This module does not write preCICE XML.
 
 Agents: this module owns policy kinds and fail-closed validation. XML lives in
 e_backend_precice. Do not add extra orchestration functions for FSI, thermal,
@@ -6,10 +6,10 @@ or gas. Compressible-fluid metadata is a field/region attribute on the same
 compile_coupling_policy path. C/D keep default_policy and tight_d_policy in
 c_backend_precice; do not call those from here.
 
-Aitken is not a free acceleration knob. On serial-implicit, preCICE only
+Aitken is not a free acceleration setting. On serial-implicit, preCICE only
 allows Aitken on data the *second* participant writes to the *first*
-(C/D: Force). Displacement Aitken (first→second) is illegal — status
-broken, never emit that XML.
+(C/D Force). Displacement Aitken from the first participant to the second is illegal.
+Status is broken. Never emit that XML.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 from engineering_tools.e_field import QUANTITIES
+from engineering_tools.e_interaction import default_fluid_exchanges, fluid_first_participants, interaction_step
 
 # R35 kinds. Strings are the public IDs tests and sessions store.
 POLICY_KINDS = frozenset(
@@ -35,7 +36,7 @@ SUPPORTED_BACKENDS = frozenset({"precice"})
 # claim these in policy. The backend maps them to serial-implicit XML.
 _IMPLICIT_KINDS = frozenset({"implicit two-way", "multirate implicit"})
 
-# Canonical quantity → (preCICE data name, data element kind).
+# Canonical quantity to (preCICE data name, data element kind).
 # traction becomes Force: OpenFOAM-preCICE writes Force, not Traction.
 PRECICE_DATA = {
     "displacement": ("Displacement", "vector"),
@@ -66,11 +67,7 @@ def mechanical_exchanges(
     first: str = "Solid",
     second: str = "Fluid",
 ) -> list[dict[str, str]]:
-    """Live OpenFOAM FSI + CalculiX: Displacement and Force only.
-
-    Agents: Heat-Flux/Temperature stay on the canonical graph. The live
-    adapters do not write those names; putting them in XML hangs the couple.
-    """
+    """Displacement and Force only. Live policy uses mechanical_thermal_exchanges."""
     return [
         {"quantity": "displacement", "from": first, "to": second},
         {"quantity": "traction", "from": second, "to": first},
@@ -83,7 +80,7 @@ def mechanical_thermal_exchanges(
 ) -> list[dict[str, str]]:
     """Wall interface: displacement↔force and temperature↔heat-flux.
 
-    Agents: two pairs, same interface. Not two orchestration functions.
+    Agents: Heat-Flux is exchanged on interface-faces, not the nodes mesh.
     traction is the canonical quantity; compile maps it to Force.
     """
     return [
@@ -159,14 +156,31 @@ def compile_coupling_policy(
         return _broken(f"unknown coupling kind: {kind}")
     if backend not in SUPPORTED_BACKENDS:
         return _broken(f"unsupported coupling backend: {backend}")
-    parts = list(participants) if participants is not None else default_participants()
+    # one-way is the fluid-first wall step. Implicit kinds keep Solid-first defaults.
+    if kind == "one-way" and participants is None:
+        parts = [
+            {"name": item["name"], "solver": item["solver"]}
+            for item in fluid_first_participants()
+        ]
+    else:
+        parts = list(participants) if participants is not None else default_participants()
     if len(parts) < 2:
         return _broken("coupling policy needs at least two participants")
     first_name = str(parts[0]["name"])
     second_name = str(parts[1]["name"])
-    raw_exchanges = exchanges if exchanges is not None else mechanical_thermal_exchanges(
-        first_name, second_name
-    )
+    if kind == "one-way" and first_name != "Fluid":
+        return _broken("one-way interaction requires Fluid first")
+    if exchanges is None and kind == "one-way":
+        raw_exchanges = default_fluid_exchanges()
+    else:
+        raw_exchanges = exchanges if exchanges is not None else mechanical_thermal_exchanges(
+            first_name, second_name
+        )
+    if kind == "one-way":
+        # Same rejection as the outline. Do not emit a Solid to Fluid displacement.
+        checked = interaction_step(exchanges=list(raw_exchanges))
+        if checked["status"] != "ok":
+            return _broken(str(checked["detail"]))
     compiled: list[dict[str, Any]] = []
     for raw in raw_exchanges:
         got = _normalize_exchange(raw, parts)

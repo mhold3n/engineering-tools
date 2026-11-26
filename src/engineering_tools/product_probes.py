@@ -1,4 +1,4 @@
-"""Product capability probes for proprietary→OSS mappings.
+"""Product capability probes for proprietary to open-source mappings.
 
 Most probes reuse component hello outcomes from the same `etools hello` run.
 Fluid Dynamics reuses the OpenFOAM component after that probe has run icoFoam.

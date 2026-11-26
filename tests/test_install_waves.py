@@ -34,6 +34,18 @@ def test_wave_membership_covers_non_3dx_mapping_components_exactly() -> None:
     assert "engineering-tools" not in set(waved)
 
 
+def test_cae_core_wave_keeps_hello_solvers_outside_the_couple_list() -> None:
+    """Wave 2 stays the distro hello ids. The couple list is not a wave member."""
+    wave = INSTALL_WAVES["2-cae-core"]
+    assert "calculix" in wave
+    assert "openfoam" in wave
+    assert "ubuntu-24.04-couple" not in wave
+    assert "ubuntu-24.04-couple" not in all_wave_component_ids()
+    by_id = {item["id"]: item for item in load_manifest()["components"]}
+    assert by_id["calculix"]["install_recipe"]["package"] == "calculix-ccx"
+    assert by_id["openfoam"]["install_recipe"]["package"] == "openfoam"
+
+
 def test_install_cli_unknown_wave(tmp_path, monkeypatch, capsys) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path))
     code = main(["install", "--wave", "no-such-wave"])
@@ -52,7 +64,7 @@ def test_install_cli_unknown_component(tmp_path, monkeypatch, capsys) -> None:
 
 def test_install_cli_wave_continues_after_failure(tmp_path, monkeypatch, capsys) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "state"))
-    # Mega-ops recipes are still unimplemented → typed failures, continue-on-fail.
+    # Mega-ops recipes are still unimplemented. The result is a typed failure, and the run continues.
     worktree = tmp_path / "repo"
     worktree.mkdir()
     monkeypatch.chdir(worktree)

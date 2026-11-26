@@ -20,7 +20,7 @@ from engineering_tools.c_adapter_calculix import (
 
 
 def test_find_calculix_participant_ignores_plain_ccx(monkeypatch: pytest.MonkeyPatch) -> None:
-    """ccx_preCICE, ccx_precice, and calculix-precice absent → None even if ccx exists."""
+    """ccx_preCICE, ccx_precice, and calculix-precice absent returns None even if ccx exists."""
 
     def _which(name: str) -> str | None:
         if name == "ccx":

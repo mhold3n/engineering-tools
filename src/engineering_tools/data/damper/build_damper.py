@@ -1,4 +1,4 @@
-# engineering-tools MIT sample — headless parametric damper
+# engineering-tools MIT sample. Headless parametric damper
 # Calls FreeCAD (LGPL); this script itself is MIT (c) 2026 mhold3n
 # Usage: FreeCADCmd build_damper.py   (cwd must contain damper-params.json)
 # Extra CLI args are treated as documents to open; do not pass the JSON path.

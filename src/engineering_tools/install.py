@@ -85,7 +85,7 @@ def _fetch_artifact(url: str, destination: Path) -> None:
         return
     if parsed.scheme in {"http", "https"}:
         try:
-            with urllib.request.urlopen(url, timeout=120) as response:  # noqa: S310 — pins verified after fetch
+            with urllib.request.urlopen(url, timeout=120) as response:  # noqa: S310 pins verified after fetch
                 destination.write_bytes(response.read())
         except OSError as exc:
             raise InstallError(f"fetch failed for {url}: {exc}") from exc

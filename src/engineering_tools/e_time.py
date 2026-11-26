@@ -7,7 +7,17 @@ This module compiles schedules only; it does not march live solvers.
 
 from __future__ import annotations
 
+import math
 from typing import Any
+
+
+def _finite_positive(value: float) -> bool:
+    """True for a clock value that can be divided and rounded."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(number) and number > 0
 
 
 def compile_multirate_schedule(
@@ -18,17 +28,18 @@ def compile_multirate_schedule(
 ) -> dict[str, Any]:
     """Compile per-participant subcycles for one coupling window.
 
-    Fluid vs solid: e.g. fluid dt 0.002 inside a 0.01 solid/window step → 5
-    fluid subcycles. Window dt that is not an integer multiple of a solver dt
-    is broken (no silent rounding).
+    Fluid vs solid example. Fluid dt 0.002 inside a 0.01 window is 5
+    fluid subcycles. A non-finite window or solver dt is broken before
+    round is called. Window dt that is not an integer multiple of a solver
+    dt is broken, with no silent rounding.
     """
-    if window_dt_s <= 0:
-        return {"status": "broken", "detail": "window_dt_s must be positive"}
+    if not _finite_positive(window_dt_s):
+        return {"status": "broken", "detail": "window_dt_s must be finite and positive"}
     compiled: dict[str, Any] = {}
     for name, spec in participants.items():
         dt = float(spec["dt_s"])
-        if dt <= 0:
-            return {"status": "broken", "detail": f"{name} dt_s must be positive"}
+        if not _finite_positive(dt):
+            return {"status": "broken", "detail": f"{name} dt_s must be finite and positive"}
         ratio = window_dt_s / dt
         subcycles = round(ratio)
         if abs(ratio - subcycles) > 1e-12 or subcycles < 1:

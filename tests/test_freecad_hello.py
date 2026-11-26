@@ -17,7 +17,7 @@ def test_load_freecad_sample_mentions_hellobox():
 def test_freecad_probe_runs_fake_freecad(tmp_path, monkeypatch):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
-    # No ccx — force FreeCAD path (keep /usr/bin:/bin so fake script can call touch)
+    # No ccx. Force the FreeCAD path. Keep /usr/bin:/bin so the fake script can call touch.
     fc = fake_bin / "FreeCADCmd"
     fc.write_text(
         "#!/bin/sh\n"

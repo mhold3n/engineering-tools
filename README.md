@@ -68,6 +68,24 @@ stack is ESI **openfoam2512**, **libprecice3**, and Solid under **`mpirun -n 1`*
 Distro OpenFOAM 1912 and a bare `ccx_preCICE` without mpirun do not complete C.
 C wall pressure and key stress remaining ~0 vs B is a later vertical.
 
+## Live couple on a Linux VM
+
+The published clone is `https://github.com/mhold3n/engineering-tools`. The steps
+below match that default branch once this deploy work is what the branch contains.
+
+```bash
+git clone https://github.com/mhold3n/engineering-tools
+cd engineering-tools
+pip install -e ".[dev]"
+etools install --couple
+```
+
+`pip install -e ".[dev]"` installs this Python package on every host. `etools install --couple` reads the Ubuntu 24.04 requirements list.
+
+On Ubuntu 24.04 the list installs `gmsh`, `openmpi-bin`, the pinned `libprecice3` 3.5.0 noble deb, the CalculiX adapter `calculix-precice3` 2.20.2 noble deb, and ESI `openfoam2512-default`. The ESI apt source for that host is `deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main`, and the key is `https://dl.openfoam.com/pubkey.gpg` at `/etc/apt/trusted.gpg.d/openfoam.gpg`. Those two values are what `https://dl.openfoam.com/add-debian-repo.sh` writes. The couple command records them and leaves that script unrun. Add the source and the key, then run the couple command. Success is the ESI `rhoPimpleFoam` and `gmshToFoam` files, `ccx_preCICE`, a preCICE locator (`precice-tools`, then `binprecice`, then `precice`), `gmsh`, and `mpirun`. A coupled solve is a later run. The Ubuntu binary check is not run from this tree.
+
+On macOS, `etools install --couple` reports the live couple unavailable. The pip command above is the Mac install.
+
 ### Alpha pulse
 
 `hello` evaluates every manifest component and proprietary-product mapping. It never selects a preferred backend or stops after one success. Success states are `ok` for components and `covered` for products. Non-success states are `missing`, `broken`, `misconfigured`, `unverified`, `invalid-pointer`, `probe-unimplemented`, `capability-failed`, `inventory-unfrozen`, and `invalid-manifest`.
@@ -76,15 +94,15 @@ Packaged inventory is audited, so `inventory-unfrozen` is cleared. Single-compon
 
 ### Hello samples
 
-- **CalculiX** (`ccx`): MIT deck `examples/calculix/hello_beam.inp` → `artifacts/calculix-hello/`
-- **FreeCAD** (`FreeCADCmd`): MIT script `examples/freecad/hello_box.py` → `artifacts/freecad-hello/hello_box.FCStd`
-- **OpenFOAM** (`blockMesh` or `foamExec blockMesh`): MIT cavity case → `artifacts/openfoam-hello/constant/polyMesh/`
-- **Scenario** (`etools scenario damper-keyway`): parametric damper CAD + CalculiX + OpenFOAM, then a second ccx job that maps chamber-wall Pa, plus named probe relations → `artifacts/scenario-damper-keyway/`. `--coupling c` (alias `--fsi`) runs C-FSI after A/B succeed and writes `c-fsi/c-session.json`. Exit 0 only when A, B, and C pass. If A/B fail, C is not evaluated.
+- **CalculiX** (`ccx`): MIT deck `examples/calculix/hello_beam.inp` writes `artifacts/calculix-hello/`
+- **FreeCAD** (`FreeCADCmd`): MIT script `examples/freecad/hello_box.py` writes `artifacts/freecad-hello/hello_box.FCStd`
+- **OpenFOAM** (`blockMesh` or `foamExec blockMesh`): MIT cavity case writes `artifacts/openfoam-hello/constant/polyMesh/`
+- **Scenario** (`etools scenario damper-keyway`): parametric damper CAD, CalculiX, and OpenFOAM, then a second ccx job that maps chamber-wall Pa, plus named probe relations, writes `artifacts/scenario-damper-keyway/`. `--coupling c` (alias `--fsi`) runs C-FSI after A/B succeed and writes `c-fsi/c-session.json`. Exit 0 only when A, B, and C pass. If A/B fail, C is not evaluated.
 
 Upstream solvers stay GPL/LGPL; we only call them.
 
 ## License
 
-[MIT](LICENSE) — use it, fork it, ship it. Attribution required (and we practice what we preach for upstreams).
+[MIT](LICENSE). Use it, fork it, and ship it. Attribution is required.
 
-We never vendor solvers and never strip upstream licenses — see `THIRD_PARTY.md`.
+We never vendor solvers and we never strip upstream licenses. See `THIRD_PARTY.md`.

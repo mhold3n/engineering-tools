@@ -1,12 +1,14 @@
-"""Phase E OpenFOAM deck: gas envelope, patch inner_wall = face.inner_wall.
+"""Phase E OpenFOAM deck: gas cylinder, patch face.inner_wall.
 
-Agents: blockMesh already names inner_wall. Adapter YAML/preciceDict must
-use that patch, mesh interface-fluid, write Force (not Traction), read
-Displacement. Does not launch pimpleFoam or precice.
+Agents: mesh is Gmsh + gmshToFoam. Patch name matches Physical Surface
+face.inner_wall (same CAD face as the solid). Adapter writes Force and
+Heat-Flux, reads Displacement and Temperature. rhoPimpleFoam: no CHT rho/Cp
+block. Does not launch solvers.
 """
 
 from __future__ import annotations
 
+import math
 import os
 import re
 import shlex
@@ -15,14 +17,19 @@ from pathlib import Path
 from typing import Any
 
 from engineering_tools.c_adapter_openfoam import _with_adapter_function
-from engineering_tools.e_mesh_fluid import INNER_WALL as MESH_FACE, write_fluid_block_mesh_dict
+from engineering_tools.e_mesh_fluid import INNER_WALL as MESH_FACE
 from engineering_tools.hello_probes import _openfoam_tool
 
 _ESI_FOAM = Path("/usr/lib/openfoam/openfoam2512/platforms/linux64GccDPInt32Opt/bin")
 
 
 def _e_openfoam_tool(name: str) -> list[str] | None:
-    """ESI v2512 first. Distro /usr/bin rhoPimpleFoam is not the C-proven adapter ABI."""
+    """ESI v2512 first unless ETOOLS_E_MOCK_SOLVERS=1 (pytest PATH fakes)."""
+    if os.environ.get("ETOOLS_E_MOCK_SOLVERS") == "1":
+        located = _openfoam_tool(name)
+        if located is not None:
+            return list(located[0])
+        return None
     esi = _ESI_FOAM / name
     if esi.is_file():
         return [str(esi)]
@@ -33,7 +40,7 @@ def _e_openfoam_tool(name: str) -> list[str] | None:
 
 # CAD entity for the FSI wall (same string as mesh bindings).
 CAD_FACE = "face.inner_wall"
-OF_PATCH = "inner_wall"
+OF_PATCH = "face.inner_wall"
 _AIR_RHO = 1.225
 
 
@@ -44,26 +51,29 @@ def _config_reference(config_xml: Path, workdir: Path) -> str:
         return config_xml.as_posix()
 
 
-def write_e_fluid_fields(case: Path) -> None:
-    """0/ and system dicts whose patches match e_mesh_fluid blockMeshDict."""
+def write_e_fluid_fields(case: Path, *, t_end_s: float = 0.02, dt_s: float = 0.01, p_pa: float = 1.01e5) -> None:
+    """0/ and system dicts whose patches match Physical Surface names."""
     case = Path(case)
-    patches = f"""
+    pressure = float(p_pa)
+    p_patches = f"""
     {OF_PATCH} {{ type zeroGradient; }}
     lid {{ type zeroGradient; }}
     base {{ type zeroGradient; }}
-    outer {{ type zeroGradient; }}
+"""
+    t_patches = f"""
+    {OF_PATCH} {{ type fixedValue; value uniform 300; }}
+    lid {{ type zeroGradient; }}
+    base {{ type zeroGradient; }}
 """
     u_patches = f"""
     {OF_PATCH} {{ type movingWallVelocity; value uniform (0 0 0); }}
     lid {{ type noSlip; }}
     base {{ type noSlip; }}
-    outer {{ type noSlip; }}
 """
     disp_patches = f"""
     {OF_PATCH} {{ type fixedValue; value uniform (0 0 0); }}
     lid {{ type fixedValue; value uniform (0 0 0); }}
     base {{ type fixedValue; value uniform (0 0 0); }}
-    outer {{ type fixedValue; value uniform (0 0 0); }}
 """
     files = {
         "0/p": f"""FoamFile
@@ -74,9 +84,9 @@ def write_e_fluid_fields(case: Path) -> None:
     object      p;
 }}
 dimensions      [1 -1 -2 0 0 0 0];
-internalField   uniform 101325;
+internalField   uniform {pressure};
 boundaryField
-{{{patches}}}
+{{{p_patches}}}
 """,
         "0/T": f"""FoamFile
 {{
@@ -88,7 +98,7 @@ boundaryField
 dimensions      [0 0 0 1 0 0 0];
 internalField   uniform 350;
 boundaryField
-{{{patches}}}
+{{{t_patches}}}
 """,
         "0/U": f"""FoamFile
 {{
@@ -148,19 +158,19 @@ mixture
     transport { mu 1.8e-05; Pr 0.7; }
 }
 """,
-        "system/controlDict": """FoamFile
-{
+        "system/controlDict": f"""FoamFile
+{{
     version     2.0;
     format      ascii;
     class       dictionary;
     object      controlDict;
-}
+}}
 application     rhoPimpleFoam;
 startFrom       startTime;
 startTime       0;
 stopAt          endTime;
-endTime         0.02;
-deltaT          0.01;
+endTime         {float(t_end_s)};
+deltaT          {float(dt_s)};
 writeControl    timeStep;
 writeInterval   1;
 purgeWrite      0;
@@ -179,7 +189,7 @@ runTimeModifiable true;
 
 
 def write_e_precice_adapter_config(workdir: Path, config_xml: Path) -> None:
-    """Force write, Displacement read, patch inner_wall, mesh interface-fluid."""
+    """Force and Heat-Flux write; Displacement and Temperature read. Patch inner_wall."""
     workdir = Path(workdir)
     config_ref = _config_reference(config_xml, workdir)
     yml = f"""participant: Fluid
@@ -193,8 +203,10 @@ interfaces:
       - {OF_PATCH}
     read-data:
       - Displacement
+      - Temperature
     write-data:
       - Force
+      - Heat-Flux
 """
     (workdir / "precice-adapter-config.yml").write_text(yml, encoding="utf-8")
     dict_path = workdir / "system" / "preciceDict"
@@ -209,7 +221,7 @@ interfaces:
 }}
 preciceConfig "{Path(config_ref).as_posix()}";
 participant Fluid;
-modules (FSI);
+modules (FSI CHT);
 interfaces
 {{
     Interface1
@@ -217,8 +229,8 @@ interfaces
         mesh            interface-fluid;
         patches         ({OF_PATCH});
         locations       faceCenters;
-        readData        (Displacement);
-        writeData       (Force);
+        readData        (Displacement Temperature);
+        writeData       (Force Heat-Flux);
     }}
 }}
 FSI
@@ -231,15 +243,28 @@ FSI
 
 
 def prepare_e_fluid_participant(
-    workdir: Path, config_xml: Path, identity: dict[str, Any]
+    workdir: Path,
+    config_xml: Path,
+    identity: dict[str, Any],
+    *,
+    msh: Path | None = None,
+    t_end_s: float = 0.02,
+    dt_s: float = 0.01,
+    p_pa: float = 1.01e5,
 ) -> dict[str, Any]:
-    """Stage blockMeshDict, fields, and adapter files. Does not run blockMesh."""
+    """Stage fluid.msh, fields, and adapter files. Does not run gmshToFoam."""
     ids = set(identity.get("entity_ids") or [])
     if CAD_FACE not in ids:
         return {"status": "broken", "detail": f"identity missing {CAD_FACE}"}
     workdir = Path(workdir)
-    write_fluid_block_mesh_dict(workdir / "system" / "blockMeshDict")
-    write_e_fluid_fields(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    if msh is not None:
+        src = Path(msh)
+        if not src.is_file():
+            return {"status": "broken", "detail": f"missing fluid msh {src}"}
+        dest = workdir / "fluid.msh"
+        dest.write_text(src.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
+    write_e_fluid_fields(workdir, t_end_s=t_end_s, dt_s=dt_s, p_pa=p_pa)
     write_e_solver_support(workdir)
     write_e_precice_adapter_config(workdir, config_xml)
     return {
@@ -365,10 +390,9 @@ dimensions      [0 1 0 0 0 0 0];
 internalField   uniform (0 0 0);
 boundaryField
 {
-    inner_wall { type fixedValue; value uniform (0 0 0); }
+    face.inner_wall { type fixedValue; value uniform (0 0 0); }
     lid { type fixedValue; value uniform (0 0 0); }
     base { type fixedValue; value uniform (0 0 0); }
-    outer { type fixedValue; value uniform (0 0 0); }
 }
 """,
 }
@@ -397,9 +421,22 @@ def _tool_ok(name: str, workdir: Path) -> bool:
 
 
 def mesh_e_fluid_participant(workdir: Path) -> bool:
-    """blockMesh only. Facade starts rhoPimpleFoam."""
+    """gmshToFoam on fluid.msh. Facade starts rhoPimpleFoam."""
+    from engineering_tools.hello_probes import _run_openfoam
+
+    workdir = Path(workdir)
+    msh = workdir / "fluid.msh"
+    if not msh.is_file():
+        return False
     write_e_solver_support(workdir)
-    return _tool_ok("blockMesh", workdir)
+    command = _e_openfoam_tool("gmshToFoam")
+    if command is None:
+        return False
+    try:
+        proc = _run_openfoam(list(command) + [str(msh)], workdir)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return proc.returncode == 0
 
 
 def fluid_e_participant_argv() -> list[str] | None:
@@ -411,6 +448,8 @@ def fluid_e_participant_argv() -> list[str] | None:
     command = _e_openfoam_tool("rhoPimpleFoam")
     if command is None:
         return None
+    if os.environ.get("ETOOLS_E_MOCK_SOLVERS") == "1":
+        return command
     bashrc = "/usr/lib/openfoam/openfoam2512/etc/bashrc"
     quoted = " ".join(shlex.quote(p) for p in command)
     if Path(bashrc).is_file():
@@ -475,37 +514,166 @@ def _latest_scalar(workdir: Path, name: str) -> Path | None:
     return sorted(found)[-1]
 
 
-def sample_e_fluid_probes(out: Path) -> dict[str, Any]:
-    """SI p and T from later-than-0 time dirs. Patch is inner_wall."""
-    from engineering_tools.damper_cfd import parse_internal_field_p
+def _foam_list_body(text: str) -> str:
+    """Inner text of the first count+(...) polyMesh list."""
+    match = re.search(r"(?m)^(\d+)\s*\n\(", text)
+    if match is None:
+        return ""
+    start = match.end() - 1
+    depth = 0
+    for index, char in enumerate(text[start:], start=start):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1 : index]
+    return ""
 
-    p_path = _latest_scalar(out, "p")
-    t_path = _latest_scalar(out, "T")
-    center = _inner_wall_center_m(out)
-    if p_path is None or t_path is None or center is None:
-        return {}
-    pressure = parse_internal_field_p(p_path.read_text(encoding="utf-8", errors="replace"))
-    temperature = parse_internal_field_p(t_path.read_text(encoding="utf-8", errors="replace"))
+
+def _parse_points(text: str) -> list[list[float]]:
+    body = _foam_list_body(text)
+    points: list[list[float]] = []
+    for match in re.finditer(r"\(([^)]+)\)", body):
+        nums = [float(tok) for tok in match.group(1).split()]
+        if len(nums) >= 3:
+            points.append(nums[:3])
+    return points
+
+
+def _parse_faces(text: str) -> list[list[int]]:
+    body = _foam_list_body(text)
+    faces: list[list[int]] = []
+    for match in re.finditer(r"(\d+)\s*\(([^)]*)\)", body):
+        faces.append([int(tok) for tok in match.group(2).split()])
+    return faces
+
+
+def _parse_owner(text: str) -> list[int]:
+    body = _foam_list_body(text)
+    return [int(tok) for tok in body.split() if tok.lstrip("-").isdigit()]
+
+
+def _patch_face_range(boundary_text: str, name: str) -> tuple[int, int] | None:
+    match = re.search(rf"\b{re.escape(name)}\s*\{{", boundary_text)
+    if match is None:
+        return None
+    body = boundary_text[match.end() :]
+    end = body.find("}")
+    if end < 0:
+        return None
+    block = body[:end]
+    n_faces = re.search(r"nFaces\s+(\d+)", block)
+    start_face = re.search(r"startFace\s+(\d+)", block)
+    if n_faces is None or start_face is None:
+        return None
+    return int(start_face.group(1)), int(n_faces.group(1))
+
+
+def _cell_pressures(p_text: str, n_cells: int) -> list[float] | None:
+    """Owner-cell p from latest volScalarField. Does not read T."""
+    if n_cells <= 0:
+        return None
+    if re.search(r"internalField\s+nonuniform\s+List<scalar>", p_text):
+        body = _foam_list_body(p_text[p_text.find("internalField") :])
+        values = [float(tok) for tok in body.split() if tok not in {"(", ")"}]
+        if len(values) < n_cells:
+            return None
+        return values[:n_cells]
+    uniform = re.search(r"internalField\s+uniform\s+([-+0-9.eE]+)", p_text)
+    if uniform is None:
+        return None
+    return [float(uniform.group(1))] * n_cells
+
+
+def _face_area(points: list[list[float]], ids: list[int]) -> list[float]:
+    if len(ids) < 3 or any(nid >= len(points) for nid in ids):
+        return [0.0, 0.0, 0.0]
+    origin = points[ids[0]]
+    acc = [0.0, 0.0, 0.0]
+    for index in range(1, len(ids) - 1):
+        a = [points[ids[index]][axis] - origin[axis] for axis in range(3)]
+        b = [points[ids[index + 1]][axis] - origin[axis] for axis in range(3)]
+        acc[0] += a[1] * b[2] - a[2] * b[1]
+        acc[1] += a[2] * b[0] - a[0] * b[2]
+        acc[2] += a[0] * b[1] - a[1] * b[0]
+    return [0.5 * component for component in acc]
+
+
+def integrate_inner_wall_pressure_force(workdir: Path) -> dict[str, Any] | None:
+    """Absolute p*Sf on complete face.inner_wall. Net and L1; SI newtons.
+
+    Agents: OpenFOAM Sf is outward from the fluid. p*Sf is the pressure load
+    on that patch (same applied-load family as CalculiX interface FORC/CLOAD).
+    Net vector nearly cancels on the cylinder; L1 of ||p*Sf|| is the mapping
+    size compared to sum ||FORC||. Gauge p-p_ref is not used: live p is ~p_ref
+    so gauge L1 is identically 0 and is not the coupled Force.
+    """
+    mesh = Path(workdir) / "constant" / "polyMesh"
+    p_path = _latest_scalar(Path(workdir), "p")
+    needed = [mesh / "points", mesh / "faces", mesh / "owner", mesh / "boundary"]
+    if p_path is None or any(not path.is_file() for path in needed):
+        return None
+    points = _parse_points(needed[0].read_text(encoding="utf-8", errors="replace"))
+    faces = _parse_faces(needed[1].read_text(encoding="utf-8", errors="replace"))
+    owner = _parse_owner(needed[2].read_text(encoding="utf-8", errors="replace"))
+    span = _patch_face_range(needed[3].read_text(encoding="utf-8", errors="replace"), OF_PATCH)
+    if span is None or not points or not faces or not owner:
+        return None
+    start, n_faces = span
+    end = start + n_faces
+    if n_faces <= 0 or end > len(faces) or end > len(owner):
+        return None
+    n_cells = max(owner) + 1 if owner else 0
+    pressures = _cell_pressures(p_path.read_text(encoding="utf-8", errors="replace"), n_cells)
+    if pressures is None:
+        return None
+    fx = fy = fz = 0.0
+    l1 = 0.0
+    for face_id in range(start, end):
+        cell = owner[face_id]
+        if cell < 0 or cell >= len(pressures):
+            return None
+        area = _face_area(points, faces[face_id])
+        px, py, pz = pressures[cell] * area[0], pressures[cell] * area[1], pressures[cell] * area[2]
+        fx += px
+        fy += py
+        fz += pz
+        l1 += math.sqrt(px * px + py * py + pz * pz)
     return {
-        "face.inner_wall.pressure": {
-            "value": pressure,
-            "unit": "Pa",
-            "entity_id": CAD_FACE,
-            "patch": OF_PATCH,
-            "xyz_m": list(center),
-        },
-        "face.inner_wall.temperature": {
-            "value": temperature,
-            "unit": "K",
-            "entity_id": CAD_FACE,
-            "patch": OF_PATCH,
-            "xyz_m": list(center),
-        },
-        "face.inner_wall.heat_flux": {
-            "value": 0.0,
-            "unit": "W/m2",
-            "entity_id": CAD_FACE,
-            "note": "sampled placeholder; live XML is FSI Force/Displacement",
-        },
+        "value": l1,
+        "unit": "N",
+        "entity_id": CAD_FACE,
+        "kind": "integrated_traction_magnitude",
+        "l1_N": l1,
+        "net_components_N": [fx, fy, fz],
+        "net_magnitude_N": math.sqrt(fx * fx + fy * fy + fz * fz),
+        "components_N": [fx, fy, fz],
+        "n_faces": n_faces,
+        "endpoint": "reconstructed_p_Sf_pressure_only",
+        "limitation": "pressure-only p*Sf reconstruction; not proven adapter Force write",
     }
+
+def sample_e_fluid_probes(out: Path) -> dict[str, Any]:
+    """Interface location count from tagged msh plus wall pressure force. Not T."""
+    from engineering_tools.e_msh2 import interface_triangle_count
+
+    workdir = Path(out)
+    msh = workdir / "fluid.msh"
+    probes: dict[str, Any] = {}
+    if msh.is_file():
+        text = msh.read_text(encoding="utf-8", errors="replace")
+        n_loc = interface_triangle_count(text, CAD_FACE)
+        if n_loc > 0:
+            probes["face.inner_wall.interface_locations"] = {
+                "value": float(n_loc),
+                "unit": "1",
+                "entity_id": CAD_FACE,
+                "patch": OF_PATCH,
+                "locations": "faceCenters",
+            }
+    force = integrate_inner_wall_pressure_force(workdir)
+    if force is not None:
+        probes["face.inner_wall.fluid_integrated_force"] = force
+    return probes
 

@@ -130,10 +130,33 @@ def test_fsi_and_coupling_c_call_scenario_with_coupling_c(tmp_path: Path, monkey
 
 def test_e_reference_scenario_cli(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
+    monkeypatch.setattr("engineering_tools.e_facade._authoritative_live", lambda: False)
+    monkeypatch.delenv("ETOOLS_E_MOCK_SOLVERS", raising=False)
     project = init_project(tmp_path / "e-part", name="E")
     code = main(["scenario", "e-reference", "--coupling", "e", "--project", str(project)])
+    assert code == 1
+    session_path = project / "artifacts" / "scenario-e-reference" / "e-session.json"
+    assert session_path.is_file()
+    import json
+
+    session = json.loads(session_path.read_text(encoding="utf-8"))
+    assert session["e_ok"] is False
+    assert session["status"] == "missing"
+
+
+def test_e_reference_dry_run_cli(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "etools-home"))
+    monkeypatch.setattr("engineering_tools.e_facade._authoritative_live", lambda: False)
+    project = init_project(tmp_path / "e-dry", name="E")
+    code = main(["scenario", "e-reference", "--coupling", "e", "--dry-run", "--project", str(project)])
     assert code == 0
-    assert (project / "artifacts" / "scenario-e-reference" / "e-session.json").is_file()
+    import json
+
+    session = json.loads(
+        (project / "artifacts" / "scenario-e-reference" / "e-session.json").read_text(encoding="utf-8")
+    )
+    assert session["e_ok"] is False
+    assert session["status"] == "dry-run"
 
 
 def test_damper_rejects_coupling_e(tmp_path: Path, monkeypatch, capsys) -> None:

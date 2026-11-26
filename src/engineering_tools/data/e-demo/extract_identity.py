@@ -1,4 +1,4 @@
-# engineering-tools MIT — FreeCAD STEP → canonical E identity JSON.
+# engineering-tools MIT. FreeCAD STEP to canonical E identity JSON.
 # Agents: run via e_cad with env ETOOLS_E_STEP and ETOOLS_E_OUT.
 # Labels body.gas / body.shell / body.lid are preferred. If STEP dropped
 # labels, solids are classified by volume (max=gas, min=lid, rest=shell).

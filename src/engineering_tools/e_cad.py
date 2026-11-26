@@ -4,7 +4,7 @@ Agents: entity_id and topology_version come from CAD identity, never from
 mesh node counts. Path None loads data/e-demo/identity.json (CI without
 FreeCAD). A .step file requires FreeCADCmd: extract_identity.py assigns
 canonical IDs (body.gas/shell/lid, face.inner_wall). Missing FreeCAD is
-missing — never damper hex writers. Changed STEP bytes bump topology_version;
+missing. Damper hex writers are not a fallback. Changed STEP bytes bump topology_version;
 remesh kwargs are ignored.
 """
 
@@ -177,9 +177,9 @@ def import_identity(
 ) -> dict[str, Any]:
     """Import B-rep identity. mesh is accepted and ignored so remesh cannot change IDs.
 
-    path None → packaged e-demo fixture (used when FreeCAD is absent).
-    path to .step/.stp without FreeCAD → status missing (not damper hex).
-    path to .step/.stp with FreeCAD → extract_identity.py canonical IDs.
+    path None loads the packaged e-demo fixture, used when FreeCAD is absent.
+    A .step or .stp path without FreeCAD returns status missing, not a damper hex.
+    A .step or .stp path with FreeCAD runs extract_identity.py canonical IDs.
     """
     del mesh  # identity is CAD-only; discretization must not mint entity_id
     if path is None:

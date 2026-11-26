@@ -11,13 +11,14 @@ from typing import Optional, Sequence
 from . import __version__
 from .bom_cli import cmd_bom_dispatch
 from .hello import run_hello
-from .install import install_components
+from .couple_install import current_host, install_couple
+from .install import InstallError, install_components
 from .install_waves import INSTALL_WAVES, all_wave_component_ids, wave_component_ids
 from .jobs import append_job, read_jobs
 from .manifest import load_manifest
 from .profile import detect_profile, summarize_profile
 from .project import init_project, is_project
-from .registry import list_projects, touch_project
+from .registry import etools_home, list_projects, touch_project
 from .run import SUPPORTED_TOOLS
 from .run_cli import cmd_run_dispatch
 from .verification import hello_report_path
@@ -100,7 +101,13 @@ def _cmd_hello(args: argparse.Namespace) -> int:
 
 
 def _cmd_install(args: argparse.Namespace) -> int:
-    """Install pinned components outside the git worktree; continue on per-item failure."""
+    """Install pinned components outside the git worktree; continue on per-item failure.
+
+    `--couple` is the Ubuntu 24.04 live couple. It is not a wave and it does
+    not change the hello component recipes.
+    """
+    if args.couple:
+        return _cmd_install_couple(args)
     manifest = load_manifest()
     by_id = {item["id"]: item for item in manifest["components"]}
     selected: list[dict] = []
@@ -142,6 +149,27 @@ def _cmd_install(args: argparse.Namespace) -> int:
             f"failed={counts['failed']} ok={summary['ok']}"
         )
     return 0 if summary["ok"] else 1
+
+
+def _cmd_install_couple(args: argparse.Namespace) -> int:
+    """Apply the couple list on Ubuntu 24.04. Other hosts report it unavailable."""
+    if args.wave or args.all or args.component_id:
+        print("etools install --couple does not take a component, --wave, or --all", file=sys.stderr)
+        return 2
+    try:
+        result = install_couple(
+            destination=etools_home() / "downloads",
+            worktree_root=Path.cwd(),
+            host=current_host(),
+        )
+    except InstallError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(result["message"])
+    return 0 if result["status"] in {"installed", "unavailable"} else 1
 
 
 def _cmd_projects(args: argparse.Namespace) -> int:
@@ -241,7 +269,7 @@ def _cmd_scenario(args: argparse.Namespace) -> int:
         if req.token not in (None, "e"):
             print("e-reference only accepts --coupling e", file=sys.stderr)
             return 1
-        result = run_e_reference(root)
+        result = run_e_reference(root, dry_run=bool(getattr(args, "dry_run", False)))
         tool = "e-reference"
     else:
         result = run_damper_keyway(root, coupling=req.token)
@@ -310,6 +338,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  etools install <component-id>\n"
             "  etools install --wave 1-cad-viz\n"
             "  etools install --all\n"
+            "  etools install --couple\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -328,6 +357,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Re-fetch and re-verify even when a matching receipt exists",
+    )
+    install.add_argument(
+        "--couple",
+        action="store_true",
+        help="Install the Ubuntu 24.04 live couple from the requirements list",
     )
     install.add_argument("--json", action="store_true", help="Print JSON summary")
     install.set_defaults(func=_cmd_install)
@@ -418,6 +452,7 @@ def build_parser() -> argparse.ArgumentParser:
     scenario.add_argument("--coupling", default=None, help="C coupler (c), D damper FSI (d), or E CAD graph (e)")
     scenario.add_argument("--fsi", action="store_true", help="Alias for --coupling c")
     scenario.add_argument("--json", action="store_true", help="Print JSON result")
+    scenario.add_argument("--dry-run", action="store_true", help="Stage E XML/meshes without claiming couple success")
     scenario.set_defaults(func=_cmd_scenario)
 
     return parser

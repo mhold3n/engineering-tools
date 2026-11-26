@@ -30,7 +30,7 @@ def mm_to_m(xyz_mm: list[float]) -> list[float]:
 
 
 def request_capability(name: str) -> dict[str, Any]:
-    """Resolve a named C capability; unknown → broken, unavailable → missing."""
+    """Resolve a named C capability. Unknown is broken. Unavailable is missing."""
     state = CAPABILITIES.get(name)
     if state is None:
         return {"status": "broken", "detail": f"unknown capability: {name}"}

@@ -1,7 +1,7 @@
 """Phase E physics-specific mesh metadata bound to canonical entities.
 
 Agents: this is discretization identity, not a mesher. Records are synthetic
-JSON metadata (mesh_id, participant, source topology_version, entity→mesh-set
+JSON metadata (mesh_id, participant, source topology_version, entity to mesh-set
 bindings, quality, refinement). Fluid and structural patches on the same
 canonical face may have unequal node counts. Never call Gmsh here. Stale
 topology_version vs the current model is broken; missing face binding is broken.
@@ -9,7 +9,21 @@ topology_version vs the current model is broken; missing face binding is broken.
 
 from __future__ import annotations
 
+import math
 from typing import Any
+
+
+def finite_positive_mesh_size(h_max: float) -> bool:
+    """A geo file may carry only a finite size above zero.
+
+    Callers pass h_max in from outside the mesher. A negative, zero, or
+    non-finite size is refused here, before any geo text is written.
+    """
+    try:
+        size = float(h_max)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(size) and size > 0
 
 
 def make_mesh_record(
@@ -89,7 +103,10 @@ def validate_interface_meshes(
     canonical_face_id: str,
     current_topology_version: int | None = None,
 ) -> dict[str, Any]:
-    """Independent participant meshes may share a face with unequal node counts."""
+    """Independent participant meshes share a CAD face; counts may be equal or not.
+
+    Agents: independence is separate generators + mapping, not unequal totals.
+    """
     if not canonical_face_id:
         return _broken("canonical_face_id required")
     if not isinstance(meshes, list) or len(meshes) < 2:
@@ -107,5 +124,4 @@ def validate_interface_meshes(
                     node_counts.append(int(binding["node_count"]))
         if not bound:
             return _broken(f"mesh {mesh.get('mesh_id')} missing binding to {canonical_face_id}")
-    # Unequal node_counts are valid; conformal coincidence is not required.
-    return _ok(f"interface {canonical_face_id} node_counts={node_counts}")
+    return _ok(f"interface {canonical_face_id} discretizations={node_counts}")

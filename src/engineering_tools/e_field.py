@@ -11,7 +11,7 @@ from typing import Any
 
 FIELD_KINDS = frozenset({"scalar", "vector", "tensor"})
 
-# Quantity id → (rank, SI unit token). Rank must match field kind.
+# Quantity id to (rank, SI unit token). Rank must match field kind.
 QUANTITIES: dict[str, tuple[str, str]] = {
     "displacement": ("vector", "m"),
     "traction": ("vector", "Pa"),

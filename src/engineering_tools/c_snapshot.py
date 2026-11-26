@@ -3,7 +3,7 @@
 Comments for other agents: freeze_ab_snapshot copies product-state.json and
 scenario-report.json from src into dest without modifying src. The returned
 digest is SHA-256 hex over raw product-state.json bytes, a single newline (0x0A),
-then raw scenario-report.json bytes — not a JSON merge. Missing either source
+then raw scenario-report.json bytes. This is not a JSON merge. Missing either source
 file raises FileNotFoundError (callers map to C broken).
 """
 

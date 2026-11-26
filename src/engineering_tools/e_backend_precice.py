@@ -1,16 +1,16 @@
-"""Phase E compiler: coupling policy → preCICE 3 XML artifact.
+"""Phase E compiler. A coupling policy becomes a preCICE 3 XML artifact.
 
-Agents: policy is source of truth (e_policy). This file only serializes.
+Agents: the input is the policy from e_policy. This file only serializes.
 Do not edit c_backend_precice.default_policy or tight_d_policy. Do not wrap
 XML in <solver-interface>. Each <mesh> has dimensions="3". m2n uses
-acceptor/connector (not from/to). No <solver:…/> tags.
+acceptor/connector, not from/to. No solver tags.
 
 OpenFOAM-style force is data name Force, never Traction. Aitken lists only
-policy["aitken_data"], already restricted to second→first in e_policy.
+policy["aitken_data"], already restricted to second-to-first writes in e_policy.
 
-one-way / explicit two-way → coupling-scheme:serial-explicit (no
-max-iterations, no relative-convergence-measure, no Aitken).
-implicit two-way / multirate implicit → serial-implicit with those markers.
+one-way and explicit two-way use coupling-scheme:serial-explicit. That scheme
+has no max-iterations, no relative-convergence-measure, and no Aitken.
+implicit two-way and multirate implicit use serial-implicit with those markers.
 multirate adds substeps="true" on exchanges.
 """
 
@@ -28,8 +28,9 @@ _RELATIVE_CONVERGENCE_LIMIT = "1.0e-4"
 def generate_e_precice_config(policy: dict[str, Any]) -> str:
     """Build preCICE 3 XML from a compiled E policy.
 
-    Raises ValueError if the policy is not status ok. Callers should compile
-    first; this function does not invent a weaker scheme on failure.
+    Agents: Heat-Flux lives on Solid mesh interface-faces (faces-mesh / *DFLUX).
+    Displacement, Force, and Temperature stay on nodes mesh interface.
+    Heat-Flux is never use-data or write/read on interface.
     """
     if policy.get("status") != "ok":
         raise ValueError(policy.get("detail") or "coupling policy is not ok")
@@ -37,7 +38,6 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
         raise ValueError(f"E preCICE backend cannot emit {policy.get('backend')}")
 
     participants: list[dict[str, str]] = policy["participants"]
-    mesh_name = str(policy["mesh_name"])
     exchanges: list[dict[str, Any]] = policy["exchanges"]
     time_window = float(policy["time_window"])
     max_iterations = int(policy["max_iterations"])
@@ -46,10 +46,11 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
     second = participants[1]
     first_name = escape(first["name"])
     second_name = escape(second["name"])
-    mesh = escape(mesh_name)
-    second_mesh = escape(f"{mesh_name}-fluid")
+    mesh = escape(str(policy["mesh_name"]))
+    second_mesh = escape(f"{policy['mesh_name']}-fluid")
+    faces = "interface-faces"
+    has_heat = any(str(ex["precice_name"]) == "Heat-Flux" for ex in exchanges)
 
-    # Unique (precice_name, rank) in exchange order.
     data_decls: list[tuple[str, str]] = []
     seen: set[str] = set()
     for ex in exchanges:
@@ -65,46 +66,60 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
         written_by[ex["from"]].add(ex["precice_name"])
         read_by[ex["to"]].add(ex["precice_name"])
 
+    node_names = [name for name, _rank in data_decls if name != "Heat-Flux"]
+
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         "<precice-configuration>",
     ]
     for name, rank in data_decls:
-        ename = escape(name)
-        lines.append(f'  <data:{rank} name="{ename}"/>')
+        lines.append(f'  <data:{rank} name="{escape(name)}"/>')
 
-    def _mesh_block(mesh_xml_name: str) -> list[str]:
+    def _mesh_block(mesh_xml_name: str, names: list[str]) -> list[str]:
         block = [f'  <mesh name="{mesh_xml_name}" dimensions="3">']
-        for name, _rank in data_decls:
+        for name in names:
             block.append(f'    <use-data name="{escape(name)}"/>')
         block.append("  </mesh>")
         return block
 
-    lines.extend(_mesh_block(mesh))
-    lines.extend(_mesh_block(second_mesh))
+    lines.extend(_mesh_block(mesh, node_names))
+    if has_heat:
+        lines.extend(_mesh_block(faces, ["Heat-Flux"]))
+    lines.extend(_mesh_block(second_mesh, [name for name, _rank in data_decls]))
+
+    def _solid_mesh(name: str) -> str:
+        return faces if name == "Heat-Flux" else mesh
 
     lines.append(f'  <participant name="{first_name}">')
     lines.append(f'    <provide-mesh name="{mesh}"/>')
+    if has_heat:
+        lines.append(f'    <provide-mesh name="{faces}"/>')
     for name, _rank in data_decls:
         if name in written_by[first["name"]]:
-            lines.append(f'    <write-data name="{escape(name)}" mesh="{mesh}"/>')
+            lines.append(f'    <write-data name="{escape(name)}" mesh="{_solid_mesh(name)}"/>')
         if name in read_by[first["name"]]:
-            lines.append(f'    <read-data name="{escape(name)}" mesh="{mesh}"/>')
+            lines.append(f'    <read-data name="{escape(name)}" mesh="{_solid_mesh(name)}"/>')
     lines.append("  </participant>")
 
     lines.append(f'  <participant name="{second_name}">')
     lines.append(f'    <provide-mesh name="{second_mesh}"/>')
     lines.append(f'    <receive-mesh name="{mesh}" from="{first_name}"/>')
+    if has_heat:
+        lines.append(f'    <receive-mesh name="{faces}" from="{first_name}"/>')
     for name, _rank in data_decls:
         if name in written_by[second["name"]]:
             lines.append(f'    <write-data name="{escape(name)}" mesh="{second_mesh}"/>')
         if name in read_by[second["name"]]:
             lines.append(f'    <read-data name="{escape(name)}" mesh="{second_mesh}"/>')
-    # Conservative on extensive writes (Force, Heat-Flux); consistent on reads.
     lines.append(
         f'    <mapping:nearest-neighbor direction="write" '
         f'from="{second_mesh}" to="{mesh}" constraint="conservative"/>'
     )
+    if has_heat:
+        lines.append(
+            f'    <mapping:nearest-neighbor direction="write" '
+            f'from="{second_mesh}" to="{faces}" constraint="conservative"/>'
+        )
     lines.append(
         f'    <mapping:nearest-neighbor direction="read" '
         f'from="{mesh}" to="{second_mesh}" constraint="consistent"/>'
@@ -126,21 +141,24 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
     if implicit:
         lines.append(f'      <max-iterations value="{max_iterations}"/>')
         for name, _rank in data_decls:
+            cmesh = faces if name == "Heat-Flux" else mesh
             lines.append(
                 f'      <relative-convergence-measure data="{escape(name)}" '
-                f'mesh="{mesh}" limit="{_RELATIVE_CONVERGENCE_LIMIT}"/>'
+                f'mesh="{cmesh}" limit="{_RELATIVE_CONVERGENCE_LIMIT}"/>'
             )
         aitken = [str(n) for n in policy.get("aitken_data") or []]
         if aitken:
             lines.append('      <min-iterations value="2"/>')
             lines.append("      <acceleration:aitken>")
             for name in aitken:
-                lines.append(f'        <data name="{escape(name)}" mesh="{mesh}"/>')
+                amesh = faces if name == "Heat-Flux" else mesh
+                lines.append(f'        <data name="{escape(name)}" mesh="{amesh}"/>')
             lines.append('        <initial-relaxation value="0.5"/>')
             lines.append("      </acceleration:aitken>")
     for ex in exchanges:
+        ex_mesh = faces if str(ex["precice_name"]) == "Heat-Flux" else mesh
         lines.append(
-            f'      <exchange data="{escape(ex["precice_name"])}" mesh="{mesh}" '
+            f'      <exchange data="{escape(ex["precice_name"])}" mesh="{ex_mesh}" '
             f'from="{escape(ex["from"])}" to="{escape(ex["to"])}"{substeps}/>'
         )
     lines.append(f"  </coupling-scheme:{scheme}>")

@@ -2,10 +2,11 @@
 
 from pathlib import Path
 
+import pytest
+
 from engineering_tools.e_adapters import fluid_participant_input, structural_participant_input
 from engineering_tools.e_facade import run_e_session
 from engineering_tools.e_scenario import reference_model, run_e_reference
-from engineering_tools.e_verify import compare_refinement
 
 
 def test_structural_and_fluid_adapters_from_reference_model() -> None:
@@ -18,15 +19,28 @@ def test_structural_and_fluid_adapters_from_reference_model() -> None:
     assert fluid["equation_of_state"] == "perfect_gas"
 
 
-def test_run_e_session_ok_with_finite_probes(tmp_path: Path) -> None:
+def test_run_e_session_without_live_kernels_is_missing(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("engineering_tools.e_facade._authoritative_live", lambda: False)
+    monkeypatch.delenv("ETOOLS_E_MOCK_SOLVERS", raising=False)
     session = run_e_session(tmp_path / "e-out", reference_model())
-    assert session["e_ok"] is True
+    assert session["e_ok"] is False
+    assert session["status"] == "missing"
     assert (tmp_path / "e-out" / "e-session.json").is_file()
-    assert "Displacement" in (tmp_path / "e-out" / "precice-config.xml").read_text()
-    assert "Heat-Flux" in (tmp_path / "e-out" / "precice-config.xml").read_text()
-    probes = session["probes"]
-    assert probes["face.inner_wall.pressure"]["value"] > 0
-    assert probes["face.inner_wall.temperature"]["value"] > 0
+
+
+def test_run_e_session_probes_are_not_engineering_ok(tmp_path: Path) -> None:
+    session = run_e_session(tmp_path / "e-probes", reference_model(), probes={
+        "face.inner_wall.displacement": {"value": 1.2e-5, "unit": "m", "entity_id": "face.inner_wall"},
+        "face.inner_wall.integrated_force": {"value": 12.0, "unit": "N", "entity_id": "face.inner_wall"},
+    })
+    assert session["e_ok"] is False
+    assert session["status"] == "mock"
+    assert session["mapping_error"]["relative"] is None
+    assert "Displacement" in (tmp_path / "e-probes" / "precice-config.xml").read_text()
+    assert "Heat-Flux" in (tmp_path / "e-probes" / "precice-config.xml").read_text()
+    assert session["capabilities_used"] == ["fake_history", "checkpoint_restore"]
+    assert session["coupling_convergence"] is False
+    assert session["solver_convergence"] is None
 
 
 def test_run_e_session_broken_when_mapped_fields_are_zero(tmp_path: Path) -> None:
@@ -43,11 +57,14 @@ def test_run_e_session_broken_when_mapped_fields_are_zero(tmp_path: Path) -> Non
 
 def test_run_e_reference_writes_session(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr("engineering_tools.e_facade._authoritative_live", lambda: False)
+    monkeypatch.delenv("ETOOLS_E_MOCK_SOLVERS", raising=False)
     from engineering_tools.project import init_project
 
     project = init_project(tmp_path / "proj", name="e")
     result = run_e_reference(project)
-    assert result["ok"] is True
+    assert result["ok"] is False
+    assert result["session"]["e_ok"] is False
     assert (Path(result["workdir"]) / "e-session.json").is_file()
 
 
@@ -61,32 +78,33 @@ def test_missing_thermal_pair_is_not_the_reference_model() -> None:
     assert "compressible_fluid" in physics
 
 
-def test_refinement_within_band() -> None:
-    baseline = {
-        "peak_wall_pressure": 1.01e5,
-        "integrated_wall_force": 12.0,
-        "peak_structural_displacement": 1.2e-5,
-        "critical_von_mises": 8.0e7,
-        "wall_temperature": 350.0,
-        "integrated_heat_transfer": 40.0,
-    }
-    refined = dict(baseline)
-    refined["peak_wall_pressure"] = 1.05e5
-    got = compare_refinement(baseline, refined, relative_tolerance=0.2)
-    assert got["ok"] is True
+def test_mechanical_verify_rejects_hardcoded_zero_mapping() -> None:
+    from engineering_tools.e_verify import verify_mechanical_couple
 
-
-def test_refinement_outside_band_fails() -> None:
-    baseline = {
-        "peak_wall_pressure": 1.0e5,
-        "integrated_wall_force": 10.0,
-        "peak_structural_displacement": 1.0e-5,
-        "critical_von_mises": 1.0e8,
-        "wall_temperature": 300.0,
-        "integrated_heat_transfer": 10.0,
-    }
-    refined = dict(baseline)
-    refined["peak_wall_pressure"] = 2.0e5
-    got = compare_refinement(baseline, refined, relative_tolerance=0.2)
+    got = verify_mechanical_couple(
+        windows_ok=True,
+        probes={
+            "face.inner_wall.displacement": {"value": 1e-8, "unit": "m"},
+            "face.inner_wall.integrated_force": {"value": 9.0, "unit": "N", "l1_N": 9.0},
+        },
+        mapping_residual=None,
+        log_text="Time window completed\n",
+    )
     assert got["ok"] is False
-    assert got["status"] == "broken"
+    assert got["mapping_error"]["relative"] is None
+
+
+def test_mechanical_verify_accepts_force_disp_and_residual() -> None:
+    from engineering_tools.e_verify import verify_mechanical_couple
+
+    got = verify_mechanical_couple(
+        windows_ok=True,
+        probes={
+            "face.inner_wall.displacement": {"value": 1e-8, "unit": "m"},
+            "face.inner_wall.integrated_force": {"value": 9.0, "unit": "N", "l1_N": 9.0},
+        },
+        mapping_residual=1.2e-5,
+        log_text="relative convergence measure is not the mapping residual\n",
+    )
+    assert got["ok"] is True
+    assert got["mapping_error"]["relative"] == pytest.approx(1.2e-5)

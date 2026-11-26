@@ -58,7 +58,7 @@ def test_compressible_fluid_metadata_does_not_need_run_gas_special() -> None:
 def test_one_way_omits_implicit_iteration_markers() -> None:
     one = compile_coupling_policy(
         kind="one-way",
-        exchanges=[{"quantity": "displacement", "from": "Solid", "to": "Fluid"}],
+        exchanges=[{"quantity": "force", "from": "Fluid", "to": "Solid"}],
     )
     two = compile_coupling_policy(kind="implicit two-way")
     one_xml = generate_e_precice_config(one)
@@ -85,7 +85,7 @@ def test_invalid_policy_backend_combo_fails() -> None:
         exchanges=[{"quantity": "displacement", "from": "Solid", "to": "Fluid"}],
     )
     assert aitken_on_one_way["status"] == "broken"
-    # First→second Displacement Aitken is the C/D illegal case.
+    # First to second Displacement Aitken is the C/D illegal case.
     illegal = compile_coupling_policy(
         kind="implicit two-way",
         aitken_data=["Displacement"],
@@ -122,6 +122,37 @@ def test_explicit_and_multirate_kinds_compile() -> None:
     assert 'substeps="true"' not in generate_e_precice_config(
         compile_coupling_policy(kind="implicit two-way")
     )
+
+
+def test_one_way_is_fluid_first_and_rejects_solid_displacement() -> None:
+    """The outline step. Implicit two-way is a different kind and stays unchanged."""
+    from engineering_tools.e_interaction import FLUID_WALL_QUANTITIES
+
+    policy = compile_coupling_policy(kind="one-way")
+    assert policy["status"] == "ok"
+    assert [item["name"] for item in policy["participants"]] == ["Fluid", "Solid"]
+    assert {item["quantity"] for item in policy["exchanges"]} == set(FLUID_WALL_QUANTITIES)
+    assert all(item["from"] == "Fluid" and item["to"] == "Solid" for item in policy["exchanges"])
+    rejected = compile_coupling_policy(
+        kind="one-way",
+        exchanges=[{"quantity": "displacement", "from": "Solid", "to": "Fluid"}],
+    )
+    assert rejected["status"] == "broken"
+    assert "displacement" in rejected["detail"]
+
+
+def test_live_policy_xml_is_fluid_first_without_solid_displacement() -> None:
+    """Live policy is the outline. The graph policy is still implicit two-way."""
+    from engineering_tools.e_facade import _compile_live_policy
+
+    policy = _compile_live_policy(windows=2, time_window=0.01)
+    assert policy["status"] == "ok"
+    assert policy["kind"] == "one-way"
+    xml = generate_e_precice_config(policy)
+    assert '<participants first="Fluid" second="Solid"/>' in xml
+    assert 'from="Solid"' not in xml
+    assert 'exchange data="Displacement"' not in xml
+    assert 'write-data name="Displacement"' not in xml
 
 
 def test_precice3_shape_and_aitken_only_second_to_first() -> None:

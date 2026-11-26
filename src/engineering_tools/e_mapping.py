@@ -4,7 +4,7 @@ Agents: this is geometric transfer only (no solvers, no preCICE). Source and
 target must share entity_id + topology_version. Conservative maps preserve
 integrals (pressure load, heat flow). Displacement uses consistent lookup at
 the target centroid. mapping_error is conservation/geometry; coupling_residual
-is whatever the caller supplied — never alias those dicts.
+is whatever the caller supplied. Do not alias those dicts.
 """
 
 from __future__ import annotations
@@ -176,7 +176,7 @@ def _intersect(
 def _clip_polygon(
     subject: list[tuple[float, float]], clipper: list[tuple[float, float]]
 ) -> list[tuple[float, float]]:
-    """Sutherland–Hodgman. Clipper must be CCW. Agents: overlap area, not nodes."""
+    """Sutherland-Hodgman. Clipper must be CCW. Agents: overlap area, not nodes."""
     output = list(subject)
     nclip = len(clipper)
     for i in range(nclip):
@@ -287,7 +287,7 @@ def map_surface_field(
     """Transfer one QUANTITY between non-conformal cells on the same CAD face.
 
     pressure / heat_flux: overlap-area conservative. displacement: centroid
-    containment (constant field → identical vector on every target cell).
+    containment. A constant field becomes the same vector on every target cell.
     """
     residual_out = _copy_residual(coupling_residual)
     spec = QUANTITIES.get(quantity)

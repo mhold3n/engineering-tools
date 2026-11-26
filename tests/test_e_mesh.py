@@ -43,7 +43,15 @@ def test_mesh_record_stores_required_fields() -> None:
     assert "refinement" in record
 
 
-def test_unequal_interface_node_counts_on_same_canonical_face_are_valid() -> None:
+def test_equal_interface_counts_on_same_canonical_face_are_valid() -> None:
+    fluid = _mesh(mesh_id="fluid.iface", participant="Fluid", node_count=9)
+    solid = _mesh(mesh_id="solid.iface", participant="Solid", node_count=9)
+    got = validate_interface_meshes(
+        [fluid, solid],
+        canonical_face_id="face.wall",
+        current_topology_version=1,
+    )
+    assert got["status"] == "ok"
     fluid = _mesh(mesh_id="fluid.iface", participant="Fluid", node_count=40)
     solid = _mesh(mesh_id="solid.iface", participant="Solid", node_count=9)
     got = validate_interface_meshes(

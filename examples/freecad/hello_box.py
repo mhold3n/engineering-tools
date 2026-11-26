@@ -1,4 +1,4 @@
-# engineering-tools MIT sample — headless FreeCAD 10mm box
+# engineering-tools MIT sample. Headless FreeCAD 10mm box
 # Calls FreeCAD (LGPL); this script itself is MIT (c) 2026 mhold3n
 # Usage: FreeCADCmd hello_box.py [optional_output.FCStd]
 import sys
