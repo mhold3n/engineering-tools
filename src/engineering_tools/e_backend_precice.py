@@ -28,9 +28,13 @@ _RELATIVE_CONVERGENCE_LIMIT = "1.0e-4"
 def generate_e_precice_config(policy: dict[str, Any]) -> str:
     """Build preCICE 3 XML from a compiled E policy.
 
-    Agents: Heat-Flux lives on Solid mesh interface-faces (faces-mesh / *DFLUX).
-    Displacement, Force, and Temperature stay on nodes mesh interface.
-    Heat-Flux is never use-data or write/read on interface.
+    Agents: mesh ownership follows the participant name, not list index.
+    Solid provides interface and interface-faces. Fluid provides
+    interface-fluid and holds mappings. A write mapping is emitted only
+    when Fluid writes that data. One-way Solid therefore has no write
+    mapping. Heat-Flux lives on interface-faces. Displacement, Force, and
+    Temperature stay on nodes mesh interface. Heat-Flux is never use-data
+    or write/read on interface.
     """
     if policy.get("status") != "ok":
         raise ValueError(policy.get("detail") or "coupling policy is not ok")
@@ -90,40 +94,53 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
     def _solid_mesh(name: str) -> str:
         return faces if name == "Heat-Flux" else mesh
 
-    lines.append(f'  <participant name="{first_name}">')
+    # List index is scheme order. Mesh ownership is the solver name.
+    # One-way puts Fluid first, and the old index rule then handed Solid
+    # the fluid mesh plus a write mapping Solid does not write.
+    by_name = {participant["name"]: participant for participant in participants}
+    solid = by_name.get("Solid", first)
+    fluid = by_name.get("Fluid", second)
+    solid_name = escape(solid["name"])
+    fluid_name = escape(fluid["name"])
+
+    lines.append(f'  <participant name="{solid_name}">')
     lines.append(f'    <provide-mesh name="{mesh}"/>')
     if has_heat:
         lines.append(f'    <provide-mesh name="{faces}"/>')
     for name, _rank in data_decls:
-        if name in written_by[first["name"]]:
+        if name in written_by[solid["name"]]:
             lines.append(f'    <write-data name="{escape(name)}" mesh="{_solid_mesh(name)}"/>')
-        if name in read_by[first["name"]]:
+        if name in read_by[solid["name"]]:
             lines.append(f'    <read-data name="{escape(name)}" mesh="{_solid_mesh(name)}"/>')
     lines.append("  </participant>")
 
-    lines.append(f'  <participant name="{second_name}">')
+    lines.append(f'  <participant name="{fluid_name}">')
     lines.append(f'    <provide-mesh name="{second_mesh}"/>')
-    lines.append(f'    <receive-mesh name="{mesh}" from="{first_name}"/>')
+    lines.append(f'    <receive-mesh name="{mesh}" from="{solid_name}"/>')
     if has_heat:
-        lines.append(f'    <receive-mesh name="{faces}" from="{first_name}"/>')
+        lines.append(f'    <receive-mesh name="{faces}" from="{solid_name}"/>')
     for name, _rank in data_decls:
-        if name in written_by[second["name"]]:
+        if name in written_by[fluid["name"]]:
             lines.append(f'    <write-data name="{escape(name)}" mesh="{second_mesh}"/>')
-        if name in read_by[second["name"]]:
+        if name in read_by[fluid["name"]]:
             lines.append(f'    <read-data name="{escape(name)}" mesh="{second_mesh}"/>')
-    lines.append(
-        f'    <mapping:nearest-neighbor direction="write" '
-        f'from="{second_mesh}" to="{mesh}" constraint="conservative"/>'
-    )
-    if has_heat:
+    fluid_writes = written_by[fluid["name"]]
+    fluid_reads = read_by[fluid["name"]]
+    if any(name != "Heat-Flux" for name in fluid_writes):
+        lines.append(
+            f'    <mapping:nearest-neighbor direction="write" '
+            f'from="{second_mesh}" to="{mesh}" constraint="conservative"/>'
+        )
+    if "Heat-Flux" in fluid_writes:
         lines.append(
             f'    <mapping:nearest-neighbor direction="write" '
             f'from="{second_mesh}" to="{faces}" constraint="conservative"/>'
         )
-    lines.append(
-        f'    <mapping:nearest-neighbor direction="read" '
-        f'from="{mesh}" to="{second_mesh}" constraint="consistent"/>'
-    )
+    if any(name != "Heat-Flux" for name in fluid_reads):
+        lines.append(
+            f'    <mapping:nearest-neighbor direction="read" '
+            f'from="{mesh}" to="{second_mesh}" constraint="consistent"/>'
+        )
     lines.append("  </participant>")
     lines.append(
         f'  <m2n:sockets acceptor="{second_name}" connector="{first_name}" '

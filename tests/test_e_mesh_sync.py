@@ -30,7 +30,8 @@ def test_mesh_sync_pair_and_missing_openfoam(tmp_path: Path) -> None:
     xml = (out / "precice-config.xml").read_text(encoding="utf-8")
     assert '<participants first="Fluid" second="Solid"/>' in xml
     assert 'exchange data="Displacement"' not in xml
-    assert 'from="Solid"' not in xml
+    assert 'from="Solid" to=' not in xml
+    assert 'write-data name="Displacement"' not in xml
     assert report["e_ok"] is False
     assert report["status"] == "missing"
     saved = (out / "mesh-sync.json").read_text(encoding="utf-8")

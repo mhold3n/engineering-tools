@@ -130,9 +130,9 @@ def test_config_yml_reads_force(tmp_path: Path) -> None:
     ident = import_identity()
     write_e_coupling_bundle(tmp_path / "e-couple", ident)
     yml = (tmp_path / "e-couple" / "e-solid" / "config.yml").read_text()
-    assert "Force" in yml
-    assert "Displacement" in yml
-    assert "Temperature" in yml
+    assert "read-data: [Force]" in yml
+    assert "write-data" not in yml
+    assert "Displacement" not in yml
     assert "Heat-Flux" in yml
     assert "faces-mesh: interface-faces" in yml
     assert "Traction" not in yml

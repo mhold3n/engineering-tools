@@ -123,7 +123,12 @@ def _sinterfacet_lines(dflux: list[str]) -> list[str] | None:
 
 
 def _write_e_solid_adapter_config(workdir: Path, config_xml: Path) -> None:
-    """Overwrite config.yml: nodes-mesh Force/U/T, faces-mesh Heat-Flux."""
+    """One-way adapter file. Solid reads Force and Heat-Flux and writes nothing.
+
+    The live policy forbids Solid displacement and temperature writes back
+    onto the fluid mesh. A write-data list here makes preCICE look for a
+    write the XML does not declare.
+    """
     precice_config = Path(config_xml).resolve()
     text = (
         "participants:\n"
@@ -132,7 +137,6 @@ def _write_e_solid_adapter_config(workdir: Path, config_xml: Path) -> None:
         "    - nodes-mesh: interface\n"
         "      patch: interface\n"
         "      read-data: [Force]\n"
-        "      write-data: [Displacement, Temperature]\n"
         "    - faces-mesh: interface-faces\n"
         "      patch: interface\n"
         "      read-data: [Heat-Flux]\n"

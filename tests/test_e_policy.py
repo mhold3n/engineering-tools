@@ -141,6 +141,12 @@ def test_one_way_is_fluid_first_and_rejects_solid_displacement() -> None:
     assert "displacement" in rejected["detail"]
 
 
+def _participant_block(xml: str, name: str) -> str:
+    start = xml.index(f'<participant name="{name}">')
+    end = xml.index("</participant>", start)
+    return xml[start:end]
+
+
 def test_live_policy_xml_is_fluid_first_without_solid_displacement() -> None:
     """Live policy is the outline. The graph policy is still implicit two-way."""
     from engineering_tools.e_facade import _compile_live_policy
@@ -150,9 +156,38 @@ def test_live_policy_xml_is_fluid_first_without_solid_displacement() -> None:
     assert policy["kind"] == "one-way"
     xml = generate_e_precice_config(policy)
     assert '<participants first="Fluid" second="Solid"/>' in xml
-    assert 'from="Solid"' not in xml
+    assert 'from="Solid" to=' not in xml
     assert 'exchange data="Displacement"' not in xml
     assert 'write-data name="Displacement"' not in xml
+
+
+def test_one_way_solid_does_not_carry_the_fluid_write_mapping() -> None:
+    """preCICE rejects a write mapping on a participant that has no write-data.
+
+    The live run aborted on Solid's mapping from interface-fluid to interface.
+    Solid provides the node mesh and only reads. Fluid writes and maps.
+    Implicit two-way keeps Fluid's write mapping.
+    """
+    from engineering_tools.e_facade import _compile_live_policy
+
+    one = generate_e_precice_config(_compile_live_policy(windows=2, time_window=0.01))
+    solid = _participant_block(one, "Solid")
+    fluid = _participant_block(one, "Fluid")
+    assert 'provide-mesh name="interface"' in solid
+    assert 'provide-mesh name="interface-fluid"' not in solid
+    assert "write-data" not in solid
+    assert 'direction="write"' not in solid
+    assert 'read-data name="Force" mesh="interface"' in solid
+    assert 'read-data name="Heat-Flux" mesh="interface-faces"' in solid
+    assert 'provide-mesh name="interface-fluid"' in fluid
+    assert 'write-data name="Force" mesh="interface-fluid"' in fluid
+    assert 'direction="write" from="interface-fluid" to="interface"' in fluid
+    assert 'direction="read"' not in fluid
+    two = generate_e_precice_config(compile_coupling_policy(kind="implicit two-way"))
+    two_fluid = _participant_block(two, "Fluid")
+    assert 'write-data name="Force" mesh="interface-fluid"' in two_fluid
+    assert 'direction="write" from="interface-fluid" to="interface"' in two_fluid
+    assert 'direction="read" from="interface" to="interface-fluid"' in two_fluid
 
 
 def test_precice3_shape_and_aitken_only_second_to_first() -> None:

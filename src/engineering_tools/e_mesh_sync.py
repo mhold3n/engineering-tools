@@ -59,7 +59,8 @@ def _sync_stage(pair: dict[str, Any], xml: str) -> dict[str, Any]:
         return _stage("broken", f"topology_version solid {solid_tv} fluid {fluid_tv}")
     if '<participants first="Fluid" second="Solid"/>' not in xml:
         return _stage("broken", "live XML is not Fluid first")
-    if 'from="Solid"' in xml or 'exchange data="Displacement"' in xml:
+    # receive-mesh from="Solid" is mesh ownership. An exchange from Solid is a write.
+    if 'from="Solid" to=' in xml or 'exchange data="Displacement"' in xml or 'write-data name="Displacement"' in xml:
         return _stage("broken", "live XML writes solid displacement")
     return _stage("ok", INNER_WALL, topology_version=solid_tv)
 
