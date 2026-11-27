@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from engineering_tools.e_adapter_calculix import CI_SOLID_MSH2, write_e_solid_inp
+from engineering_tools.e_adapter_openfoam import fluid_adapter_load_detail, write_e_fluid_fields
 from engineering_tools.e_cad import import_identity
 from engineering_tools.e_interface_map import compile_cad_interface_mapping, write_e_coupling_bundle
 def test_solid_deck_has_ninterfacen_and_zero_cload(tmp_path: Path) -> None:
@@ -136,3 +137,44 @@ def test_config_yml_reads_force(tmp_path: Path) -> None:
     assert "Heat-Flux" in yml
     assert "faces-mesh: interface-faces" in yml
     assert "Traction" not in yml
+
+
+def test_one_way_fluid_adapter_writes_heat_flux_and_does_not_read_displacement(tmp_path: Path) -> None:
+    from engineering_tools.e_adapter_openfoam import write_e_precice_adapter_config
+    from engineering_tools.e_backend_precice import generate_e_precice_config
+    from engineering_tools.e_facade import _compile_live_policy
+
+    xml_path = tmp_path / "precice-config.xml"
+    xml_path.write_text(
+        generate_e_precice_config(_compile_live_policy(windows=2, time_window=0.01)),
+        encoding="utf-8",
+    )
+    write_e_precice_adapter_config(tmp_path, xml_path)
+    text = (tmp_path / "system" / "preciceDict").read_text(encoding="utf-8")
+    assert "Heat-Flux" in text
+    assert "Force" in text
+    assert "Temperature" in text
+    assert "Displacement" not in text
+    assert "readData" not in text
+    assert "writeData" in text
+    assert "Pressure" not in xml_path.read_text(encoding="utf-8")
+
+
+def test_fluid_control_dict_aborts_when_the_adapter_library_is_missing(tmp_path: Path) -> None:
+    write_e_fluid_fields(tmp_path, t_end_s=0.02, dt_s=0.01)
+    control = (tmp_path / "system" / "controlDict").read_text(encoding="utf-8")
+    assert "errors          strict;" in control
+    assert "libpreciceAdapterFunctionObject.so" in control
+    assert "preciceAdapterFunctionObject" in control
+
+
+def test_fluid_log_names_the_missing_adapter_library() -> None:
+    log = (
+        'Could not load "libpreciceAdapterFunctionObject.so"\n'
+        "Unknown function type preciceAdapterFunctionObject\n"
+        "End\n"
+    )
+    detail = fluid_adapter_load_detail(log)
+    assert detail is not None
+    assert "libpreciceAdapterFunctionObject.so" in detail
+    assert fluid_adapter_load_detail("End\n") is None

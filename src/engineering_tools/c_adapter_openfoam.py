@@ -186,8 +186,10 @@ boundaryField
 }
 
 
-# OpenFOAM-preCICE function object. Name matches the adapter tutorial type.
-# pRef, pointDisplacement, and cellDisplacement stay in their own files.
+# OpenFOAM-preCICE function object for the C damper deck. Name matches the
+# adapter tutorial type. The E fluid deck does not use this block: it adds
+# `errors strict` so a missing library aborts rhoPimpleFoam. pRef,
+# pointDisplacement, and cellDisplacement stay in their own files.
 _ADAPTER_FUNCTION = """
 functions
 {
