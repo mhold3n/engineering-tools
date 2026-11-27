@@ -17,8 +17,19 @@
       "id": "mpi",
       "package": "openmpi-bin",
       "locators": ["mpirun"]
+    },
+    {
+      "id": "pkgconf",
+      "package": "pkgconf",
+      "locators": ["pkg-config"]
     }
   ],
+  "openfoam_adapter": {
+    "id": "openfoam-adapter",
+    "version": "1.4.0",
+    "url": "https://github.com/precice/openfoam-adapter/releases/download/v1.4.0/openfoam-adapter-1.4.0-OpenFOAMv1812-v2606-newer.tar.gz",
+    "library": "libpreciceAdapterFunctionObject.so"
+  },
   "openfoam": {
     "id": "openfoam-esi",
     "package": "openfoam2512-default",

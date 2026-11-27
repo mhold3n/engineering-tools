@@ -38,17 +38,29 @@ _IMPLICIT_KINDS = frozenset({"implicit two-way", "multirate implicit"})
 
 # Canonical quantity to (preCICE data name, data element kind).
 # traction becomes Force: OpenFOAM-preCICE writes Force, not Traction.
+# Heat-Flux is the wall-normal flux. Adapter v1.4.0 leaves CouplingDataUser
+# at its scalar default for that name. A vector tag makes configure abort:
+# mesh dimension equals the data dimension, so the adapter treats the tag as
+# a vector and rejects it. The field graph still stores heat_flux as a
+# 3-vector so surface mapping can integrate q·n.
 PRECICE_DATA = {
     "displacement": ("Displacement", "vector"),
     "traction": ("Force", "vector"),
     "force": ("Force", "vector"),
     "temperature": ("Temperature", "scalar"),
-    "heat_flux": ("Heat-Flux", "vector"),
+    "heat_flux": ("Heat-Flux", "scalar"),
     "pressure": ("Pressure", "scalar"),
     "velocity": ("Velocity", "vector"),
     "density": ("Density", "scalar"),
     "enthalpy": ("Enthalpy", "scalar"),
 }
+
+# OpenFOAM adapter v1.4.0 with modules FSI and CHT. These are the only names
+# that module pair can read or write. Pressure, velocity, density, and
+# enthalpy stay on the policy exchange list. Writing them into the XML makes
+# Fluid declare data the adapter never writes, so the window dies before
+# Heat-Flux is exchanged.
+OPENFOAM_ADAPTER_DATA = frozenset({"Displacement", "Force", "Temperature", "Heat-Flux"})
 
 
 def _broken(detail: str) -> dict[str, Any]:

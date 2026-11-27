@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import io
 import json
+import tarfile
 from pathlib import Path
 
 import pytest
 
 from engineering_tools.cli import main
 from engineering_tools.couple_install import (
+    ADAPTER_LIBRARY,
     VM_SMOKE,
+    adapter_build_argv,
     apt_commands,
     install_couple,
     load_couple_requirements,
@@ -21,6 +25,21 @@ from engineering_tools.manifest import load_manifest
 
 UBUNTU = {"system": "Linux", "id": "ubuntu", "version_id": "24.04"}
 MAC = {"system": "Darwin", "id": "", "version_id": ""}
+
+
+def _fetch(url: str, destination: Path) -> None:
+    """Write a deb stub, or a one-file adapter archive for the Allwmake pin."""
+    if url.endswith(".tar.gz"):
+        payload = b"#!/bin/sh\n"
+        info = tarfile.TarInfo("openfoam-adapter/Allwmake")
+        info.size = len(payload)
+        info.mode = 0o755
+        buffer = io.BytesIO()
+        with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
+            tar.addfile(info, io.BytesIO(payload))
+        destination.write_bytes(buffer.getvalue())
+        return
+    destination.write_bytes(b"deb")
 
 
 def test_couple_list_names_esi_precice_adapter_gmsh_and_mpi() -> None:
@@ -42,6 +61,11 @@ def test_couple_list_names_esi_precice_adapter_gmsh_and_mpi() -> None:
     assert data["openfoam"]["locators"] == ["rhoPimpleFoam", "gmshToFoam"]
     assert data["python_package"]["argv"] == ["pip", "install", "-e", ".[dev]"]
     assert VM_SMOKE == "not_run"
+    assert "pkgconf" in packages
+    foam_adapter = data["openfoam_adapter"]
+    assert foam_adapter["version"] == "1.4.0"
+    assert foam_adapter["url"].endswith("openfoam-adapter-1.4.0-OpenFOAMv1812-v2606-newer.tar.gz")
+    assert foam_adapter["library"] == "libpreciceAdapterFunctionObject.so"
 
 
 def test_couple_list_rejects_adapter_2_20_1() -> None:
@@ -76,6 +100,7 @@ def test_couple_commands_are_apt_and_leave_the_bootstrap_unrun() -> None:
     flat = [arg for argv in commands for arg in argv]
     assert commands[0][:4] == ["apt-get", "install", "-y", "gmsh"]
     assert "openmpi-bin" in commands[0]
+    assert "pkgconf" in commands[0]
     assert "openfoam2512-default" in commands[-1]
     assert "pip" not in flat
     assert "curl" not in flat
@@ -111,9 +136,6 @@ def test_couple_refuses_destination_inside_worktree(tmp_path: Path) -> None:
 def test_ubuntu_missing_locator_is_a_failed_install(tmp_path: Path) -> None:
     calls: list[list[str]] = []
 
-    def fetch(url: str, destination: Path) -> None:
-        destination.write_bytes(b"deb")
-
     def runner(argv: list[str]) -> int:
         calls.append(argv)
         return 0
@@ -123,7 +145,7 @@ def test_ubuntu_missing_locator_is_a_failed_install(tmp_path: Path) -> None:
         worktree_root=tmp_path / "repo",
         host=UBUNTU,
         runner=runner,
-        fetch=fetch,
+        fetch=_fetch,
         probe=lambda: {
             "rhoPimpleFoam": False,
             "gmshToFoam": False,
@@ -137,7 +159,7 @@ def test_ubuntu_missing_locator_is_a_failed_install(tmp_path: Path) -> None:
     assert result["apt_attempted"] is True
     assert result["missing"]
     assert calls
-    assert all("pip" not in arg for argv in calls for arg in argv)
+    assert all(arg != "pip" for argv in calls for arg in argv)
 
 
 def test_ubuntu_success_writes_a_receipt_outside_the_worktree(tmp_path, monkeypatch) -> None:
@@ -146,15 +168,12 @@ def test_ubuntu_success_writes_a_receipt_outside_the_worktree(tmp_path, monkeypa
     repo.mkdir()
     monkeypatch.setenv("ETOOLS_HOME", str(home))
 
-    def fetch(url: str, destination: Path) -> None:
-        destination.write_bytes(b"deb")
-
     result = install_couple(
         destination=tmp_path / "debs",
         worktree_root=repo,
         host=UBUNTU,
         runner=lambda argv: 0,
-        fetch=fetch,
+        fetch=_fetch,
         probe=lambda: {
             "rhoPimpleFoam": True,
             "gmshToFoam": True,
@@ -180,21 +199,82 @@ def test_ubuntu_success_writes_a_receipt_outside_the_worktree(tmp_path, monkeypa
 def test_ubuntu_locator_failure_writes_no_receipt(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "home"))
 
-    def fetch(url: str, destination: Path) -> None:
-        destination.write_bytes(b"deb")
-
     result = install_couple(
         destination=tmp_path / "debs",
         worktree_root=tmp_path / "repo",
         host=UBUNTU,
         runner=lambda argv: 0,
-        fetch=fetch,
+        fetch=_fetch,
         probe=lambda: {"rhoPimpleFoam": False},
     )
     assert result["status"] == "failed"
     from engineering_tools.verification import installation_for, load_installations
 
     assert installation_for("ubuntu-24.04-couple", load_installations()) is None
+
+
+def test_ubuntu_build_asks_for_allwmake_into_the_site_lib(tmp_path: Path) -> None:
+    calls: list[list[str]] = []
+
+    def runner(argv: list[str]) -> int:
+        calls.append(argv)
+        return 0
+
+    result = install_couple(
+        destination=tmp_path / "debs",
+        worktree_root=tmp_path / "repo",
+        host=UBUNTU,
+        runner=runner,
+        fetch=_fetch,
+        probe=lambda: {
+            "rhoPimpleFoam": True,
+            "gmshToFoam": True,
+            "ccx_preCICE": True,
+            "precice": True,
+            "gmsh": True,
+            "mpirun": True,
+            "pkg-config": True,
+            "openfoam_adapter": True,
+        },
+    )
+    assert result["status"] == "installed"
+    build = next(argv for argv in calls if argv and argv[0] == "bash")
+    script = build[-1]
+    assert "./Allwmake" in script
+    assert "PRECICE_OPENFOAM_TARGET_DIR=" in script
+    assert str(ADAPTER_LIBRARY.parent) in script
+    assert "curl" not in script
+    assert "wget" not in script
+    assert all(argv[0] == "apt-get" or argv[0] == "bash" for argv in calls)
+
+
+def test_ubuntu_allwmake_failure_writes_no_receipt(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ETOOLS_HOME", str(tmp_path / "home"))
+
+    def runner(argv: list[str]) -> int:
+        return 1 if argv and argv[0] == "bash" else 0
+
+    result = install_couple(
+        destination=tmp_path / "debs",
+        worktree_root=tmp_path / "repo",
+        host=UBUNTU,
+        runner=runner,
+        fetch=_fetch,
+        probe=lambda: {"openfoam_adapter": True},
+    )
+    assert result["status"] == "failed"
+    assert "Allwmake" in result["message"]
+    from engineering_tools.verification import installation_for, load_installations
+
+    assert installation_for("ubuntu-24.04-couple", load_installations()) is None
+
+
+def test_adapter_build_argv_is_the_pinned_site_lib() -> None:
+    argv = adapter_build_argv(Path("/tmp/openfoam-adapter"), ADAPTER_LIBRARY.parent)
+    assert argv[:3] == ["bash", "--noprofile", "--norc"]
+    assert argv[3] == "-c"
+    assert "./Allwmake" in argv[-1]
+    assert "add-debian-repo.sh" not in argv[-1]
 
 
 def test_cli_couple_on_macos_reports_unavailable(tmp_path, monkeypatch, capsys) -> None:

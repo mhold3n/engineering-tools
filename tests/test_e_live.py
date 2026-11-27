@@ -193,7 +193,8 @@ def test_run_e_session_path_fakes_are_not_engineering_ok(tmp_path: Path, monkeyp
     yml = (tmp_path / "e-out" / "e-solid" / "config.yml").read_text()
     assert "nodes-mesh: interface" in yml
     assert "faces-mesh: interface-faces" in yml
-    assert "Displacement, Temperature" in yml or "Temperature" in yml
+    assert "write-data" not in yml
+    assert "read-data: [Force]" in yml
     assert "Heat-Flux" in yml
     inp = (tmp_path / "e-out" / "e-solid" / "e-solid.inp").read_text()
     assert "*COUPLED TEMPERATURE-DISPLACEMENT" in inp

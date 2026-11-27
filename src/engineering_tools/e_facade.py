@@ -29,6 +29,7 @@ from engineering_tools.e_adapter_calculix import (
 )
 from engineering_tools.e_adapter_openfoam import (
     _ESI_FOAM,
+    fluid_adapter_load_detail,
     fluid_e_participant_argv,
     mesh_e_fluid_participant,
     prepare_e_fluid_participant,
@@ -680,6 +681,15 @@ def _run_live(
         fluid_cwd=fluid_dir,
         n_windows=n_windows,
     )
+    # The fluid log line is the cause when the adapter library is absent.
+    # Mechanical verify then only reports the windows that never started.
+    fluid_log_path = fluid_dir / "participant.log"
+    fluid_log = (
+        fluid_log_path.read_text(encoding="utf-8", errors="replace")
+        if fluid_log_path.is_file()
+        else ""
+    )
+    adapter_detail = fluid_adapter_load_detail(fluid_log)
     mapped: dict[str, Any] = {}
     mapped.update(sample_e_solid_probes(solid_dir))
     mapped.update(sample_e_fluid_probes(fluid_dir))
@@ -718,7 +728,7 @@ def _run_live(
                 "status": "broken",
                 "e_ok": False,
                 "live": bool(engineering),
-                "detail": "CAD-mapped fields ~0 while loads/BCs are finite",
+                "detail": adapter_detail or "CAD-mapped fields ~0 while loads/BCs are finite",
                 "steps": list(coupled["steps"]),
                 "probes": mapped,
                 "solid_interface_vertices": n_solid,
@@ -728,7 +738,7 @@ def _run_live(
                 "coupling_convergence": bool(windows_ok and engineering),
             },
         )
-    e_ok = bool(engineering and mech["ok"] and windows_ok)
+    e_ok = bool(engineering and mech["ok"] and windows_ok and not adapter_detail)
     if not engineering:
         e_ok = False
     session = {
@@ -753,7 +763,14 @@ def _run_live(
         **live_record,
         "coupling_convergence": bool(windows_ok and engineering),
         "backend_versions": blocks["provenance"].get("backend_versions") or {},
-        "detail": None if e_ok else (mech.get("detail") or coupled.get("detail") or "mechanical couple incomplete"),
+        "detail": None
+        if e_ok
+        else (
+            adapter_detail
+            or mech.get("detail")
+            or coupled.get("detail")
+            or "mechanical couple incomplete"
+        ),
     }
     if not engineering:
         session["detail"] = "PATH mock solvers are not an engineering result"

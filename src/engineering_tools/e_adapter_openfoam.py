@@ -16,8 +16,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from engineering_tools.c_adapter_openfoam import _with_adapter_function
 from engineering_tools.e_mesh_fluid import INNER_WALL as MESH_FACE
+from engineering_tools.e_policy import OPENFOAM_ADAPTER_DATA
 from engineering_tools.hello_probes import _openfoam_tool
 
 _ESI_FOAM = Path("/usr/lib/openfoam/openfoam2512/platforms/linux64GccDPInt32Opt/bin")
@@ -42,6 +42,24 @@ def _e_openfoam_tool(name: str) -> list[str] | None:
 CAD_FACE = "face.inner_wall"
 OF_PATCH = "face.inner_wall"
 _AIR_RHO = 1.225
+# Name OpenFOAM prints when the function object cannot open this file.
+# The couple install builds this into the ESI site lib. A case that names it
+# and a machine that lacks it is the early-exit seen on the guest.
+ADAPTER_LIBRARY = "libpreciceAdapterFunctionObject.so"
+# OpenFOAM 2512 functionObjectList reads this word in the functions dictionary.
+# The default handler warns and continues, so rhoPimpleFoam reaches End without
+# joining preCICE. `strict` calls exitNow on that load failure.
+_E_ADAPTER_FUNCTION = """
+functions
+{
+    errors          strict;
+    preciceAdapter
+    {
+        type            preciceAdapterFunctionObject;
+        libs            ("libpreciceAdapterFunctionObject.so");
+    }
+}
+"""
 
 
 def _config_reference(config_xml: Path, workdir: Path) -> str:
@@ -184,31 +202,88 @@ runTimeModifiable true;
         dest.parent.mkdir(parents=True, exist_ok=True)
         text = body
         if rel == "system/controlDict":
-            text = _with_adapter_function(body)
+            text = _with_e_adapter_function(body)
         dest.write_text(text, encoding="utf-8")
 
 
+def _with_e_adapter_function(control: str) -> str:
+    """Append the adapter function object with the strict OpenFOAM handler.
+
+    Agents: the C damper controlDict keeps the default handler. This E deck
+    must not. A missing libpreciceAdapterFunctionObject.so has to stop
+    rhoPimpleFoam before the time loop, not after a short uncoupled End.
+    """
+    if "errors          strict;" in control and ADAPTER_LIBRARY in control:
+        return control
+    return control.rstrip() + "\n" + _E_ADAPTER_FUNCTION
+
+
+def fluid_adapter_load_detail(log_text: str) -> str | None:
+    """Return the session detail when the fluid log shows the adapter did not load.
+
+    Agents: that line is the cause. A later End and a zero window count are
+    the consequence. Callers must prefer this detail over the mechanical
+    verify string, which only restates the missing windows.
+    """
+    if f'Could not load "{ADAPTER_LIBRARY}"' in log_text:
+        return (
+            "OpenFOAM could not load libpreciceAdapterFunctionObject.so; "
+            "the fluid solver left the couple"
+        )
+    return None
+
+
+def _participant_data_names(xml: str, participant: str, tag: str) -> list[str]:
+    """Names of one read-data or write-data tag inside one participant block.
+
+    Agents: the adapter must ask only for data this XML puts on that
+    participant. A hardcoded Displacement read makes one-way configure abort,
+    because Solid does not provide Displacement.
+    """
+    start = xml.find(f'<participant name="{participant}">')
+    if start < 0:
+        return []
+    end = xml.find("</participant>", start)
+    block = xml[start:end]
+    names: list[str] = []
+    for name in re.findall(rf'{tag} name="([^"]+)"', block):
+        if name in names or name not in OPENFOAM_ADAPTER_DATA:
+            continue
+        names.append(name)
+    return names
+
+
 def write_e_precice_adapter_config(workdir: Path, config_xml: Path) -> None:
-    """Force and Heat-Flux write; Displacement and Temperature read. Patch inner_wall."""
+    """Fluid adapter files whose read and write lists match the XML.
+
+    Agents: one-way writes Force, Heat-Flux, and Temperature and reads
+    nothing. Two-way still reads Displacement and Temperature when the XML
+    says Fluid reads them. An empty read list is omitted. Adapter v1.4.0
+    treats a skipped readData entry as uni-directional coupling.
+    """
     workdir = Path(workdir)
     config_ref = _config_reference(config_xml, workdir)
-    yml = f"""participant: Fluid
-
-precice-config-file: "{config_ref}"
-
-interfaces:
-  - mesh: interface-fluid
-    locations: faceCenters
-    patches:
-      - {OF_PATCH}
-    read-data:
-      - Displacement
-      - Temperature
-    write-data:
-      - Force
-      - Heat-Flux
-"""
+    xml_text = Path(config_xml).read_text(encoding="utf-8") if Path(config_xml).is_file() else ""
+    reads = _participant_data_names(xml_text, "Fluid", "read-data")
+    writes = _participant_data_names(xml_text, "Fluid", "write-data")
+    read_yml = "".join(f"      - {name}\n" for name in reads)
+    write_yml = "".join(f"      - {name}\n" for name in writes)
+    read_block = f"    read-data:\n{read_yml}" if reads else ""
+    write_block = f"    write-data:\n{write_yml}" if writes else ""
+    yml = (
+        "participant: Fluid\n\n"
+        f'precice-config-file: "{config_ref}"\n\n'
+        "interfaces:\n"
+        "  - mesh: interface-fluid\n"
+        "    locations: faceCenters\n"
+        "    patches:\n"
+        f"      - {OF_PATCH}\n"
+        f"{read_block}"
+        f"{write_block}"
+    )
     (workdir / "precice-adapter-config.yml").write_text(yml, encoding="utf-8")
+    read_line = f"        readData        ({' '.join(reads)});\n" if reads else ""
+    write_line = f"        writeData       ({' '.join(writes)});\n" if writes else ""
     dict_path = workdir / "system" / "preciceDict"
     dict_path.parent.mkdir(parents=True, exist_ok=True)
     dict_path.write_text(
@@ -229,9 +304,7 @@ interfaces
         mesh            interface-fluid;
         patches         ({OF_PATCH});
         locations       faceCenters;
-        readData        (Displacement Temperature);
-        writeData       (Force Heat-Flux);
-    }}
+{read_line}{write_line}    }}
 }}
 FSI
 {{
