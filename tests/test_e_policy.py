@@ -30,6 +30,10 @@ def test_mechanical_and_thermal_exchanges_coexist_in_one_config() -> None:
     assert 'exchange data="Temperature"' in xml
     assert 'exchange data="Heat-Flux"' in xml
     assert xml.count("<exchange ") == 4
+    heat = next(item for item in policy["exchanges"] if item["quantity"] == "heat_flux")
+    assert heat["rank"] == "scalar"
+    assert '<data:scalar name="Heat-Flux"/>' in xml
+    assert '<data:vector name="Heat-Flux"/>' not in xml
 
 
 def test_compressible_fluid_metadata_does_not_need_run_gas_special() -> None:
@@ -161,6 +165,43 @@ def test_live_policy_xml_is_fluid_first_without_solid_displacement() -> None:
     assert 'write-data name="Displacement"' not in xml
 
 
+def test_fluid_wall_writes_initialize_before_the_first_step() -> None:
+    """The t=0 map is the wall field, not the allocated zero sample.
+
+    serial-explicit does not ask the first participant for initial data.
+    The OpenFOAM adapter writes before initialize only when
+    requiresInitialData() is true. initialize="true" on each Fluid write
+    is that request. A Solid write stays off the flag.
+    """
+    one = generate_e_precice_config(compile_coupling_policy(kind="one-way"))
+    fluid_lines = [
+        line.strip()
+        for line in one.splitlines()
+        if line.strip().startswith("<exchange ") and 'from="Fluid"' in line
+    ]
+    assert [line.split('data="', 1)[1].split('"', 1)[0] for line in fluid_lines] == [
+        "Force",
+        "Heat-Flux",
+        "Temperature",
+    ]
+    assert all('initialize="true"' in line for line in fluid_lines)
+    two = generate_e_precice_config(compile_coupling_policy(kind="explicit two-way"))
+    solid_lines = [
+        line.strip()
+        for line in two.splitlines()
+        if line.strip().startswith("<exchange ") and 'from="Solid"' in line
+    ]
+    assert solid_lines
+    assert all('initialize="true"' not in line for line in solid_lines)
+    fluid_two = [
+        line.strip()
+        for line in two.splitlines()
+        if line.strip().startswith("<exchange ") and 'from="Fluid"' in line
+    ]
+    assert fluid_two
+    assert all('initialize="true"' in line for line in fluid_two)
+
+
 def test_one_way_solid_does_not_carry_the_fluid_write_mapping() -> None:
     """preCICE rejects a write mapping on a participant that has no write-data.
 
@@ -179,6 +220,11 @@ def test_one_way_solid_does_not_carry_the_fluid_write_mapping() -> None:
     assert 'direction="write"' not in solid
     assert 'read-data name="Force" mesh="interface"' in solid
     assert 'read-data name="Heat-Flux" mesh="interface-faces"' in solid
+    assert '<data:scalar name="Heat-Flux"/>' in one
+    assert '<data:vector name="Heat-Flux"/>' not in one
+    assert '<data:scalar name="Pressure"/>' not in one
+    assert 'read-data name="Displacement"' not in fluid
+    assert 'write-data name="Heat-Flux"' in fluid
     assert 'provide-mesh name="interface-fluid"' in fluid
     assert 'write-data name="Force" mesh="interface-fluid"' in fluid
     assert 'direction="write" from="interface-fluid" to="interface"' in fluid

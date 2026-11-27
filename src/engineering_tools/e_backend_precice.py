@@ -11,13 +11,17 @@ policy["aitken_data"], already restricted to second-to-first writes in e_policy.
 one-way and explicit two-way use coupling-scheme:serial-explicit. That scheme
 has no max-iterations, no relative-convergence-measure, and no Aitken.
 implicit two-way and multirate implicit use serial-implicit with those markers.
-multirate adds substeps="true" on exchanges.
+multirate adds substeps="true" on exchanges. Each Fluid write sets
+initialize="true" so the adapter writes the wall fields before the first
+step. serial-explicit otherwise leaves that sample at the allocated zeros.
 """
 
 from __future__ import annotations
 
 from typing import Any
 from xml.sax.saxutils import escape
+
+from engineering_tools.e_policy import OPENFOAM_ADAPTER_DATA
 
 # Same residual numeric as C/D so implicit windows stay comparable. Importing
 # the private C constant would couple E to C's module layout; duplicate the
@@ -42,7 +46,10 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
         raise ValueError(f"E preCICE backend cannot emit {policy.get('backend')}")
 
     participants: list[dict[str, str]] = policy["participants"]
-    exchanges: list[dict[str, Any]] = policy["exchanges"]
+    # Policy exchanges stay complete. XML data is only what FSI/CHT can carry.
+    exchanges: list[dict[str, Any]] = [
+        ex for ex in policy["exchanges"] if str(ex["precice_name"]) in OPENFOAM_ADAPTER_DATA
+    ]
     time_window = float(policy["time_window"])
     max_iterations = int(policy["max_iterations"])
     max_time_windows = int(policy["max_time_windows"])
@@ -174,9 +181,14 @@ def generate_e_precice_config(policy: dict[str, Any]) -> str:
             lines.append("      </acceleration:aitken>")
     for ex in exchanges:
         ex_mesh = faces if str(ex["precice_name"]) == "Heat-Flux" else mesh
+        # Fluid's wall values already exist on the patch. serial-explicit
+        # does not ask for them, so the adapter skips the write and preCICE
+        # maps the allocated zeros. initialize="true" is the request that
+        # makes requiresInitialData() true and the t=0 map the wall field.
+        initial = ' initialize="true"' if ex["from"] == fluid["name"] else ""
         lines.append(
             f'      <exchange data="{escape(ex["precice_name"])}" mesh="{ex_mesh}" '
-            f'from="{escape(ex["from"])}" to="{escape(ex["to"])}"{substeps}/>'
+            f'from="{escape(ex["from"])}" to="{escape(ex["to"])}"{initial}{substeps}/>'
         )
     lines.append(f"  </coupling-scheme:{scheme}>")
     lines.append("</precice-configuration>")
